@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/img/nexa-logo.svg" alt="Nexa Logo" width="250" />
+  <img src="docs/img/nexa-logo-noframe.svg" alt="Nexa Logo" width="250" />
   <h1>Nexa Language</h1>
   <p><b><i>The Dawn of Agent-Native Programming. Write flows, not glue code.</i></b></p>
   
