@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Use the python from the virtual environment if it exists, otherwise use system python
+if [ -f "$(dirname "$0")/.venv/bin/python" ]; then
+    PYTHON_CMD="$(dirname "$0")/.venv/bin/python"
+else
+    PYTHON_CMD="python3"
+fi
+
+$PYTHON_CMD "$(dirname "$0")/src/cli.py" "$@"
