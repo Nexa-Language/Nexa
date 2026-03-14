@@ -1,0 +1,21 @@
+agent Researcher -> JSON<UserRecord> uses web_search {
+    model: "minimax-m2.5",
+    role: "专业数据分析师",
+    skills: [web_search, text_summarize],
+    memory: shared
+}
+
+flow main {
+    article = Researcher.run("Deep Learning in 2026") >> Writer >> Editor;
+    
+    ideas = join(AnalyzerA, AnalyzerB, AnalyzerC);
+    
+    match intent("coding") {
+        intent("creative") => Writer,
+        _ => Assistant
+    }
+    
+    loop {
+        draft = Writer.write("Hello");
+    } until (Editor.approve(draft))
+}

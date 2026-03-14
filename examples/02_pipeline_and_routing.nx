@@ -1,0 +1,37 @@
+agent Router {
+    role: "User Intent Router"
+}
+
+agent WeatherBot {
+    role: "Weather Expert",
+    model: "minimax-m2.5",
+    prompt: "You fetch and report the weather natively."
+}
+
+agent NewsBot {
+    role: "News Expert",
+    model: "minimax-m2.5",
+    prompt: "You summarize today's big news."
+}
+
+agent SmallTalkBot {
+    role: "Casual conversationalist",
+    model: "minimax-m2.5",
+    prompt: "You are a very friendly ChatBot for casual conversations."
+}
+
+agent Translator {
+    role: "Translator",
+    model: "minimax-m2.5",
+    prompt: "Translate everything to French."
+}
+
+flow main {
+    req = "Tell me what is happening in the world today!";
+    
+    match req {
+        intent("Check weather") => WeatherBot.run(req) >> Translator,
+        intent("Check daily news") => NewsBot.run(req) >> Translator,
+        _ => SmallTalkBot.run(req)
+    }
+}

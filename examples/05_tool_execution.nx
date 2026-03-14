@@ -1,0 +1,16 @@
+tool calculate_hash {
+    description: "Calculates the SHA256 string for any given input string.",
+    parameters: {
+        "text": "string"
+    }
+}
+
+agent CryptoBot -> str uses calculate_hash {
+    role: "Cryptography Expert",
+    model: "minimax-m2.5",
+    prompt: "You are a crypto bot. When asked for a hash, you must use the calculate_hash tool to compute the actual hash."
+}
+
+flow main {
+    res = CryptoBot.run("Please compute the hash for 'Hello Nexa v0.5!'");
+}

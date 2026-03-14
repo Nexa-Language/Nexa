@@ -1,0 +1,26 @@
+agent Writer {
+    role: "Writer",
+    model: "minimax-m2.5",
+    prompt: "Write a short 2-sentence poem about AGI."
+}
+
+agent Critic {
+    role: "Critic",
+    model: "deepseek-chat",
+    prompt: "Review the poem and suggest exactly one concrete poetry improvement."
+}
+
+agent Editor {
+    role: "Editor",
+    model: "minimax-m2.5",
+    prompt: "Improve the poem based on the critic feedback."
+}
+
+flow main {
+    poem = Writer.run("Write a poem about Artificial General Intelligence");
+    
+    loop {
+        feedback = Critic.run(poem);
+        poem = Editor.run(poem, feedback);
+    } until ("Poem has rhyme and mentions singularity")
+}

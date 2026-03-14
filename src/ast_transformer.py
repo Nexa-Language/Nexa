@@ -41,27 +41,59 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def agent_decl(self, args):
+        # args can contain: name, -> return_type (optional), uses list (optional), agent_properties...
         name = str(args[0])
+        return_type = "str"
         uses = []
-        body_idx = 1
-        if isinstance(args[1], list):
-            uses = args[1]
-            body_idx = 2
+        properties = {}
         
+        for arg in args[1:]:
+            if isinstance(arg, dict) and arg.get("type") == "return_type":
+                return_type = arg["value"]
+            elif isinstance(arg, list) and len(arg) > 0 and isinstance(arg[0], str): # This might conflict with array values
+                # Actually, how do we distinguish uses list? The grammar says:
+                # agent_decl: "agent" IDENTIFIER ["->" return_type] ["uses" identifier_list] "{" agent_property* "}"
+                # Let's just iterate and check types
+                if not isinstance(arg, dict):
+                    uses = arg
+            elif isinstance(arg, dict) and "key" in arg:
+                properties[arg["key"]] = arg["value"]
+                
         return {
             "type": "AgentDeclaration",
             "name": name,
+            "return_type": return_type,
             "uses": uses,
-            "prompt": args[body_idx]
+            "properties": properties,
+            "prompt": properties.get("prompt", "")
         }
+
+    @v_args(inline=False)
+    def return_type(self, args):
+        val = "".join([str(a) for a in args])
+        return {"type": "return_type", "value": val}
+
+    @v_args(inline=False)
+    def agent_property(self, args):
+        key = str(args[0])
+        value = args[1]
+        return {"key": key, "value": value}
+
+    @v_args(inline=True)
+    def string_val(self, s):
+        return str(s).strip('"')
+
+    @v_args(inline=True)
+    def id_val(self, i):
+        return str(i)
+
+    @v_args(inline=True)
+    def list_val(self, i):
+        return i
 
     @v_args(inline=False)
     def identifier_list(self, args):
         return [str(arg) for arg in args]
-
-    @v_args(inline=False)
-    def agent_body(self, args):
-        return str(args[0]).strip('"')
 
     @v_args(inline=False)
     def flow_decl(self, args):
@@ -103,6 +135,72 @@ class NexaTransformer(Transformer):
             "target_variable": target,
             "consequence": consequence,
             "alternative": alternative
+        }
+
+    @v_args(inline=False)
+    def loop_stmt(self, args):
+        return {
+            "type": "LoopUntilStatement",
+            "body": args[0],
+            "condition": args[1]
+        }
+
+    @v_args(inline=False)
+    def match_stmt(self, args):
+        target = str(args[0])
+        cases = []
+        default_case = None
+        for arg in args[1:]:
+            if arg["type"] == "MatchCase":
+                cases.append(arg)
+            elif arg["type"] == "DefaultCase":
+                default_case = arg
+        
+        return {
+            "type": "MatchIntentStatement",
+            "target": target,
+            "cases": cases,
+            "default": default_case
+        }
+
+    @v_args(inline=False)
+    def match_case(self, args):
+        return {
+            "type": "MatchCase",
+            "intent": str(args[0]).strip('"'),
+            "expression": args[1]
+        }
+
+    @v_args(inline=False)
+    def default_case(self, args):
+        return {
+            "type": "DefaultCase",
+            "expression": args[0]
+        }
+
+    @v_args(inline=False)
+    def pipeline_expr(self, args):
+        return {
+            "type": "PipelineExpression",
+            "stages": args
+        }
+
+    @v_args(inline=False)
+    def join_call(self, args):
+        # join_call: "join" "(" identifier_list ")" [ "." IDENTIFIER "(" [argument_list] ")" ]
+        agents = args[0]
+        method = "run"
+        arguments = []
+        if len(args) > 1:
+            method = str(args[1])
+            if len(args) > 2:
+                arguments = args[2]
+        
+        return {
+            "type": "JoinCallExpression",
+            "agents": agents,
+            "method": method,
+            "arguments": arguments
         }
 
     @v_args(inline=False)

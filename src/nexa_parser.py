@@ -10,24 +10,44 @@ tool_body: "description" ":" STRING_LITERAL "," "parameters" ":" json_object
 json_object: "{" [json_pair ("," json_pair)*] "}"
 json_pair: STRING_LITERAL ":" STRING_LITERAL
 
-agent_decl: "agent" IDENTIFIER ["uses" identifier_list] "{" agent_body "}"
+agent_decl: "agent" IDENTIFIER ["->" return_type] ["uses" identifier_list] "{" agent_property* "}"
+return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER
+
+agent_property: IDENTIFIER ":" agent_property_value ","?
+?agent_property_value: STRING_LITERAL -> string_val
+                     | IDENTIFIER -> id_val
+                     | "[" identifier_list "]" -> list_val
+
 identifier_list: IDENTIFIER ("," IDENTIFIER)*
-agent_body: "prompt" ":" STRING_LITERAL
 
 flow_decl: "flow" IDENTIFIER block
 
 block: "{" flow_stmt* "}"
 
-?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt
+?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt
 
 assignment_stmt: IDENTIFIER "=" expression ";"
+               | IDENTIFIER "=" match_stmt
 expr_stmt: expression ";"
 
 semantic_if_stmt: "semantic_if" STRING_LITERAL "against" IDENTIFIER block ["else" block]
 
-?expression: method_call 
-           | STRING_LITERAL -> string_expr 
-           | IDENTIFIER -> id_expr
+loop_stmt: "loop" block "until" "(" expression ")"
+
+match_stmt: "match" IDENTIFIER "{" match_case* default_case? "}"
+match_case: "intent" "(" STRING_LITERAL ")" "=>" expression ","?
+default_case: "_" "=>" expression ","?
+
+?expression: pipeline_expr | base_expr
+
+pipeline_expr: base_expr (">>" base_expr)+
+
+?base_expr: join_call 
+          | method_call 
+          | STRING_LITERAL -> string_expr 
+          | IDENTIFIER -> id_expr
+
+join_call: "join" "(" identifier_list ")" [ "." IDENTIFIER "(" [argument_list] ")" ]
 
 method_call: IDENTIFIER "." IDENTIFIER "(" [argument_list] ")"
 argument_list: expression ("," expression)*

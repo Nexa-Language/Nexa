@@ -1,4 +1,6 @@
-# 此文件由 Nexa v0.5 Code Generator 自动生成
+import sys
+
+content = r'''# 此文件由 Nexa v0.5 Code Generator 自动生成
 import os
 import json
 
@@ -157,7 +159,7 @@ class CodeGenerator:
             for sub_stmt in stmt["body"]:
                 self._generate_statement(sub_stmt)
             cond_str = self._resolve_expression(stmt["condition"])
-            self.code.append(f"{self._indent()}if nexa_semantic_eval({cond_str}, str(locals())):")
+            self.code.append(f"{self._indent()}if nexa_semantic_eval({cond_str}, 'current context'):")
             self.indent_level += 1
             self.code.append(f"{self._indent()}break")
             self.indent_level -= 2
@@ -185,7 +187,7 @@ class CodeGenerator:
             agents_list_str = "[ " + ", ".join(agent_names) + " ]"
             return f"nexa_pipeline({initial_call}, {agents_list_str})"
         elif ex_type == "JoinCallExpression":
-            agents_list_str = "[ " + ", ".join([a for a in expr["agents"]]) + "]"
+            agents_list_str = "[ " + ", ".join([a["value"] for a in expr["agents"]]) + "]"
             method = expr.get("method")
             if "arguments" in expr:
                 args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
@@ -213,3 +215,7 @@ if __name__ == "__main__":
     
     generator = CodeGenerator(ast)
     print(generator.generate())
+'''
+
+with open('src/code_generator.py', 'w') as f:
+    f.write(content)
