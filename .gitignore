@@ -2,3 +2,6 @@
 __pycache__/
 *.pyc
 docs/secert.md
+*.egg-info/
+build/
+dist/
