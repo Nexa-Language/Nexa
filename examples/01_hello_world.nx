@@ -1,0 +1,46 @@
+/* 
+  Hello World Nexa MVP (v0.1)
+
+  [Nexa 编译器转译指南]
+  当这段代码遇到 Nexa v0.1 Transpiler 时，将生成如下等价 Python 结构：
+  1. 定义 `web_search` python 函数（当前仅为 dummy 接口定义），并通过 Pydantic 导出标准 JSON Schema。
+  2. 初始化 openai `client`。
+  3. 定义 class `Agent_Researcher`，在实例化时指定 `tools=[web_search_schema]` 并且写入 system `prompt`。
+  4. main flow 生成为 `def flow_main():`
+  5. 遇到 `semantic_if` 时，背后会静默调用一个 `__nexa_eval_condition` (基于 gpt-4o-mini structured output {"matched": bool, "confidence": float})。
+  6. 依据布尔结果执行实际的 Python if/else 分支。
+*/
+
+// --------- 工具挂载 (Tool) ---------
+tool web_search {
+    description: "Search the web for a given query string.",
+    parameters: {
+        "query": "string"
+    }
+}
+
+// --------- 智能体声明 (Agent) ---------
+agent Researcher uses web_search {
+    prompt: "You are a brilliant researcher. Answer the query context based on the web search results."
+}
+
+// --------- 编排主流程 (Flow) ---------
+flow main {
+    // 触发智能体执行任务
+    result = Researcher.run("Search the latest news about the new 'Nexa' programming language.");
+
+    // [原生语义分支]
+    // 这里不会写恶心的 if "agent-native" in result 这种文本匹配
+    // 而是委托给轻量级 LLM 进行语义判定
+    semantic_if "The result explicitly mentions 'agent-native' or 'transpiler'" against result {
+        
+        // 判定通过
+        Researcher.run("Provide a 50-word technical summary based on the result.", result);
+        
+    } else {
+        
+        // 判定失败
+        Researcher.run("Just reply: 'No relevant Nexa logic found in search results.'");
+        
+    }
+}
