@@ -20,7 +20,8 @@
 - [x] 确立 Transpiler 后端目标代码 Reference (Python)。
 - [x] 使用 Lark 编写前端解析器 (Lexer & Parser) 并在 Python 中打印出 AST。
 - [x] 编写 AST 到 Python 的代码生成器 (Code Generator / Visitor 模式)。
-- [ ] **NEXT:** Nexa CLI 命令行工具封装 (`nexa build` / `nexa run`)。
+- [x] NEXA MVP Code Generator 编写与真实 VENV 联调完成。
+- [x] Nexa CLI 命令行工具封装 (`nexa build` / `nexa run`) -> **Nexa v0.1 MVP 正式完成！**
 
 ## 4. 踩坑记录与教训 (Lessons Learned)
 - **EBNF 歧义陷阱:** 早期设计没有区分表达式和语句，导致 `result = Researcher.run()` 和独立调用无法共存，且变量传递逻辑断层。已通过重写 EBNF 的 `assignment_stmt` 和 `expr_stmt` 解决。在后续手写 Parser 时需严格遵循当前 EBNF。

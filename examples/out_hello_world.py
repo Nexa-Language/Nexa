@@ -9,7 +9,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 # ==========================================
 # [Boilerplate] Nexa 核心运行时环境
 # ==========================================
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(
+    base_url="https://aihub.arcsysu.cn/v1",
+    api_key="sk-lDc9yRMvfPzpxXKuuXB2LA"
+)
 
 class SemanticEvalSchema(BaseModel):
     matched: bool = Field(description="Whether the condition is matched.")
@@ -22,20 +25,28 @@ class SemanticEvalSchema(BaseModel):
     reraise=True
 )
 def __nexa_semantic_eval_with_retry(condition: str, target_text: str) -> bool:
-    resp = client.beta.chat.completions.parse(
-        model="gpt-4o-mini",
+    resp = client.chat.completions.create(
+        model="deepseek-chat",
         messages=[
-            {"role": "system", "content": f"Evaluate condition against target text. Condition: {condition}"},
+            {"role": "system", "content": f"Evaluate condition against target text. Condition: {condition} - Respond EXACTLY with a JSON object like {{'matched': bool, 'confidence': float}}."},
             {"role": "user", "content": str(target_text)}
         ],
-        response_format=SemanticEvalSchema,
+        response_format={"type": "json_object"},
         timeout=10.0
     )
-    return resp.choices[0].message.parsed.matched
+    content = resp.choices[0].message.content or "{}"
+    try:
+        data = json.loads(content)
+        return bool(data.get("matched", False))
+    except Exception:
+        return False
 
 def __nexa_semantic_eval(condition: str, target_text: str) -> bool:
+    print(f"[Semantic_IF Evaluating] Condition: '{condition}'")
     try:
-        return __nexa_semantic_eval_with_retry(condition, target_text)
+        matched = __nexa_semantic_eval_with_retry(condition, target_text)
+        print(f"[Semantic_IF Result] -> {matched}")
+        return matched
     except Exception as e:
         print(f"[Nexa Runtime Warning] Semantic eval failed after retries: {e}. Defaulting to False.")
         return False
@@ -49,18 +60,28 @@ class __NexaAgent:
 
     def run(self, *args) -> str:
         user_input = " ".join([str(arg) for arg in args])
+        print(f"\n> [{self.name} received]: {user_input}")
         self.messages.append({"role": "user", "content": user_input})
         
         kwargs = {
-            "model": "gpt-4o",
+            "model": "minimax-m2.5",
             "messages": self.messages,
         }
         if self.tools:
             kwargs["tools"] = [{"type": "function", "function": t} for t in self.tools]
 
         response = client.chat.completions.create(**kwargs)
-        reply = response.choices[0].message.content or ""
+        
+        msg = response.choices[0].message
+        reply = msg.content or ""
+        
+        if getattr(msg, "tool_calls", None):
+            for tc in msg.tool_calls:
+                print(f"[{self.name} requested TOOL CALL]: {tc.function.name} -> {tc.function.arguments}")
+                reply += f" [Tool Call: {tc.function.name}({tc.function.arguments})] "
+
         self.messages.append({"role": "assistant", "content": reply})
+        print(f"< [{self.name} replied]: {reply}\n")
         return reply
 
 # ==========================================
