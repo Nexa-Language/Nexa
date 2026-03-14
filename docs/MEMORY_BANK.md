@@ -27,3 +27,7 @@
 - **EBNF 歧义陷阱:** 早期设计没有区分表达式和语句，导致 `result = Researcher.run()` 和独立调用无法共存，且变量传递逻辑断层。已通过重写 EBNF 的 `assignment_stmt` 和 `expr_stmt` 解决。在后续手写 Parser 时需严格遵循当前 EBNF。
 - **Lark 中的 Block/Scope 解析:** 在定义 `semantic_if_stmt` 时，如果没有独立的 `block: "{" flow_stmt* "}"` 规则，解析出的 args 将被拍平为一个长列表，使得无法区分 `consequence` 与 `alternative` (else) 中究竟包含了几个语句。引入独立的 `block` 后逻辑非常平滑地映射成了字典。
 - **严厉的反思 (测试态度纪律):** 绝对不能在测试块中取巧只打印 success。必须强制使用 `tree.pretty()` 打印完整的 Tree 和 JSON 并在终端中肉眼校验！这才能防止出现空指针或解析遗漏。CLI 脚本在终端的输出排版同样是一种尊严，没有任何隐藏静默的权力。绝对不能在测试块中取巧只打印 success，必须强制打印完整的 Tree 和 JSON 并在终端中肉眼校验，防止出现空指针或解析遗漏。
+
+## 5. 项目生态与开源包装 (Open Source Ecosystem)
+- 通过 setuptools 编写 setup.py 并注册 entry_points (nexa=src.cli:main)。
+- 重新构筑史诗级 README.md 与开发者第一视角的 06_quick_start_guide.md。完成了 MVP 最终开源面貌的打包。
