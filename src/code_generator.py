@@ -1,15 +1,17 @@
 # 此文件由 Nexa v0.5 Code Generator 自动生成
 import os
 import json
+from src.runtime.stdlib import STD_NAMESPACE_MAP
 
 BOILERPLATE = """# 此文件由 Nexa v0.5 Code Generator 自动生成
 import os
 import json
+from src.runtime.stdlib import STD_NAMESPACE_MAP
 from src.runtime.agent import NexaAgent
 from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
 from src.runtime.orchestrator import join_agents, nexa_pipeline
 from src.runtime.memory import global_memory
-from src.runtime.stdlib import STD_TOOLS_SCHEMA
+from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
 from src.runtime.secrets import nexa_secrets
 
 # ==========================================
@@ -86,7 +88,11 @@ class CodeGenerator:
             tool_refs_list = []
             for t in uses:
                 if t.startswith("std."):
-                    tool_refs_list.append(f"STD_TOOLS_SCHEMA['{t.replace('std.', 'std_')}_execute']")
+                    if t in STD_NAMESPACE_MAP:
+                        for fn_name in STD_NAMESPACE_MAP[t]:
+                            tool_refs_list.append(f"STD_TOOLS_SCHEMA['{fn_name}']")
+                    else:
+                        print(f"⚠️ Warning: Unknown standard namespace '{t}'")
                 else:
                     tool_refs_list.append(f"__tool_{t}_schema")
             tool_refs = ", ".join(tool_refs_list)

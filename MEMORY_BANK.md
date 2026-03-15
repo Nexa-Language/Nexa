@@ -23,3 +23,10 @@ We completely upgraded Nexa to v0.6 with the new safety and modularity component
 y extending the root dictionary before the code generator.
 4. Delivered `examples/07_modules_and_secrets.nx` and testing module `examples/utils.nxlib`.
 5. Updated `docs/03_roadmap_and_vision.md` shifting future sights towards MCP integration, Streaming prints, and NxPM (Nexa Package Manager). 
+
+## Step 8: v0.7 Standard Library Expansion (fs, http, time)
+We significantly expanded the Nexa Native Standard Library, paving the way for out-of-the-box agent utility:
+1. Implemented namespaced standard tools in `src/runtime/stdlib.py` (`std_fs_read_file`, `std_fs_write_file`, `std_http_fetch`, `std_time_now`).
+2. Updated `code_generator.py` to recursively map wildcard namespace bindings like `uses std.fs` natively into the execution code without syntax overhead.
+3. Addressed model-specific strict schema requirement bugs (Minimax schema format rejections) by stripping inner wrapper keys and strictly enforcing Pydantic-like parameters matching.
+4. Delivered `examples/08_news_aggregator.nx` proving End-to-End web scraping, time-awareness, and file I/O within a single prompt action!

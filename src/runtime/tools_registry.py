@@ -1,7 +1,7 @@
 import json
 import hashlib
 import time
-from .stdlib import std_shell_execute
+from .stdlib import std_shell_execute, std_fs_read_file, std_fs_write_file, std_http_fetch, std_time_now
 
 def calculate_hash(text: str) -> str:
     """Calculates the SHA256 string for any given input string."""
@@ -15,7 +15,11 @@ def get_current_time(timezone: str = "UTC") -> str:
 LOCAL_TOOLS = {
     "calculate_hash": calculate_hash,
     "get_current_time": get_current_time,
-    "std_shell_execute": std_shell_execute
+    "std_shell_execute": std_shell_execute,
+    "std_fs_read_file": std_fs_read_file,
+    "std_fs_write_file": std_fs_write_file,
+    "std_http_fetch": std_http_fetch,
+    "std_time_now": std_time_now
 }
 
 def execute_tool(name: str, args_json: str) -> str:
