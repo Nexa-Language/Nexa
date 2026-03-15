@@ -1,0 +1,7 @@
+agent SysAdminBot uses std.shell {
+    prompt: "You are a Linux system administrator bot. Answer questions about the OS by executing commands like `uname -a`, `free -m`, `ls -la`, etc."
+}
+
+flow main {
+    SysAdminBot.run("Please run `ls -a` in the current project root, and check the ram usage. Then summarize what's in the repo and how much memory is free.");
+}

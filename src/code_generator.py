@@ -9,6 +9,8 @@ from src.runtime.agent import NexaAgent
 from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
 from src.runtime.orchestrator import join_agents, nexa_pipeline
 from src.runtime.memory import global_memory
+from src.runtime.stdlib import STD_TOOLS_SCHEMA
+from src.runtime.secrets import nexa_secrets
 
 # ==========================================
 # [Target Code] 自动生成的编排逻辑
@@ -81,7 +83,13 @@ class CodeGenerator:
             role = properties.get("role", '""').strip('"')
             memory_scope = properties.get("memory", '"local"').strip('"')
             
-            tool_refs = ", ".join([f"__tool_{t}_schema" for t in uses])
+            tool_refs_list = []
+            for t in uses:
+                if t.startswith("std."):
+                    tool_refs_list.append(f"STD_TOOLS_SCHEMA['{t.replace('std.', 'std_')}_execute']")
+                else:
+                    tool_refs_list.append(f"__tool_{t}_schema")
+            tool_refs = ", ".join(tool_refs_list)
             self.code.append(f'{name} = NexaAgent(')
             self.code.append(f'    name="{name}",')
             self.code.append(f'    prompt="{prompt}",')
@@ -167,6 +175,8 @@ class CodeGenerator:
         ex_type = expr.get("type")
         if ex_type == "StringLiteral":
             return f'"{expr["value"]}"'
+        elif ex_type == "SecretCall":
+            return f'nexa_secrets.get("{expr["key"]}")'
         elif ex_type == "Identifier":
             return expr["value"]
         elif ex_type == "MethodCallExpression":

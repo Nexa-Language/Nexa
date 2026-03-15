@@ -1,0 +1,10 @@
+tool echo_tool {
+    description: "Echo back the input string",
+    parameters: {
+        "text": "string"
+    }
+}
+
+agent LibAgent uses echo_tool {
+    prompt: "You are a library agent. Your job is to format text."
+}

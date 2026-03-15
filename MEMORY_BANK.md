@@ -14,3 +14,12 @@ We finalized the multi-argument parameter support and the tool sandbox:
 2. Created a native Python Sandbox registry (`src/runtime/tools_registry.py`).
 3. Enhanced `src/runtime/agent.py` to recursively parse `tool_calls`, trigger the Python local function, append the results natively to the Context Thread, and loop until standard string outputs are formulated. Tested strictly with `examples/05_tool_execution.nx`.
 4. Successfully rewritten the complete `README.md` launching Nexa v0.5 "The Orchestration Era".
+
+## Step 7: v0.6 Modularity and Saftey Era (.nxlib and .nxs)
+We completely upgraded Nexa to v0.6 with the new safety and modularity components:
+1. Created `.nxs` natively in `src/runtime/secrets.py` for API Key management avoiding hardcoded credentials.
+2. Updated `ast_transformer.py` and `nexa_parser.py` adding `secret("KEY")` base keyword functionality.
+3. Created the `.nxlib` logic utilizing `include "xx.nxlib";` at the very top of `.nx` grammars that efficiently merges multi-file ASTs directly b
+y extending the root dictionary before the code generator.
+4. Delivered `examples/07_modules_and_secrets.nx` and testing module `examples/utils.nxlib`.
+5. Updated `docs/03_roadmap_and_vision.md` shifting future sights towards MCP integration, Streaming prints, and NxPM (Nexa Package Manager). 
