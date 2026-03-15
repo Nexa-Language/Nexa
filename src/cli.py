@@ -79,11 +79,14 @@ def run_file(nx_file_path: str):
     
     try:
         # Using sys.executable to run with the current python environment
+        env = os.environ.copy()
+        env['PYTHONPATH'] = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         process = subprocess.Popen(
             [sys.executable, generated_py_path],
             stdout=sys.stdout,
             stderr=sys.stderr,
-            text=True
+            text=True,
+            env=env
         )
         process.communicate()
         

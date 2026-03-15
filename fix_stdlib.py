@@ -1,4 +1,13 @@
+import os
+import urllib.request
+import urllib.error
+import datetime
+import re
 
+with open('src/runtime/stdlib.py', 'r') as f:
+    original = f.read()
+
+new_lib = """
 import subprocess
 import json
 import os
@@ -8,8 +17,8 @@ import urllib.error
 import re
 
 def std_shell_execute(command: str) -> str:
-    """Executes a shell command on the local operating system and returns the output."""
-    print(f"\n\033[93m⚠️ [Nexa Sandbox] Agent requested to run: {command}\033[0m\n")
+    \"\"\"Executes a shell command on the local operating system and returns the output.\"\"\"
+    print(f"\\n\\033[93m⚠️ [Nexa Sandbox] Agent requested to run: {command}\\033[0m\\n")
     try:
         result = subprocess.run(
             command, 
@@ -21,13 +30,13 @@ def std_shell_execute(command: str) -> str:
         )
         output = result.stdout
         if result.stderr:
-            output += f"\n[STDERR]:\n{result.stderr}"
+            output += f"\\n[STDERR]:\\n{result.stderr}"
         return output if output.strip() else "[Command executed successfully with no output]"
     except Exception as e:
         return f"Error executing command: {str(e)}"
 
 def std_fs_read_file(filepath: str) -> str:
-    print(f"\n\033[94m🔍 [Nexa FS] Reading file: {filepath}\033[0m\n")
+    print(f"\\n\\033[94m🔍 [Nexa FS] Reading file: {filepath}\\033[0m\\n")
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             return f.read()
@@ -35,7 +44,7 @@ def std_fs_read_file(filepath: str) -> str:
         return f"Error reading file {filepath}: {str(e)}"
 
 def std_fs_write_file(filepath: str, content: str) -> str:
-    print(f"\n\033[94m💾 [Nexa FS] Writing file: {filepath}\033[0m\n")
+    print(f"\\n\\033[94m💾 [Nexa FS] Writing file: {filepath}\\033[0m\\n")
     try:
         # Create directory if it doesn't exist
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
@@ -46,7 +55,7 @@ def std_fs_write_file(filepath: str, content: str) -> str:
         return f"Error writing to file {filepath}: {str(e)}"
 
 def std_http_fetch(url: str) -> str:
-    print(f"\n\033[96m🌐 [Nexa HTTP] Fetching: {url}\033[0m\n")
+    print(f"\\n\\033[96m🌐 [Nexa HTTP] Fetching: {url}\\033[0m\\n")
     try:
         req = urllib.request.Request(
             url, 
@@ -58,19 +67,21 @@ def std_http_fetch(url: str) -> str:
             text = re.sub(r'<style.*?>.*?</style>', ' ', html, flags=re.IGNORECASE | re.DOTALL)
             text = re.sub(r'<script.*?>.*?</script>', ' ', text, flags=re.IGNORECASE | re.DOTALL)
             text = re.sub(r'<[^>]+>', ' ', text)
-            text = re.sub(r'\s+', ' ', text)
+            text = re.sub(r'\\s+', ' ', text)
             return text.strip()[:20000] # Limit size to prevent context overflow
     except Exception as e:
         return f"Error fetching {url}: {str(e)}"
 
-def std_time_now(**kwargs) -> str:
+def std_time_now() -> str:
     now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(f"\n\033[95m🕒 [Nexa Time] Time requested, returned: {now}\033[0m\n")
+    print(f"\\n\\033[95m🕒 [Nexa Time] Time requested, returned: {now}\\033[0m\\n")
     return now
 
 STD_TOOLS_SCHEMA = {
     "std_shell_execute": {
-        "name": "std_shell_execute",
+        "type": "function",
+        "function": {
+            "name": "std_shell_execute",
             "description": "Executes a shell command on the local operating system and returns the output (stdout/stderr).",
             "parameters": {
                 "type": "object",
@@ -78,10 +89,13 @@ STD_TOOLS_SCHEMA = {
                     "command": {"type": "string", "description": "The shell command to execute"}
                 },
                 "required": ["command"]
+            }
         }
     },
     "std_fs_read_file": {
-        "name": "std_fs_read_file",
+        "type": "function",
+        "function": {
+            "name": "std_fs_read_file",
             "description": "Reads the content of a local file.",
             "parameters": {
                 "type": "object",
@@ -89,10 +103,13 @@ STD_TOOLS_SCHEMA = {
                     "filepath": {"type": "string", "description": "The absolute or relative path to the file"}
                 },
                 "required": ["filepath"]
+            }
         }
     },
     "std_fs_write_file": {
-        "name": "std_fs_write_file",
+        "type": "function",
+        "function": {
+            "name": "std_fs_write_file",
             "description": "Writes text content to a local file.",
             "parameters": {
                 "type": "object",
@@ -101,10 +118,13 @@ STD_TOOLS_SCHEMA = {
                     "content": {"type": "string", "description": "The text content to write"}
                 },
                 "required": ["filepath", "content"]
+            }
         }
     },
     "std_http_fetch": {
-        "name": "std_http_fetch",
+        "type": "function",
+        "function": {
+             "name": "std_http_fetch",
              "description": "Fetches and returns the plain text content of a given URL.",
              "parameters": {
                  "type": "object",
@@ -112,17 +132,18 @@ STD_TOOLS_SCHEMA = {
                      "url": {"type": "string", "description": "The URL to fetch, including http:// or https://"}
                  },
                  "required": ["url"]
+             }
         }
     },
     "std_time_now": {
-        "name": "std_time_now",
+        "type": "function",
+        "function": {
+            "name": "std_time_now",
             "description": "Returns the current local system time formatted as YYYY-MM-DD HH:MM:SS.",
             "parameters": {
                 "type": "object",
-                "properties": {
-                    "timezone": {"type": "string", "description": "Timezone to retrieve the time for, e.g., 'UTC'"}
-                },
-                "required": ["timezone"]
+                "properties": {}
+            }
         }
     }
 }
@@ -133,3 +154,7 @@ STD_NAMESPACE_MAP = {
     "std.http": ["std_http_fetch"],
     "std.time": ["std_time_now"]
 }
+"""
+
+with open('src/runtime/stdlib.py', 'w') as f:
+    f.write(new_lib)

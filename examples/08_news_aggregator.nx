@@ -1,0 +1,8 @@
+agent Researcher uses std.time, std.http, std.fs {
+    prompt: "You are an intelligent news researcher. Your job is to fetch the current date, then fetch top news from a given URL, summarize the top 3 items, and save the result into a local file with the date included in the summary."
+}
+
+flow main {
+    msg = "Please fetch the current time, then fetch news from https://lite.cnn.com (it's a text-only news site, easy to parse). Extract top 3 headlines and save them to `examples/today_news.md` using the file system tool.";
+    Researcher.run(msg);
+}
