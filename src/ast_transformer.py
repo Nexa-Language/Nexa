@@ -7,8 +7,19 @@ class NexaTransformer(Transformer):
     Nexa 原生的轻量级 JSON / Dict 抽象语法树（AST）
     """
     @v_args(inline=False)
+    def import_stmt(self, args):
+        return {"type": "IncludeStatement", "path": str(args[0]).strip('"')}
+
+    @v_args(inline=False)
     def program(self, args):
-        return {"type": "Program", "body": args}
+        includes = []
+        body = []
+        for arg in args:
+            if isinstance(arg, dict) and arg.get("type") == "IncludeStatement":
+                includes.append(arg)
+            else:
+                body.append(arg)
+        return {"type": "Program", "includes": includes, "body": body}
 
     @v_args(inline=False)
     def tool_decl(self, args):
@@ -94,6 +105,16 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def identifier_list(self, args):
         return [str(arg) for arg in args]
+
+    def use_identifier_list(self, args):
+        return [str(arg) for arg in args]
+
+    def use_identifier(self, args):
+        return str(args[0])
+
+    def namespaced_id(self, args):
+        return f"{args[0]}.{args[1]}"
+
 
     @v_args(inline=False)
     def flow_decl(self, args):
@@ -214,6 +235,10 @@ class NexaTransformer(Transformer):
             "method": str(args[1]),
             "arguments": arguments
         }
+
+    @v_args(inline=False)
+    def secret_call(self, args):
+        return {"type": "SecretCall", "key": str(args[0]).strip('"')}
 
     @v_args(inline=False)
     def argument_list(self, args):

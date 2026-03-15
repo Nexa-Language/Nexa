@@ -1,7 +1,9 @@
 from lark import Lark
 
 nexa_grammar = """
-program: script_stmt*
+program: import_stmt* script_stmt*
+
+import_stmt: "include" STRING_LITERAL ";"
 
 ?script_stmt: tool_decl | agent_decl | flow_decl
 
@@ -10,7 +12,7 @@ tool_body: "description" ":" STRING_LITERAL "," "parameters" ":" json_object
 json_object: "{" [json_pair ("," json_pair)*] "}"
 json_pair: STRING_LITERAL ":" STRING_LITERAL
 
-agent_decl: "agent" IDENTIFIER ["->" return_type] ["uses" identifier_list] "{" agent_property* "}"
+agent_decl: "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] "{" agent_property* "}"
 return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER
 
 agent_property: IDENTIFIER ":" agent_property_value ","?
@@ -19,6 +21,8 @@ agent_property: IDENTIFIER ":" agent_property_value ","?
                      | "[" identifier_list "]" -> list_val
 
 identifier_list: IDENTIFIER ("," IDENTIFIER)*
+use_identifier_list: use_identifier ("," use_identifier)*
+use_identifier: IDENTIFIER | IDENTIFIER "." IDENTIFIER -> namespaced_id
 
 flow_decl: "flow" IDENTIFIER block
 
@@ -44,12 +48,14 @@ pipeline_expr: base_expr (">>" base_expr)+
 
 ?base_expr: join_call 
           | method_call 
+          | secret_call
           | STRING_LITERAL -> string_expr 
           | IDENTIFIER -> id_expr
 
 join_call: "join" "(" identifier_list ")" [ "." IDENTIFIER "(" [argument_list] ")" ]
 
 method_call: IDENTIFIER "." IDENTIFIER "(" [argument_list] ")"
+secret_call: "secret" "(" STRING_LITERAL ")"
 argument_list: expression ("," expression)*
 
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/

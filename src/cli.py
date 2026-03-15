@@ -36,6 +36,24 @@ def build_file(nx_file_path: str) -> str:
         transformer = NexaTransformer()
         ast = transformer.transform(tree)
 
+        # Handle nxlib includes
+        if "includes" in ast:
+            for include_stmt in ast["includes"]:
+                inc_rel_path = include_stmt["path"]
+                inc_full_path = input_path.parent / inc_rel_path
+                if not inc_full_path.exists():
+                    print(f"❌ Error: Included file '{inc_rel_path}' does not exist at '{inc_full_path}'.")
+                    sys.exit(1)
+                
+                with open(inc_full_path, 'r', encoding='utf-8') as inc_f:
+                    inc_code = inc_f.read()
+                
+                inc_tree = parse(inc_code)
+                inc_ast = transformer.transform(inc_tree)
+                
+                # Merge included bodies to the top of AST
+                ast["body"] = inc_ast["body"] + ast["body"]
+
         # Generate Code
         generator = CodeGenerator(ast)
         python_code = generator.generate()
