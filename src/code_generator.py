@@ -102,10 +102,45 @@ class CodeGenerator:
             model = properties.get("model", '"minimax-m2.5"').strip('"')
             role = properties.get("role", '""').strip('"')
             memory_scope = properties.get("memory", '"local"').strip('"')
+            stream_val = properties.get("stream", '"false"').strip('"').lower()
+            stream = "True" if stream_val == "true" else "False"
+
             
             tool_refs_list = []
             for t in uses:
-                if t.startswith("std."):
+                if t.endswith(".md"):
+                    # Parse dynamic skills from markdown
+                    md_path = os.path.join(os.path.dirname(self.source_path) if hasattr(self, 'source_path') else ".", t)
+                    try:
+                        with open(md_path, "r", encoding="utf-8") as mdf:
+                            md_content = mdf.read()
+                        import re
+                        # simple parser: find ## Tool: <name> and the JSON blocks below it
+                        blocks = re.split(r'## Tool:\s*([A-Za-z0-9_]+)', md_content)
+                        for i in range(1, len(blocks), 2):
+                            tool_name = blocks[i]
+                            tool_body = blocks[i+1]
+                            # Try to extract JSON block
+                            json_match = re.search(r'```json\s*(.*?)\s*```', tool_body, re.DOTALL)
+                            if json_match:
+                                json_str = json_match.group(1)
+                                try:
+                                    import json
+                                    schema_dict = json.loads(json_str)
+                                    desc = schema_dict.pop("description", f"Dynamic tool {tool_name}")
+                                    final_schema = {
+                                        "name": tool_name,
+                                        "description": desc,
+                                        "parameters": schema_dict
+                                    }
+                                    code_str = f"__tool_{tool_name}_schema = {json.dumps(final_schema, indent=4, ensure_ascii=False)}"
+                                    self.code.append(code_str)
+                                    tool_refs_list.append(f"__tool_{tool_name}_schema")
+                                except Exception as parse_e:
+                                    print(f"⚠️ Warning: Failed to parse JSON for tool {tool_name}: {parse_e}")
+                    except Exception as e:
+                        print(f"⚠️ Warning: Failed to load {t}: {e}")
+                elif t.startswith("std."):
                     if t in STD_NAMESPACE_MAP:
                         for fn_name in STD_NAMESPACE_MAP[t]:
                             tool_refs_list.append(f"STD_TOOLS_SCHEMA['{fn_name}']")
@@ -123,6 +158,8 @@ class CodeGenerator:
             self.code.append(f'    model="{model}",')
             self.code.append(f'    role="{role}",')
             self.code.append(f'    memory_scope="{memory_scope}",')
+            self.code.append(f'    stream={stream},')
+
             if implements:
                 self.code.append(f'    protocol={implements},')
             if max_tokens:

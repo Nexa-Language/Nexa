@@ -36,3 +36,25 @@ We significantly expanded the Nexa Native Standard Library, paving the way for o
 - **Model Routing**: Modified agent `.model` property to split into `provider/model_name`. Updated `secrets.py` to handle dynamic API key injection mapped directly to prefixes (`OPENAI_`, `MINIMAX_`, `DEEPSEEK_`). Added conditional OpenAI client instantiation.
 - **Human-in-the-loop**: Created `std.ask_human` interacting with `sys.stdin.readline` to provide sync-blocking inputs. Updated the CI environment by flushing the standard pipest to unblock execution in testing layers.
 - **MCP Client**: Designed initial stub in `src/runtime/mcp_client.py` for reading `.json` protocols and merging into ToolSchema format dynamically.
+
+### Operational Guidelines (v0.8.1+)
+1. **PROHIBIT abuse of Patch scripts**: When modifying existing code, ALWAYS use built-in editor tools (`replace_string_in_file`, `edit_file`, etc). NEVER write or run throwaway scripts like `fix_xxx.py` or `patch_xxx.py` just to edit files.
+2. **Keep Workspace Clean**: Any temporary files generated for testing must be cleaned up immediately after the test passes.
+
+### Version 0.8.1 Patch Operations
+- **Workspace Sanitization**: Removed residual `patch_` and `fix_` scripts to enforce clean working state rules. Prohibited usage of standalone scripts for simple edits.
+- **Language Features**: Implemented `stream: "true"` modifying `agent.py` to stream client completions and parse delta strings dynamically. Implemented `memory: "persistent"` which automatically serializes and restores `self.messages` from `.nexa_cache/{agent_name}_memory.json`. Handled serialization fixes for new `ChatCompletionMessage` instances payload by passing dictionary casts.
+- **MD Tool Loading**: Updated parser and generator to allow string literals inside `uses` clause. Implemented RegExp regex-based chunk extraction to discover and construct JSON sub-blocks located under `## Tool: <name>` inside markdown files natively into the tools array of `NexaAgent`. Added `patch_tool_md.py` schema logic fix for mapping pure params into complete OpenAI tool wrapper.
+- **Roadmap Shift**: Added v0.9 Cognitive & Governance scope (dual-systems, FSM) and reshuffled v1.0 AVM architecture ecosystem tools in `03_roadmap_and_vision.md`.
+
+### Version 0.8.1 Patch Operations
+- **Workspace Sanitization**: Removed residual `patch_` and `fix_` scripts to enforce clean working state rules.
+- **Language Features**: Implemented `stream: "true"` modifying `agent.py` to stream chunks natively. Implemented `memory: "persistent"` which restores `self.messages` from `.nexa_cache/{agent_name}_memory.json`. 
+- **MD Tool Loading**: Updated parser/codegen to allow string literals like `"SKILLS.md"`. Implemented regex JSON extraction.
+- **Roadmap Shift**: Added v0.9 (System 1 & 2, FSM, events) and reshuffled v1.0 AVM info in docs.
+
+### Version 0.8.1 Patch Operations
+- **Workspace Sanitization**: Removed residual patch and fix scripts.
+- **Language Features**: Implemented stream to print natively, persistent memory handling json loading/saving.
+- **MD Tool Loading**: Parses SKILLS.md JSON blocks.
+- **Roadmap Shift**: v0.9 and v1.0.
