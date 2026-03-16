@@ -27,6 +27,7 @@ agent_property: IDENTIFIER ":" agent_property_value ","?
 identifier_list: IDENTIFIER ("," IDENTIFIER)*
 use_identifier_list: use_identifier ("," use_identifier)*
 use_identifier: IDENTIFIER | IDENTIFIER "." IDENTIFIER -> namespaced_id
+              | STRING_LITERAL -> string_use
 
 flow_decl: "flow" IDENTIFIER block
 

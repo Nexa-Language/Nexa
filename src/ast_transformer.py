@@ -147,6 +147,9 @@ class NexaTransformer(Transformer):
     def namespaced_id(self, args):
         return f"{args[0]}.{args[1]}"
 
+    def string_use(self, args):
+        return str(args[0])[1:-1]
+
 
     @v_args(inline=False)
     def flow_decl(self, args):
