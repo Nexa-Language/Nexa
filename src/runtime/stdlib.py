@@ -114,6 +114,17 @@ STD_TOOLS_SCHEMA = {
                  "required": ["url"]
         }
     },
+        "std_ask_human": {
+        "name": "std_ask_human",
+        "description": "Asks the human user a question and waits for their input.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "prompt": {"type": "string", "description": "The question or prompt to show to the human user"}
+            },
+            "required": ["prompt"]
+        }
+    },
     "std_time_now": {
         "name": "std_time_now",
             "description": "Returns the current local system time formatted as YYYY-MM-DD HH:MM:SS.",
@@ -131,5 +142,15 @@ STD_NAMESPACE_MAP = {
     "std.shell": ["std_shell_execute"],
     "std.fs": ["std_fs_read_file", "std_fs_write_file"],
     "std.http": ["std_http_fetch"],
-    "std.time": ["std_time_now"]
+    "std.time": ["std_time_now"],
+    "std.hitl": ["std_ask_human"],
+    "std.ask_human": ["std_ask_human"]
 }
+
+def std_ask_human(prompt: str) -> str:
+    print(f"\n\033[1;35m[Nexa HITL] Human input required: {prompt}\033[0m", flush=True)
+    import sys
+    try:
+        return sys.stdin.readline().strip()
+    except Exception as e:
+        return f"Error reading user input: {str(e)}"

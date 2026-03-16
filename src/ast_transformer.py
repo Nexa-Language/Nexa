@@ -1,3 +1,4 @@
+import lark
 from lark import Transformer, v_args
 import json
 
@@ -39,6 +40,30 @@ class NexaTransformer(Transformer):
             "parameters": args[1]
         }
 
+    
+    @v_args(inline=False)
+    def protocol_decl(self, args):
+        name = str(args[0])
+        fields = {}
+        for arg in args[1:]:
+            if isinstance(arg, dict) and arg.get("type") == "ProtocolBody":
+                fields[arg["key"]] = arg["value"]
+        return {
+            "type": "ProtocolDeclaration",
+            "name": name,
+            "fields": fields
+        }
+
+    @v_args(inline=False)
+    def protocol_body(self, args):
+        key = str(args[0])
+        value = str(args[1]).strip('"')
+        return {
+            "type": "ProtocolBody",
+            "key": key,
+            "value": value
+        }
+
     @v_args(inline=False)
     def json_object(self, args):
         obj = {}
@@ -52,29 +77,36 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def agent_decl(self, args):
-        # args can contain: name, -> return_type (optional), uses list (optional), agent_properties...
-        name = str(args[0])
-        return_type = "str"
-        uses = []
-        properties = {}
+        max_tokens = None
+        if args[0] is not None:
+            max_tokens = int(args[0].value)
+            
+        name = str(args[1])
         
-        for arg in args[1:]:
-            if isinstance(arg, dict) and arg.get("type") == "return_type":
-                return_type = arg["value"]
-            elif isinstance(arg, list) and len(arg) > 0 and isinstance(arg[0], str): # This might conflict with array values
-                # Actually, how do we distinguish uses list? The grammar says:
-                # agent_decl: "agent" IDENTIFIER ["->" return_type] ["uses" identifier_list] "{" agent_property* "}"
-                # Let's just iterate and check types
-                if not isinstance(arg, dict):
-                    uses = arg
-            elif isinstance(arg, dict) and "key" in arg:
+        return_type = "str"
+        if args[2] is not None:
+            return_type = args[2]["value"] if isinstance(args[2], dict) else "str"
+            
+        uses = []
+        if args[3] is not None:
+            uses = args[3]
+            
+        implements = None
+        if args[4] is not None:
+            implements = str(args[4])
+            
+        properties = {}
+        for arg in args[5:]:
+            if isinstance(arg, dict) and "key" in arg:
                 properties[arg["key"]] = arg["value"]
                 
         return {
             "type": "AgentDeclaration",
             "name": name,
+            "max_tokens": max_tokens,
             "return_type": return_type,
             "uses": uses,
+            "implements": implements,
             "properties": properties,
             "prompt": properties.get("prompt", "")
         }

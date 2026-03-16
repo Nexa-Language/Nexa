@@ -1,0 +1,24 @@
+protocol ReviewResult {
+    score: "int",
+    summary: "string"
+}
+
+@limit(max_tokens=600)
+agent Coder {
+    prompt: "Write a short Python implementation of quicksort.",
+    model: "minimax/minimax-m2.5"
+}
+
+agent Reviewer implements ReviewResult {
+    prompt: "Review the provided code. Give a score from 1 to 10 and a brief summary. Return as JSON.",
+    model: "deepseek/deepseek-chat"
+}
+
+agent HumanInterface uses std.ask_human {
+    prompt: "Show the review result to the human and summarize what to do based on their input.",
+    model: "minimax/minimax-m2.5"
+}
+
+flow main {
+    res = Coder.run("Generate code") >> Reviewer >> HumanInterface;
+}
