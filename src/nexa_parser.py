@@ -47,20 +47,24 @@ match_stmt: "match" IDENTIFIER "{" match_case* default_case? "}"
 match_case: "intent" "(" STRING_LITERAL ")" "=>" expression ","?
 default_case: "_" "=>" expression ","?
 
-?expression: pipeline_expr | base_expr
+?expression: fallback_expr | pipeline_expr | base_expr
+
+fallback_expr: base_expr "fallback" expression
 
 pipeline_expr: base_expr (">>" base_expr)+
 
 ?base_expr: join_call 
           | method_call 
           | secret_call
+          | img_call
           | STRING_LITERAL -> string_expr 
           | IDENTIFIER -> id_expr
 
 join_call: "join" "(" identifier_list ")" [ "." IDENTIFIER "(" [argument_list] ")" ]
 
-method_call: IDENTIFIER "." IDENTIFIER "(" [argument_list] ")"
+method_call: IDENTIFIER ("." IDENTIFIER)? "(" [argument_list] ")"
 secret_call: "secret" "(" STRING_LITERAL ")"
+img_call: "img" "(" STRING_LITERAL ")"
 argument_list: expression ("," expression)*
 
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
@@ -86,7 +90,8 @@ def parse(text):
 
 if __name__ == "__main__":
     import os
-    example_path = os.path.join(os.path.dirname(__file__), '../examples/01_hello_world.nx')
+    import sys
+    example_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '../examples/01_hello_world.nx')
     with open(example_path, 'r', encoding='utf-8') as f:
         code = f.read()
     

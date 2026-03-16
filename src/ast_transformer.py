@@ -12,6 +12,23 @@ class NexaTransformer(Transformer):
         return {"type": "IncludeStatement", "path": str(args[0]).strip('"')}
 
     @v_args(inline=False)
+    def fallback_expr(self, args):
+        primary = args[0]
+        backup = args[1]
+        
+        if hasattr(primary, 'data'):
+            primary = getattr(self, primary.data)(primary.children)
+            
+        if hasattr(backup, 'data'):
+            backup = getattr(self, backup.data)(backup.children)
+
+        return {"type": "FallbackExpr", "primary": primary, "backup": backup}
+            
+    @v_args(inline=False)
+    def img_call(self, args):
+        return {"type": "ImgCall", "path": args[0].value.strip('"')}
+
+    @v_args(inline=False)
     def program(self, args):
         includes = []
         body = []
@@ -165,10 +182,14 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def assignment_stmt(self, args):
+        val = args[1]
+        if hasattr(val, 'data') and val.data == 'fallback_expr':
+            val = self.fallback_expr(val.children)
+            
         return {
             "type": "AssignmentStatement",
             "target": str(args[0]),
-            "value": args[1]
+            "value": val
         }
 
     @v_args(inline=False)
@@ -261,15 +282,25 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def method_call(self, args):
+        args = [a for a in args if a is not None]
         arguments = []
-        if len(args) > 2:
-            arguments = args[2]
-        return {
-            "type": "MethodCallExpression",
-            "object": str(args[0]),
-            "method": str(args[1]),
-            "arguments": arguments
-        }
+        if len(args) > 0 and isinstance(args[-1], list):
+            arguments = args.pop()
+            
+        if len(args) == 1:
+            return {
+                "type": "FunctionCallExpression",
+                "function": str(args[0]),
+                "arguments": arguments
+            }
+        elif len(args) >= 2:
+            return {
+                "type": "MethodCallExpression",
+                "object": str(args[0]),
+                "method": str(args[1]),
+                "arguments": arguments
+            }
+        return {}
 
     @v_args(inline=False)
     def secret_call(self, args):
@@ -292,7 +323,8 @@ if __name__ == "__main__":
     from nexa_parser import parse
     import os
     
-    example_path = os.path.join(os.path.dirname(__file__), '../examples/01_hello_world.nx')
+    import sys
+    example_path = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), '../examples/01_hello_world.nx')
     with open(example_path, 'r', encoding='utf-8') as f:
         code = f.read()
     
