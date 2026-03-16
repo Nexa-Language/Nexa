@@ -30,3 +30,9 @@ We significantly expanded the Nexa Native Standard Library, paving the way for o
 2. Updated `code_generator.py` to recursively map wildcard namespace bindings like `uses std.fs` natively into the execution code without syntax overhead.
 3. Addressed model-specific strict schema requirement bugs (Minimax schema format rejections) by stripping inner wrapper keys and strictly enforcing Pydantic-like parameters matching.
 4. Delivered `examples/08_news_aggregator.nx` proving End-to-End web scraping, time-awareness, and file I/O within a single prompt action!
+
+### Version 0.8 Architecture Changes
+- **Protocols Setup**: Converted `.nx` `protocol` declarations into Pydantic models in Python via AST codegen parsing. Used OpenAI's `response_format` JSON Schema specification to coerce models into returning structured data matching the protocol schema. Added automatic retry mechanism on parsing failure.
+- **Model Routing**: Modified agent `.model` property to split into `provider/model_name`. Updated `secrets.py` to handle dynamic API key injection mapped directly to prefixes (`OPENAI_`, `MINIMAX_`, `DEEPSEEK_`). Added conditional OpenAI client instantiation.
+- **Human-in-the-loop**: Created `std.ask_human` interacting with `sys.stdin.readline` to provide sync-blocking inputs. Updated the CI environment by flushing the standard pipest to unblock execution in testing layers.
+- **MCP Client**: Designed initial stub in `src/runtime/mcp_client.py` for reading `.json` protocols and merging into ToolSchema format dynamically.

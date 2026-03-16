@@ -68,3 +68,13 @@ flow main {
 
 ---
 **提示**: 上述语法已被底层的 `Nexa Runtime` 原生实现，可使用全局提供的 `nexa run` 直接加载并执行。
+## 新增 v0.8 语法扩展: Protocols 与 Model Routing
+
+```ebnf
+# 引入基于强制类型的输出协议约束，将被 transpile 为 Pydantic
+protocol_decl : "protocol" CNAME "{" (CNAME ":" ESCAPED_STRING)+ "}"
+
+# Agent 的强化声明：配置特定模型、指定实现协议以及装饰器资源控制
+agent_modifier : "@limit" "(" "max_tokens" "=" NUMBER ")"
+agent_decl     : [agent_modifier] "agent" CNAME ["implements" CNAME] "{" ... "model:" ESCAPED_STRING ... "}"
+```

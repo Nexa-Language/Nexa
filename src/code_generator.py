@@ -1,11 +1,13 @@
 # 此文件由 Nexa v0.5 Code Generator 自动生成
 import os
 import json
+import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
 
 BOILERPLATE = """# 此文件由 Nexa v0.5 Code Generator 自动生成
 import os
 import json
+import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
 from src.runtime.agent import NexaAgent
 from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
@@ -28,6 +30,7 @@ class CodeGenerator:
         self.code = [BOILERPLATE]
         self.indent_level = 0
         
+        self.protocols = []
         self.tools = []
         self.agents = []
         self.flows = []
@@ -37,13 +40,16 @@ class CodeGenerator:
         
     def generate(self):
         for node in self.ast.get("body", []):
-            if node["type"] == "ToolDeclaration":
+            if node["type"] == "ProtocolDeclaration":
+                self.protocols.append(node)
+            elif node["type"] == "ToolDeclaration":
                 self.tools.append(node)
             elif node["type"] == "AgentDeclaration":
                 self.agents.append(node)
             elif node["type"] == "FlowDeclaration":
                 self.flows.append(node)
 
+        self._generate_protocols()
         self._generate_tools()
         self._generate_agents()
         self._generate_flows()
@@ -53,6 +59,18 @@ class CodeGenerator:
         self.code.append("")
         
         return "\n".join(self.code)
+
+    def _generate_protocols(self):
+        for proto in self.protocols:
+            name = proto["name"]
+            self.code.append(f'class {name}(pydantic.BaseModel):')
+            for f_name, f_type in proto["fields"].items():
+                py_type = "str"
+                if f_type == "int": py_type = "int"
+                if f_type == "float": py_type = "float"
+                if f_type == "bool": py_type = "bool"
+                self.code.append(f'    {f_name}: {py_type}')
+            self.code.append('')
 
     def _generate_tools(self):
         for tool in self.tools:
@@ -96,12 +114,19 @@ class CodeGenerator:
                 else:
                     tool_refs_list.append(f"__tool_{t}_schema")
             tool_refs = ", ".join(tool_refs_list)
+            implements = agent.get("implements")
+            max_tokens = agent.get("max_tokens")
+            
             self.code.append(f'{name} = NexaAgent(')
             self.code.append(f'    name="{name}",')
             self.code.append(f'    prompt="{prompt}",')
             self.code.append(f'    model="{model}",')
             self.code.append(f'    role="{role}",')
             self.code.append(f'    memory_scope="{memory_scope}",')
+            if implements:
+                self.code.append(f'    protocol={implements},')
+            if max_tokens:
+                self.code.append(f'    max_tokens={max_tokens},')
             self.code.append(f'    tools=[{tool_refs}]')
             self.code.append(f')\n')
             

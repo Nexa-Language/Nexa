@@ -5,14 +5,18 @@ program: import_stmt* script_stmt*
 
 import_stmt: "include" STRING_LITERAL ";"
 
-?script_stmt: tool_decl | agent_decl | flow_decl
+?script_stmt: tool_decl | agent_decl | flow_decl | protocol_decl
 
 tool_decl: "tool" IDENTIFIER "{" tool_body "}"
 tool_body: "description" ":" STRING_LITERAL "," "parameters" ":" json_object
+
+protocol_decl: "protocol" IDENTIFIER "{" protocol_body* "}"
+protocol_body: IDENTIFIER ":" STRING_LITERAL ","?
+
 json_object: "{" [json_pair ("," json_pair)*] "}"
 json_pair: STRING_LITERAL ":" STRING_LITERAL
 
-agent_decl: "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] "{" agent_property* "}"
+agent_decl: ["@" "limit" "(" "max_tokens" "=" INT ")"] "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] "{" agent_property* "}"
 return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER
 
 agent_property: IDENTIFIER ":" agent_property_value ","?
@@ -61,6 +65,7 @@ argument_list: expression ("," expression)*
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
 STRING_LITERAL: /"[^"]*"/
 
+%import common.INT
 %import common.WS
 %import common.C_COMMENT
 %import common.CPP_COMMENT
