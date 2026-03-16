@@ -1,3 +1,4 @@
+from src.runtime.core import nexa_fallback, nexa_img_loader
 # 此文件由 Nexa v0.5 Code Generator 自动生成
 import os
 import json
@@ -15,6 +16,7 @@ from src.runtime.orchestrator import join_agents, nexa_pipeline
 from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
 from src.runtime.secrets import nexa_secrets
+from src.runtime.core import nexa_fallback, nexa_img_loader
 
 # ==========================================
 # [Target Code] 自动生成的编排逻辑
@@ -252,6 +254,12 @@ class CodeGenerator:
             method = expr["method"]
             args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
             return f'{obj}.{method}({args_str})'
+        elif ex_type == "FunctionCallExpression":
+            func = expr["function"]
+            if func == "img":
+                func = "nexa_img_loader"
+            args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
+            return f'{func}({args_str})'
         elif ex_type == "PipelineExpression":
             initial_call = self._resolve_expression(expr["stages"][0])
             agent_names = []
@@ -275,6 +283,14 @@ class CodeGenerator:
                 return f"{method}.run({join_str})"
             return join_str
             
+
+        elif ex_type == "FallbackExpr":
+            primary_code = self._resolve_expression(expr["primary"])
+            backup_code = self._resolve_expression(expr["backup"])
+            return f"nexa_fallback(lambda: {primary_code}, lambda: {backup_code})"
+        elif ex_type == "ImgCall":
+            path = expr["path"]
+            return f"nexa_img_loader('{path}')"
         return "None"
 
 if __name__ == "__main__":

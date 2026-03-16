@@ -1,0 +1,10 @@
+agent ResilientVisionAgent {
+    model: "minimax-m2.5",
+    description: "I test fallback and vision capabilities."
+}
+
+flow main {
+    img_data = img("docs/img/logo.jpg");
+    result = ResilientVisionAgent.run("Inspect this image", img_data) fallback "Fallback Triggered";
+    print(result);
+}
