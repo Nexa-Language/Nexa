@@ -17,6 +17,7 @@ from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
 from src.runtime.secrets import nexa_secrets
 from src.runtime.core import nexa_fallback, nexa_img_loader
+from src.runtime.mcp_client import fetch_mcp_tools
 
 # ==========================================
 # [Target Code] 自动生成的编排逻辑
@@ -36,7 +37,8 @@ class CodeGenerator:
         self.tools = []
         self.agents = []
         self.flows = []
-        
+        self.tests = []
+
     def _indent(self):
         return "    " * self.indent_level
         
@@ -50,11 +52,14 @@ class CodeGenerator:
                 self.agents.append(node)
             elif node["type"] == "FlowDeclaration":
                 self.flows.append(node)
+            elif node["type"] == "TestDeclaration":
+                self.tests.append(node)
 
         self._generate_protocols()
         self._generate_tools()
         self._generate_agents()
         self._generate_flows()
+        self._generate_tests()
         
         self.code.append("if __name__ == \"__main__\":")
         self.code.append("    flow_main()")
@@ -142,6 +147,9 @@ class CodeGenerator:
                                     print(f"⚠️ Warning: Failed to parse JSON for tool {tool_name}: {parse_e}")
                     except Exception as e:
                         print(f"⚠️ Warning: Failed to load {t}: {e}")
+                elif t.startswith("mcp:"):
+                    uri = t[4:]
+                    tool_refs_list.append(f"*fetch_mcp_tools('{uri}')")
                 elif t.startswith("std."):
                     if t in STD_NAMESPACE_MAP:
                         for fn_name in STD_NAMESPACE_MAP[t]:
@@ -179,6 +187,16 @@ class CodeGenerator:
             self.indent_level -= 1
             self.code.append("")
 
+    def _generate_tests(self):
+        for t in self.tests:
+            name = t["name"].replace(' ', '_').replace('-', '_').replace('.', '_')
+            self.code.append(f'def test_{name}():')
+            self.indent_level += 1
+            for stmt in t["body"]:
+                self._generate_statement(stmt)
+            self.indent_level -= 1
+            self.code.append("")
+
     def _generate_statement(self, stmt):
         st_type = stmt.get("type")
         if st_type == "AssignmentStatement":
@@ -189,11 +207,22 @@ class CodeGenerator:
         elif st_type == "ExpressionStatement":
             val_str = self._resolve_expression(stmt["expression"])
             self.code.append(f"{self._indent()}{val_str}")
+
+        elif st_type == "AssertStatement":
+            val_str = self._resolve_expression(stmt["expression"])
+            self.code.append(f"{self._indent()}assert {val_str}")
             
         elif st_type == "SemanticIfStatement":
             cond = stmt["condition"]
+            fast_match = stmt.get("fast_match")
             target = stmt["target_variable"]
-            self.code.append(f"{self._indent()}if nexa_semantic_eval(\"{cond}\", {target}):")
+            
+            if fast_match:
+                # pass fast_match as third arg
+                self.code.append(f"{self._indent()}if nexa_semantic_eval(\"{cond}\", {target}, r\"{fast_match}\"):")
+            else:
+                self.code.append(f"{self._indent()}if nexa_semantic_eval(\"{cond}\", {target}):")
+            
             self.indent_level += 1
             for sub_stmt in stmt.get("consequence", []):
                  self._generate_statement(sub_stmt)

@@ -1,63 +1,3 @@
-
-## Step 5: v0.5 Unsupervised End-to-End Delivery
-We successfully implemented the complete v0.5 architecture unattended:
-1. Created `src.runtime.*` containing standalone modules for Agent orchestration, LLM inference, routing, and memory.
-2. Modified Lark EBNF grammars inside `src/nexa_parser.py` and `src/ast_transformer.py` to correctly map `match intent`, Pipelines `>>`, `loop until`, and `join` combinations.
-3. Completely rewrote `src/code_generator.py` converting static string concatenations into intelligent DAG generation bridging with our new Python Runtime.
-4. Resolved Edge cases involving AST payload translations (`locals()` mapping in semantic loops, dict keys vs arrays parsing errors).
-5. Tested executing End to End mock workloads using Multi-Agent pipelines (`02_pipeline_and_routing.nx`, `03_critic_loop.nx`, `04_join_consensus.nx`).
-6. Delivered formal specification referencing: `docs/08_nexa_v0.5_syntax_reference.md`.
-
-## Step 6: v0.5 Final Acceptance (Phase 1 & Phase 2)
-We finalized the multi-argument parameter support and the tool sandbox:
-1. Validated and enforced that AST passes multiple variables sequentially to the `Agent.run()` method, effectively fixing the context loss in `examples/03_critic_loop.nx`.
-2. Created a native Python Sandbox registry (`src/runtime/tools_registry.py`).
-3. Enhanced `src/runtime/agent.py` to recursively parse `tool_calls`, trigger the Python local function, append the results natively to the Context Thread, and loop until standard string outputs are formulated. Tested strictly with `examples/05_tool_execution.nx`.
-4. Successfully rewritten the complete `README.md` launching Nexa v0.5 "The Orchestration Era".
-
-## Step 7: v0.6 Modularity and Saftey Era (.nxlib and .nxs)
-We completely upgraded Nexa to v0.6 with the new safety and modularity components:
-1. Created `.nxs` natively in `src/runtime/secrets.py` for API Key management avoiding hardcoded credentials.
-2. Updated `ast_transformer.py` and `nexa_parser.py` adding `secret("KEY")` base keyword functionality.
-3. Created the `.nxlib` logic utilizing `include "xx.nxlib";` at the very top of `.nx` grammars that efficiently merges multi-file ASTs directly b
-y extending the root dictionary before the code generator.
-4. Delivered `examples/07_modules_and_secrets.nx` and testing module `examples/utils.nxlib`.
-5. Updated `docs/03_roadmap_and_vision.md` shifting future sights towards MCP integration, Streaming prints, and NxPM (Nexa Package Manager). 
-
-## Step 8: v0.7 Standard Library Expansion (fs, http, time)
-We significantly expanded the Nexa Native Standard Library, paving the way for out-of-the-box agent utility:
-1. Implemented namespaced standard tools in `src/runtime/stdlib.py` (`std_fs_read_file`, `std_fs_write_file`, `std_http_fetch`, `std_time_now`).
-2. Updated `code_generator.py` to recursively map wildcard namespace bindings like `uses std.fs` natively into the execution code without syntax overhead.
-3. Addressed model-specific strict schema requirement bugs (Minimax schema format rejections) by stripping inner wrapper keys and strictly enforcing Pydantic-like parameters matching.
-4. Delivered `examples/08_news_aggregator.nx` proving End-to-End web scraping, time-awareness, and file I/O within a single prompt action!
-
-### Version 0.8 Architecture Changes
-- **Protocols Setup**: Converted `.nx` `protocol` declarations into Pydantic models in Python via AST codegen parsing. Used OpenAI's `response_format` JSON Schema specification to coerce models into returning structured data matching the protocol schema. Added automatic retry mechanism on parsing failure.
-- **Model Routing**: Modified agent `.model` property to split into `provider/model_name`. Updated `secrets.py` to handle dynamic API key injection mapped directly to prefixes (`OPENAI_`, `MINIMAX_`, `DEEPSEEK_`). Added conditional OpenAI client instantiation.
-- **Human-in-the-loop**: Created `std.ask_human` interacting with `sys.stdin.readline` to provide sync-blocking inputs. Updated the CI environment by flushing the standard pipest to unblock execution in testing layers.
-- **MCP Client**: Designed initial stub in `src/runtime/mcp_client.py` for reading `.json` protocols and merging into ToolSchema format dynamically.
-
-### Operational Guidelines (v0.8.1+)
-1. **PROHIBIT abuse of Patch scripts**: When modifying existing code, ALWAYS use built-in editor tools (`replace_string_in_file`, `edit_file`, etc). NEVER write or run throwaway scripts like `fix_xxx.py` or `patch_xxx.py` just to edit files.
-2. **Keep Workspace Clean**: Any temporary files generated for testing must be cleaned up immediately after the test passes.
-
-### Version 0.8.1 Patch Operations
-- **Workspace Sanitization**: Removed residual `patch_` and `fix_` scripts to enforce clean working state rules. Prohibited usage of standalone scripts for simple edits.
-- **Language Features**: Implemented `stream: "true"` modifying `agent.py` to stream client completions and parse delta strings dynamically. Implemented `memory: "persistent"` which automatically serializes and restores `self.messages` from `.nexa_cache/{agent_name}_memory.json`. Handled serialization fixes for new `ChatCompletionMessage` instances payload by passing dictionary casts.
-- **MD Tool Loading**: Updated parser and generator to allow string literals inside `uses` clause. Implemented RegExp regex-based chunk extraction to discover and construct JSON sub-blocks located under `## Tool: <name>` inside markdown files natively into the tools array of `NexaAgent`. Added `patch_tool_md.py` schema logic fix for mapping pure params into complete OpenAI tool wrapper.
-- **Roadmap Shift**: Added v0.9 Cognitive & Governance scope (dual-systems, FSM) and reshuffled v1.0 AVM architecture ecosystem tools in `03_roadmap_and_vision.md`.
-
-### Version 0.8.1 Patch Operations
-- **Workspace Sanitization**: Removed residual `patch_` and `fix_` scripts to enforce clean working state rules.
-- **Language Features**: Implemented `stream: "true"` modifying `agent.py` to stream chunks natively. Implemented `memory: "persistent"` which restores `self.messages` from `.nexa_cache/{agent_name}_memory.json`. 
-- **MD Tool Loading**: Updated parser/codegen to allow string literals like `"SKILLS.md"`. Implemented regex JSON extraction.
-- **Roadmap Shift**: Added v0.9 (System 1 & 2, FSM, events) and reshuffled v1.0 AVM info in docs.
-
-### Version 0.8.1 Patch Operations
-- **Workspace Sanitization**: Removed residual patch and fix scripts.
-- **Language Features**: Implemented stream to print natively, persistent memory handling json loading/saving.
-- **MD Tool Loading**: Parses SKILLS.md JSON blocks.
-- **Roadmap Shift**: v0.9 and v1.0.
 # Nexa 语言架构师记忆库 (MEMORY_BANK)
 
 > **[Agent 核心指令]** 每次对话开始时，你必须首先读取并遵循此文件。每次完成重大修改后，你必须主动更新此文件中的【进度追踪】和【踩坑记录】。
@@ -88,10 +28,49 @@ We significantly expanded the Nexa Native Standard Library, paving the way for o
 - **Lark 中的 Block/Scope 解析:** 在定义 `semantic_if_stmt` 时，如果没有独立的 `block: "{" flow_stmt* "}"` 规则，解析出的 args 将被拍平为一个长列表，使得无法区分 `consequence` 与 `alternative` (else) 中究竟包含了几个语句。引入独立的 `block` 后逻辑非常平滑地映射成了字典。
 - **严厉的反思 (测试态度纪律):** 绝对不能在测试块中取巧只打印 success。必须强制使用 `tree.pretty()` 打印完整的 Tree 和 JSON 并在终端中肉眼校验！这才能防止出现空指针或解析遗漏。CLI 脚本在终端的输出排版同样是一种尊严，没有任何隐藏静默的权力。绝对不能在测试块中取巧只打印 success，必须强制打印完整的 Tree 和 JSON 并在终端中肉眼校验，防止出现空指针或解析遗漏。
 
-## 5. 未来架构演进备忘录 (Transition to v0.5)
-- **Boilerplate 的瓶颈：** 目前我们在 `code_generator.py` 中强塞了大段的 Python SDK 初始化和工具链代码。但随着 v0.5 将引入 **多 Agent 并发 (join)**、**Unix 风格管道 (`>>`)**、**全局/共享 Memory 管理** 等高级并发功能，仅靠字符串模板生成代码将会引发灾难级的代码爆炸和难以调试。
-- **重构方向：** 下一个周期的首要任务是建设和抽离 `runtime/` 目录。Nexa 的 `code_generator` 应单纯只向外输出简单的 **DAG / Workflow 编排调用图**。对 `openai` 接口的访问拦截、`tenacity` 重试管理、`critic loop` 共识系统，必须封装沉淀进一套名为 `nexa.runtime` 的底层库支撑中。为进军 AVM 沙盒化铺路。
+## 5. 版本迭代记录 (Version History Log)
 
-## 6. 项目生态与开源包装 (Open Source Ecosystem)
-- 通过 setuptools 编写 setup.py 并注册 entry_points (nexa=src.cli:main)。
-- 重新构筑史诗级 README.md 与开发者第一视角的 06_quick_start_guide.md。完成了 MVP 最终开源面貌的打包。
+### v0.5 编排时代 (The Orchestration Era)
+- **核心特性：** 实现了真正的运行时模块（`src.runtime.*`），支持智能体协同编排、LLM 推理、路由和记忆状态管理。
+- **AST/Runtime 变更细节：** 
+  - 完全重写了 Lark EBNF 语法 (`nexa_parser.py` 和 `ast_transformer.py`)，正确映射 `match intent`、管道 `>>`、`loop until` 以及 `join` 并发组合。
+  - 重构了 `code_generator.py`，将原本静态的字符串拼接转换为智能的 DAG（有向无环图）生成逻辑，与 Python Runtime 无缝桥接。
+  - 构建了原生 Python 沙盒环境集 (`tools_registry.py`) 以支持工具调用。增强了 `agent.py`，能够递归解析 `tool_calls` 并调用本地函数执行后原生追加上下文。
+- **踩坑记录：** 解决了 AST Payload 翻译时关于字典键值对和作用域映射 (`locals()`) 的诸多前沿解析错误。修复了通过 AST 向 `Agent.run()` 方法中依次正确传递多变量参数导致的上下文丢失问题。
+
+### v0.6 模块化与安全时代 (Modularity and Safety)
+- **核心特性：** 推出了基于 `.nxs` 的密钥注入机制与基于 `.nxlib` 的代码模块化复用机制。
+- **AST/Runtime 变更细节：**
+  - 在 `src/runtime/secrets.py` 中实现了原生 `secret("KEY")` 特性，避免了代码库中硬编码敏感鉴权信息。
+  - 扩充了抽象语法树规则，首创了 `include "xx.nxlib"` 规则。只需在脚本文本顶部挂载，即可利用深度字典合并预处理多级 AST 树结构。
+
+### v0.7 基础标准库扩容 (Standard Library Expansion)
+- **核心特性：** 原生支持文件 I/O (`fs`)、网络请求 (`http`) 及时间系统 (`time`) 的 `std` 标准库。
+- **AST/Runtime 变更细节：** 
+  - 构建了 `src/runtime/stdlib.py`，包含具体的物理映射工具 (`std_fs_read_file` 等)。
+  - 增强了 `code_generator.py` 的通配符映射，让 `uses std.fs` 能够自动下钻加载库中的关联子函数。
+- **踩坑记录：** Minimax 对 Schema 格式有着极为苛刻的要求；为了消除模型被拒现象，对工具层 Schema 解析器去除了所有外部不符合 OpenAI 严格格式的包装器。
+
+### v0.8 协议约束与沙盒架构演进 (Architecture Changes)
+- **核心特性：** 新增 `protocol` 协议声明输出约束，多模型服务商动态路由分发机制，并开启了原生的 Human-in-the-loop 支持。
+- **AST/Runtime 变更细节：**
+  - 将 Nexa 脚本内声明的结构体转化为 Python Pydantic 实体类拦截返回机制，并通过 OpenAI Response Format JSON Schema 强行规范数据输出，内置失败自动重试恢复逻辑。
+  - 将 `.model` 属性解析器拆分为 `provider/model_name` 双轨制引擎。配合 `secrets.py` 中的 `OPENAI_`, `MINIMAX_`, `DEEPSEEK_` 前缀实现了灵活的模型接入支持。
+  - 设计了使用 `sys.stdin.readline` 的阻塞式 `std.ask_human` 系统并处理了多测试层的输入刷写问题。
+  - **v0.8.1：** 支持原生 Markdown 工具库导入解析 (通过提取 `## Tool: <name>` 下置 JSON 解析)，完善了单智能体 `persistent` 本地 JSON 的会话存储和 `stream` 终端流式打印。
+
+### v0.8.2 多模态视觉与韧性执行 (Multi-modal & Resilience) 
+- **核心特性：** 实现了多模态内建引擎 `img` 及处理执行层崩溃流的引擎级容错兜底关键字 `fallback`。
+- **AST/Runtime 变更细节：**
+  - 实现了 `fallback` 的核心 Python Runtime 函数（注入双重回调以完成容错兜底拦截），并修补了 AST Lark 引擎对原版 `Tree` 的子节点直接暴串导致的崩溃错误。
+  - 重设了 `ast_transformer.py` 下的 `method_call` 和 `FunctionCallExpression` 逻辑以支持裸函数如 `img("...", args)` 和 `print(xx)` 的调用解析。
+  - **踩坑记录：** 嵌套解包导致的 JSON 序列化报错；必须深层抽取 `.children` 数据才可保证 AST 的正确输出。
+
+### v0.9-alpha 测试引擎、宿主互操作与原生扩展 (Test Framework, Interop & Native MCP)
+- **核心特性：**
+  - **原生测试框架 (Test Framework)：** 引入 `test` 与 `assert` 一等公民语法，支持批量隔离测试与独立断言。配合 `nexa test` CLI 提供沉浸式通过报告。
+  - **宿主互操作性 (Python SDK Interop)：** 构建 `src.api.NexaRuntime` 允许外部 Python 系统 (如 FastAPI 等 Web 框架) 将 `.nx` 作为无头脚本通过 `run_script()` 加载执行，实现应用系统对 Agent 业务流的双向调用与入参注入 (`importlib` 动态模块桥接)。
+  - **MCP 原生接入 (Native MCP Uses)：** 解析层新增 `mcp:"<uri>"` 语法定义，允许智能体直接读取远程/本地方言协议的 JSON 快速转化为内部 Tools Schema，极大扩展后端沙盒生态能力边界。
+  - **语义阻断 (Heuristic Fast-Path)：** `semantic_if` 追加了基于正则表达式的局部匹配短路能力 (`fast_match`)，在拦截常规意图时直接绕过底层模型调用，显著优化并发性能并降低 token 消耗。
+- **AST/Runtime 变更细节：**
+  - 修补 Lark 解析器的 `use_identifier` 及 `semantic_if_stmt` 增加可选字面量支持。代码生成器配合追加对应解析链并完成动态函数映射 (`fetch_mcp_tools`, `__nexa_inputs__` 等)。
