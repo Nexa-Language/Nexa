@@ -61,18 +61,18 @@ pipeline_expr: base_expr (">>" base_expr)+
 
 ?base_expr: join_call 
           | method_call 
-          | secret_call
           | img_call
+          | property_access
           | STRING_LITERAL -> string_expr 
           | IDENTIFIER -> id_expr
           | dict_access_expr
 
 dict_access_expr: base_expr "[" expression "]"
+property_access: IDENTIFIER "." IDENTIFIER | property_access "." IDENTIFIER
 
 join_call: "join" "(" identifier_list ")" [ "." IDENTIFIER "(" [argument_list] ")" ]
 
 method_call: IDENTIFIER ("." IDENTIFIER)? "(" [argument_list] ")"
-secret_call: "secret" "(" STRING_LITERAL ")"
 img_call: "img" "(" STRING_LITERAL ")"
 ?argument: expression | kwarg
 kwarg: IDENTIFIER "=" expression

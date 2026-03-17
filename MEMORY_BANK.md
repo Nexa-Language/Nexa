@@ -97,3 +97,33 @@
   - **语义阻断 (Heuristic Fast-Path)：** `semantic_if` 追加了基于正则表达式的局部匹配短路能力 (`fast_match`)，在拦截常规意图时直接绕过底层模型调用，显著优化并发性能并降低 token 消耗。
 - **AST/Runtime 变更细节：**
   - 修补 Lark 解析器的 `use_identifier` 及 `semantic_if_stmt` 增加可选字面量支持。代码生成器配合追加对应解析链并完成动态函数映射 (`fetch_mcp_tools`, `__nexa_inputs__` 等)。
+
+## 版本 v0.9.6-rc
+### 核心特性
+- **Secrets引擎重构**:
+  - `secrets.nxs` 引入基于 AST 与 Regex 的混合块解析模型。
+  - 支持 `property_access` 链式调用（譬如 `secrets.default.MODEL_NAME["strong"]`）。
+  - 在语言层正式将 `include` 与 `uses` 进行规范，支持 `uses "secrets.nxs"` 直通底层密钥管理。
+- **上下文治理体系** (Context Governance):
+  - **静态高速缓存** (`cache: true`): 利用 `hashlib.md5` 提供调用签名，并在 `.nexa_cache/llm_cache.json` 中全量命中 LLM 缓存输出，极大减少重复Token请求计费。
+  - **滑动窗口重写与压缩** (`max_history_turns`): 利用独立的轻量级大语言模型(譬如`gpt-4o-mini` 或 `deepseek-chat`)进行上下文无损合并与浓缩总结，大幅提升多轮长时对话能力。
+  - **长图记忆植入** (`experience`): 主动读取并拉取 `.md` 知识库内容，合并注入 `system_prompt` 后段作为背景补充参数。
+  
+### 未来规划与已知局限
+- 目前 `uses "secrets.nxs"` 属于语言层的特殊保留字路径，尚未做到全对象模块化的引用导入，计划后续全面收敛为 `Module.Variable` 体系。
+- LLM 缓存系统暂未处理 `stream=True` 的全链路缓存异步回放，后续可扩展异步缓存发射器。
+
+## 版本 v0.9.6-rc
+### 核心特性
+- **Secrets引擎重构**:
+  - `secrets.nxs` 引入基于 AST 与 Regex 的混合块解析模型。
+  - 支持 `property_access` 链式调用（譬如 `secrets.default.MODEL_NAME["strong"]`）。
+  - 在语言层正式将 `include` 与 `uses` 进行规范，支持 `uses "secrets.nxs"` 直通底层密钥管理。
+- **上下文治理体系** (Context Governance):
+  - **静态高速缓存** (`cache: true`): 利用 `hashlib.md5` 提供调用签名，并在 `.nexa_cache/llm_cache.json` 中全量命中 LLM 缓存输出，极大减少重复Token请求计费。
+  - **滑动窗口重写与压缩** (`max_history_turns`): 利用独立的轻量级大语言模型(譬如`gpt-4o-mini` 或 `deepseek-chat`)进行上下文无损合并与浓缩总结，大幅提升多轮长时对话能力。
+  - **长图记忆植入** (`experience`): 主动读取并拉取 `.md` 知识库内容，合并注入 `system_prompt` 后段作为背景补充参数。
+  
+### 未来规划与已知局限
+- 目前 `uses "secrets.nxs"` 属于语言层的特殊保留字路径，尚未做到全对象模块化的引用导入，计划后续全面收敛为 `Module.Variable` 体系。
+- LLM 缓存系统暂未处理 `stream=True` 的全链路缓存异步回放，后续可扩展异步缓存发射器。
