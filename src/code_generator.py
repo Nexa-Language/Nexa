@@ -111,10 +111,16 @@ class CodeGenerator:
             memory_scope = properties.get("memory", '"local"').strip('"')
             stream_val = properties.get("stream", '"false"').strip('"').lower()
             stream = "True" if stream_val == "true" else "False"
+            cache_val = properties.get("cache", '"false"').strip('"').lower()
+            cache = "True" if cache_val == "true" else "False"
+            max_history_turns = properties.get("max_history_turns", 'None').strip('"')
+            experience = properties.get("experience", '""').strip('"')
 
             
             tool_refs_list = []
             for t in uses:
+                if t == "secrets.nxs":
+                    continue
                 if t.endswith(".md"):
                     # Parse dynamic skills from markdown
                     md_path = os.path.join(os.path.dirname(self.source_path) if hasattr(self, 'source_path') else ".", t)
@@ -169,6 +175,11 @@ class CodeGenerator:
             self.code.append(f'    role="{role}",')
             self.code.append(f'    memory_scope="{memory_scope}",')
             self.code.append(f'    stream={stream},')
+            self.code.append(f'    cache={cache},')
+            if max_history_turns != "None":
+                self.code.append(f'    max_history_turns={max_history_turns},')
+            if experience:
+                self.code.append(f'    experience="{experience}",')
 
             if implements:
                 self.code.append(f'    protocol={implements},')
@@ -293,9 +304,18 @@ class CodeGenerator:
             return f'{base_str}[{key_str}]'
         elif ex_type == "StringLiteral":
             return f'"{expr["value"]}"'
-        elif ex_type == "SecretCall":
-            return f'nexa_secrets.get("{expr["key"]}")'
+        elif ex_type == "PropertyAccess":
+            base = expr["base"]
+            if isinstance(base, str):
+                base_str = base
+            else:
+                base_str = self._resolve_expression(base)
+            if base_str == "secrets":
+                base_str = "nexa_secrets"
+            return f'{base_str}.{expr["property"]}'
         elif ex_type == "Identifier":
+            if expr["value"] == "secrets":
+                return "nexa_secrets"
             return expr["value"]
         elif ex_type == "MethodCallExpression":
             obj = expr["object"]
@@ -306,8 +326,6 @@ class CodeGenerator:
             func = expr["function"]
             if func == "img":
                 func = "nexa_img_loader"
-            elif func == "secret":
-                func = "nexa_secrets.get"
             args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
             return f'{func}({args_str})'
         elif ex_type == "PipelineExpression":

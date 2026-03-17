@@ -347,8 +347,15 @@ class NexaTransformer(Transformer):
         }
 
     @v_args(inline=False)
-    def secret_call(self, args):
-        return {"type": "SecretCall", "key": str(args[0]).strip('"')}
+    def property_access(self, args):
+        if len(args) == 2:
+            base_val = str(args[0]) if type(args[0]).__name__ == "Token" else args[0]
+            return {
+                "type": "PropertyAccess",
+                "base": base_val,
+                "property": str(args[1])
+            }
+        return {"type": "PropertyAccess", "base": args[0], "property": str(args[1])}
 
     @v_args(inline=False)
     def argument_list(self, args):
