@@ -158,5 +158,28 @@ class NexaAgent:
                 self._save_memory()
                 return reply
 
+    def clone(self, new_name: str, **kwargs):
+        # 提取可以覆盖的属性
+        model = kwargs.get("model", f"{self.provider}/{self.model}" if self.provider != "default" else self.model)
+        prompt = kwargs.get("prompt", self.system_prompt)
+        tools = kwargs.get("tools", list(self.tools))
+        role = kwargs.get("role", "")
+        memory_scope = kwargs.get("memory_scope", self.memory_scope)
+        protocol = kwargs.get("protocol", self.protocol)
+        max_tokens = kwargs.get("max_tokens", self.max_tokens)
+        stream = kwargs.get("stream", self.stream)
+        
+        return NexaAgent(
+            name=new_name,
+            prompt=prompt,
+            tools=tools,
+            model=model,
+            role=role,
+            memory_scope=memory_scope,
+            protocol=protocol,
+            max_tokens=max_tokens,
+            stream=stream
+        )
+
     def __rshift__(self, other):
         pass

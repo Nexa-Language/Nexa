@@ -1,0 +1,24 @@
+agent BaseAgent {
+    model: "deepseek-chat",
+    prompt: "I am a base agent."
+}
+
+flow main {
+    try {
+        print("尝试触发一个异常操作...");
+        invalid = secret("NOT_EXIST")["oops"];
+        print(invalid);
+    } catch (err) {
+        print("成功捕获到异常:");
+        print(err);
+    }
+    
+    // 运行时动态反射
+    try {
+        SuperAgent = BaseAgent.clone(new_name="SuperAgent", model=secret("MODEL_NAME")["super"]);
+        result = SuperAgent.run("Hello from the reflection test!");
+        print("SuperAgent返回:", result);
+    } catch (e) {
+        print("API 调用受限，但动态反射对象被成功创建!");
+    }
+}

@@ -14,15 +14,17 @@ class NexaSecrets:
         secrets_file = pathlib.Path.cwd() / "secrets.nxs"
         if secrets_file.exists():
             with open(secrets_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line and not line.startswith("#"):
-                        if "=" in line:
-                            k, v = line.split("=", 1)
-                            # Remove potential surrounding quotes mapping
-                            self._secrets[k.strip()] = v.strip().strip('"').strip("'")
-                            
-    def get(self, key: str) -> str:
+                content = f.read()
+            config_dict = {}
+            try:
+                exec(content, {}, config_dict)
+                for k, v in config_dict.items():
+                    if k.isupper() and not k.startswith("_"):
+                        self._secrets[k] = v
+            except Exception as e:
+                print(f"[Secrets Parser Error] failed to parse secrets.nxs: {e}")
+
+    def get(self, key: str):
         # 优先从 .nxs 中获取，后降级到环境变量
         return self._secrets.get(key, os.environ.get(key, ""))
 

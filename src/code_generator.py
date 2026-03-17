@@ -270,9 +270,28 @@ class CodeGenerator:
             self.indent_level -= 2
             self.code.append(f"")
 
+        elif st_type == "TryCatchStatement":
+            self.code.append(f"{self._indent()}try:")
+            self.indent_level += 1
+            for sub_stmt in stmt["block_try"]:
+                self._generate_statement(sub_stmt)
+            self.indent_level -= 1
+            catch_err = stmt["catch_err"]
+            self.code.append(f"{self._indent()}except Exception as {catch_err}:")
+            self.indent_level += 1
+            for sub_stmt in stmt["block_catch"]:
+                self._generate_statement(sub_stmt)
+            self.indent_level -= 1
+
     def _resolve_expression(self, expr):
         ex_type = expr.get("type")
-        if ex_type == "StringLiteral":
+        if ex_type == "KeywordArgument":
+            return f'{expr["key"]}={self._resolve_expression(expr["value"])}'
+        elif ex_type == "DictAccessExpression":
+            base_str = self._resolve_expression(expr["base"])
+            key_str = self._resolve_expression(expr["key"])
+            return f'{base_str}[{key_str}]'
+        elif ex_type == "StringLiteral":
             return f'"{expr["value"]}"'
         elif ex_type == "SecretCall":
             return f'nexa_secrets.get("{expr["key"]}")'
@@ -287,6 +306,8 @@ class CodeGenerator:
             func = expr["function"]
             if func == "img":
                 func = "nexa_img_loader"
+            elif func == "secret":
+                func = "nexa_secrets.get"
             args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
             return f'{func}({args_str})'
         elif ex_type == "PipelineExpression":
