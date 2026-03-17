@@ -5,7 +5,9 @@ program: import_stmt* script_stmt*
 
 import_stmt: "include" STRING_LITERAL ";"
 
-?script_stmt: tool_decl | agent_decl | flow_decl | protocol_decl
+?script_stmt: tool_decl | agent_decl | flow_decl | protocol_decl | test_decl
+
+test_decl: "test" STRING_LITERAL block
 
 tool_decl: "tool" IDENTIFIER "{" tool_body "}"
 tool_body: "description" ":" STRING_LITERAL "," "parameters" ":" json_object
@@ -28,18 +30,21 @@ identifier_list: IDENTIFIER ("," IDENTIFIER)*
 use_identifier_list: use_identifier ("," use_identifier)*
 use_identifier: IDENTIFIER | IDENTIFIER "." IDENTIFIER -> namespaced_id
               | STRING_LITERAL -> string_use
+              | "mcp:" STRING_LITERAL -> mcp_use
 
 flow_decl: "flow" IDENTIFIER block
 
 block: "{" flow_stmt* "}"
 
-?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt
+?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt
+
+assert_stmt: "assert" expression ";"
 
 assignment_stmt: IDENTIFIER "=" expression ";"
                | IDENTIFIER "=" match_stmt
 expr_stmt: expression ";"
 
-semantic_if_stmt: "semantic_if" STRING_LITERAL "against" IDENTIFIER block ["else" block]
+semantic_if_stmt: "semantic_if" STRING_LITERAL ["fast_match" ":" STRING_LITERAL] "against" IDENTIFIER block ["else" block]
 
 loop_stmt: "loop" block "until" "(" expression ")"
 

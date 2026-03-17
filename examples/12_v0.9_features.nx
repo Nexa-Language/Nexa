@@ -1,0 +1,11 @@
+test "my agent test" {
+    msg = "hello";
+    semantic_if "包含打招呼" fast_match: "(hello|hi)" against msg {
+        msg = "matched";
+    }
+    assert msg;
+}
+
+agent McpAgent uses mcp:"http://fake.url" {
+    model: "dummy_model"
+}

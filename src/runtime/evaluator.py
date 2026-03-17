@@ -1,4 +1,5 @@
 import json
+import re
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from .core import client, WEAK_MODEL
@@ -30,8 +31,15 @@ def _nexa_semantic_eval_with_retry(condition: str, target_text: str) -> bool:
     except Exception:
         return False
 
-def nexa_semantic_eval(condition: str, target_text: str) -> bool:
+def nexa_semantic_eval(condition: str, target_text: str, fast_match: str = None) -> bool:
     print(f"[Semantic_IF Evaluating] Condition: '{condition}'")
+    if fast_match:
+        if re.search(fast_match, str(target_text), re.IGNORECASE):
+            print(f"[Semantic_IF Fast-Path] Regex matched '{fast_match}', short-circuiting to True.")
+            return True
+        else:
+            print(f"[Semantic_IF Fast-Path] Regex '{fast_match}' missed, reverting to LLM evaluation.")
+            
     try:
         matched = _nexa_semantic_eval_with_retry(condition, target_text)
         print(f"[Semantic_IF Result] -> {matched}")

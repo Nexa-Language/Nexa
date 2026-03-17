@@ -167,12 +167,22 @@ class NexaTransformer(Transformer):
     def string_use(self, args):
         return str(args[0])[1:-1]
 
+    def mcp_use(self, args):
+        return "mcp:" + str(args[0])[1:-1]
 
     @v_args(inline=False)
     def flow_decl(self, args):
         return {
             "type": "FlowDeclaration",
             "name": str(args[0]),
+            "body": args[1]
+        }
+
+    @v_args(inline=False)
+    def test_decl(self, args):
+        return {
+            "type": "TestDeclaration",
+            "name": str(args[0]).strip('"'),
             "body": args[1]
         }
 
@@ -200,15 +210,24 @@ class NexaTransformer(Transformer):
         }
 
     @v_args(inline=False)
+    def assert_stmt(self, args):
+        return {
+            "type": "AssertStatement",
+            "expression": args[0]
+        }
+
+    @v_args(inline=False)
     def semantic_if_stmt(self, args):
         condition = str(args[0]).strip('"')
-        target = str(args[1])
-        consequence = args[2]
-        alternative = args[3] if len(args) > 3 else []
+        fast_match = str(args[1]).strip('"') if args[1] else None
+        target = str(args[2])
+        consequence = args[3]
+        alternative = args[4] if len(args) > 4 and args[4] else []
         
         return {
             "type": "SemanticIfStatement",
             "condition": condition,
+            "fast_match": fast_match,
             "target_variable": target,
             "consequence": consequence,
             "alternative": alternative
