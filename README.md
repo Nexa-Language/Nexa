@@ -4,7 +4,7 @@
   <p><b><i>The Dawn of Agent-Native Programming. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v0.8-brightgreen.svg?style=for-the-badge" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v0.9--alpha-brightgreen.svg?style=for-the-badge" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg?style=for-the-badge" alt="Python"/>
     <img src="https://img.shields.io/badge/Status-Experimental-orange.svg?style=for-the-badge" alt="Status"/>
   </p>
@@ -19,44 +19,37 @@
 
 ---
 
-## 🔥 **v0.8 EPIC RELEASE**：Cognitive Architecture Era
+## 🔥 **v0.9-alpha EPIC RELEASE**: Test Matrix & SDK Interop Era
 
-Nexa v0.8 引入了全新的认知架构（Cognitive Architecture）功能，重点强化了类型安全、资源治理以及人机协同（HITL）：
+Nexa v0.9-alpha 引入了底层的测试引擎、MCP 工具链支持以及大重构后的 Python SDK 动态加载机制：
 
-### 1. 强类型协议约束 (`protocol` & `implements`)
-原生支持契约式编程，利用 Pydantic 动态编译，让 Agent 产出严格遵守 Schema，自带自修正重试循环机制：
+### 1. 原生测试与断言 (`test` & `assert`)
+首创针对 Agent 流程的测试套件，通过语义模糊断言保证系统迭代时不发生退化：
 ```nexa
-protocol ReviewResult {
-    score: "int"
-    summary: "string"
-}
-agent Reviewer implements ReviewResult { ... }
-```
-
-### 2. 多模型动态路由 (`model` prefix & Routing)
-解耦单一模型强依赖，动态指定运行时的模型端点，构建灵活的跨厂模型流水线：
-```nexa
-agent Coder { model: "minimax/abab6.5-chat", prompt: "..." }
-agent Reviewer { model: "deepseek/deepseek-chat", prompt: "..." }
-```
-
-### 3. 人类介入机制 (Human-in-the-Loop)
-通过内置标准库无缝实现流中断与人工复核，轻松挂载交互鉴权断点：
-```nexa
-agent Interactor {
-    uses [std.ask_human]
-    prompt: "调用 ask_human 向人类请示是否继续。"
+test "login_agent" {
+    result = LoginBot.run("user: admin");
+    assert "包含成功确认信息" against result;
 }
 ```
 
-### 4. 运行时资源配额控制 (`@limit`)
-支持装饰器语法级的 Token 安全拦截与用量截断，保护 API 预算：
+### 2. 生态集成的终极答案：MCP 支持 (`mcp: "..."`)
+直接无缝对齐 Model Context Protocol：
 ```nexa
-@limit(max_tokens=1500)
-agent SafeBot { ... }
+tool SearchGlobal {
+    mcp: "github.com/nexa-ai/search-mcp"
+}
 ```
 
-*(向下兼容 v0.5 的流式 `>>`, `match intent`, `join`, `loop until` 等编排语法)*
+### 3. 高速启发式评估 (`fast_match`)
+在 `semantic_if` 中介入前置正则拦截，零损耗进行流转：
+```nexa
+semantic_if "是一句日期提示" fast_match r"\d{4}-\d{2}" against req { ... }
+```
+
+### 4. 转译器大升级 (`importlib` SDK Interop)
+再也没有生硬的字符串拼接！代码通过纯净的 `from src.api.nexa_runtime import NexaRuntime` 动态装载底层环境实例，为大规模部署提供支持。
+
+*(向下兼容 v0.8.x 引入的协议约束、模型路由和并发编排能力)*
 
 ---
 
@@ -69,20 +62,24 @@ cd nexa
 pip install -e .
 ```
 
-### 2. 执行你的第一个 Nexa 工作流
+### 2. 执行与测试工作流
 ```bash
+# 执行流
 nexa run examples/09_cognitive_architecture.nx
-```
-或者审计它转换生成的纯净 Python 代码栈：
-```bash
+
+# 进行语义断言测试 (v0.9+)
+nexa test examples/v0.9_test_suite.nx
+
+# 审计生成的纯净 Python 代码栈
 nexa build examples/09_cognitive_architecture.nx
 ```
 
 ---
 
 ## 📖 Documentation
-- [x] [v0.8 Syntax Reference](docs/08_nexa_v0.5_syntax_reference.md)
-- [x] [Compiler Architecture](docs/02_compiler_transpiler_design.md)
+- [x] [Nexa v0.9 Syntax Reference](docs/01_nexa_syntax_reference.md)
+- [x] [Compiler Architecture](docs/02_compiler_architecture.md)
+- [x] [Vision & Roadmap](docs/03_roadmap_and_vision.md)
 
 <div align="center">
   <sub>Built with ❤️ by the Nexa Genesis Team for the next era of automation.</sub>

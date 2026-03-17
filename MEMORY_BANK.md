@@ -9,6 +9,25 @@
 - **多轮检查:** 在每个阶段结束时，必须进行至少两轮的代码审计和测试，确保生成的 Python 代码不仅正确，而且健壮（例如在 `semantic_if` 的实现中注入重试机制）。同时，你应该重复读入并更新此 MEMORY_BANK和其他有修改的文件，以便在后续阶段中避免重复犯错。
 - **禁止懒惰:** 不允许在任何阶段中为了赶进度而牺牲代码质量或架构设计。每次提交的代码都必须是可审计、可测试、且符合生产级标准的。
 
+## 1.1 文档维护标准作业程序 (Doc SOP)
+我们将通过以下严苛的约束纪律来维护所有的文档资产，确保任何代码的下潜都能完美投射至系统级知识库中：
+- **触发条件 A (语法新增/修改)：** 必须同步更新 `docs/01_nexa_syntax_reference.md` 中的 EBNF 规则和代码示例。
+- **触发条件 B (编译器/运行时底层变动)：** 必须同步更新 `docs/02_compiler_architecture.md` 中的 AST 结构映射或 Runtime 执行逻辑。
+- **触发条件 C (新特性发布/里程碑达成)：** 必须在 `MEMORY_BANK.md` 的版本迭代记录中追加条目，并将 `docs/03_roadmap_and_vision.md` 中对应的 `[ ]` 修改为 `[x]`。同时更新 `README.md` 的特性矩阵。
+
+## 1.2 v1.0+ 架构演进待办池 (Feature Backlog)
+以下内容已在主创团队决议后纳入：
+- [ ] **复杂拓扑 DAG 支持：** 扩展 `>>` 运算符，支持分叉、合流等高阶数据流转编排。
+- [ ] **原生异常处理：** 引入 `try/catch` 语法块，允许开发者在脚本层捕获运行时异常。
+- [ ] **Rust AVM 底座：** 从 Python 脚本解释转译模式跨越至基于 Rust 编写的独立编译型 Agent Virtual Machine (AVM)。
+- [ ] **WASM 安全沙盒：** 在 AVM 中引入 WebAssembly，对外部 `tool` 执行提供强隔离与跨平台兼容性。
+- [ ] **可视化 DAG 编辑器：** 提供基于 Web 的节点拖拽界面，支持逆向生成 Nexa 代码。
+- [ ] **智能调度器 (Smart Scheduler)：** 在 AVM 层基于系统负载、Agent 优先级动态分配并发资源。
+- [ ] **向量虚存分页 (Context Paging)：** AVM 接管内存，自动执行对话历史的向量化置换与透明加载。
+- [ ] **运行时动态反射：** 支持在执行期动态生成新 Agent 实例或动态重载 Model 配置。
+- [ ] **RBAC 权限访问控制：** 为不同 Agent 或流定义安全角色，确保工具调用的最小权限原则。
+- [ ] **Open-CLI 深度接入：** 原生集成类似 `spectreconsole/open-cli` 的宿主命令行交互标准。
+
 ## 2. 架构设计锚点 (Architecture Anchors)
 - **Parser 选型:** Python `Lark` 库 (Earley 算法)。前端必须具备可视化终端报错能力。
 - **AST 设计原则:** 严格区分 `Statement` (无返回值，如 flow, agent 声明) 和 `Expression` (有返回值，如 string, method_call)。加入了嵌套 `block` 层级以正确解析条件分支的子作用域。
@@ -59,7 +78,7 @@
   - 设计了使用 `sys.stdin.readline` 的阻塞式 `std.ask_human` 系统并处理了多测试层的输入刷写问题。
   - **v0.8.1：** 支持原生 Markdown 工具库导入解析 (通过提取 `## Tool: <name>` 下置 JSON 解析)，完善了单智能体 `persistent` 本地 JSON 的会话存储和 `stream` 终端流式打印。
 
-### v0.8.2 多模态视觉与韧性执行 (Multi-modal & Resilience) 
+#### v0.8.2 多模态视觉与韧性执行 (Multi-modal & Resilience) 
 - **核心特性：** 实现了多模态内建引擎 `img` 及处理执行层崩溃流的引擎级容错兜底关键字 `fallback`。
 - **AST/Runtime 变更细节：**
   - 实现了 `fallback` 的核心 Python Runtime 函数（注入双重回调以完成容错兜底拦截），并修补了 AST Lark 引擎对原版 `Tree` 的子节点直接暴串导致的崩溃错误。
