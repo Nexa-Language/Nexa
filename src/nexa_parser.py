@@ -36,8 +36,9 @@ flow_decl: "flow" IDENTIFIER block
 
 block: "{" flow_stmt* "}"
 
-?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt
+?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt | try_catch_stmt
 
+try_catch_stmt: "try" block "catch" "(" IDENTIFIER ")" block
 assert_stmt: "assert" expression ";"
 
 assignment_stmt: IDENTIFIER "=" expression ";"
@@ -64,13 +65,18 @@ pipeline_expr: base_expr (">>" base_expr)+
           | img_call
           | STRING_LITERAL -> string_expr 
           | IDENTIFIER -> id_expr
+          | dict_access_expr
+
+dict_access_expr: base_expr "[" expression "]"
 
 join_call: "join" "(" identifier_list ")" [ "." IDENTIFIER "(" [argument_list] ")" ]
 
 method_call: IDENTIFIER ("." IDENTIFIER)? "(" [argument_list] ")"
 secret_call: "secret" "(" STRING_LITERAL ")"
 img_call: "img" "(" STRING_LITERAL ")"
-argument_list: expression ("," expression)*
+?argument: expression | kwarg
+kwarg: IDENTIFIER "=" expression
+argument_list: argument ("," argument)*
 
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
 STRING_LITERAL: /"[^"]*"/

@@ -210,6 +210,15 @@ class NexaTransformer(Transformer):
         }
 
     @v_args(inline=False)
+    def try_catch_stmt(self, args):
+        return {
+            "type": "TryCatchStatement",
+            "block_try": args[0],
+            "catch_err": str(args[1]),
+            "block_catch": args[2]
+        }
+
+    @v_args(inline=False)
     def assert_stmt(self, args):
         return {
             "type": "AssertStatement",
@@ -320,6 +329,22 @@ class NexaTransformer(Transformer):
                 "arguments": arguments
             }
         return {}
+
+    @v_args(inline=False)
+    def kwarg(self, args):
+        return {
+            "type": "KeywordArgument",
+            "key": str(args[0]),
+            "value": args[1]
+        }
+
+    @v_args(inline=False)
+    def dict_access_expr(self, args):
+        return {
+            "type": "DictAccessExpression",
+            "base": args[0],
+            "key": args[1]
+        }
 
     @v_args(inline=False)
     def secret_call(self, args):
