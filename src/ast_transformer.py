@@ -289,6 +289,73 @@ class NexaTransformer(Transformer):
             "type": "PipelineExpression",
             "stages": args
         }
+    
+    # ==================== DAG 表达式转换 ====================
+    
+    @v_args(inline=False)
+    def dag_expr(self, args):
+        """DAG表达式统一处理"""
+        return args[0]  # 返回具体的dag_fork_expr, dag_merge_expr或dag_branch_expr
+    
+    @v_args(inline=False)
+    def dag_fork_expr(self, args):
+        """
+        分叉表达式: expr |>> [Agent1, Agent2] 或 expr || [Agent1, Agent2]
+        |>> 表示分叉后等待所有结果
+        || 表示分叉后不等待（fire-and-forget）
+        """
+        input_expr = args[0]
+        operator = str(args[1]) if len(args) > 1 and hasattr(args[1], 'type') else "|>>"
+        agents = args[-1] if isinstance(args[-1], list) else []
+        
+        return {
+            "type": "DAGForkExpression",
+            "input": input_expr,
+            "agents": agents,
+            "operator": operator,
+            "wait_all": operator == "|>>"
+        }
+    
+    @v_args(inline=False)
+    def dag_merge_expr(self, args):
+        """
+        合流表达式: [Agent1, Agent2] &>> MergerAgent 或 [Agent1, Agent2] && MergerAgent
+        &>> 表示顺序合流
+        && 表示共识合流
+        """
+        agents = args[0] if isinstance(args[0], list) else []
+        operator = str(args[1]) if len(args) > 1 and hasattr(args[1], 'type') else "&>>"
+        merger = args[-1]
+        
+        return {
+            "type": "DAGMergeExpression",
+            "agents": agents,
+            "merger": merger,
+            "operator": operator,
+            "strategy": "consensus" if operator == "&&" else "concat"
+        }
+    
+    @v_args(inline=False)
+    def dag_branch_expr(self, args):
+        """
+        条件分支表达式: expr ?? TrueAgent : FalseAgent
+        类似三元运算符，但用于Agent选择
+        """
+        input_expr = args[0]
+        true_agent = args[1] if len(args) > 1 else None
+        false_agent = args[2] if len(args) > 2 else None
+        
+        return {
+            "type": "DAGBranchExpression",
+            "input": input_expr,
+            "true_agent": true_agent,
+            "false_agent": false_agent
+        }
+    
+    @v_args(inline=False)
+    def identifier_list_as_expr(self, args):
+        """将方括号内的标识符列表转换为列表"""
+        return [str(arg) for arg in args]
 
     @v_args(inline=False)
     def join_call(self, args):

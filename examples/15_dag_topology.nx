@@ -1,0 +1,73 @@
+// Nexa DAG 拓扑示例 - 复杂拓扑支持
+// 演示分叉、合流、条件分支等高阶数据流转编排
+
+// 定义多个专业Agent
+agent Researcher {
+    role: "Senior Researcher",
+    model: "deepseek/deepseek-chat",
+    prompt: "You are a research specialist. Analyze the given topic and provide detailed findings."
+}
+
+agent Analyst {
+    role: "Data Analyst", 
+    model: "deepseek/deepseek-chat",
+    prompt: "You are a data analyst. Provide quantitative analysis and insights."
+}
+
+agent Writer {
+    role: "Technical Writer",
+    model: "deepseek/deepseek-chat",
+    prompt: "You are a technical writer. Synthesize information into clear, engaging content."
+}
+
+agent Reviewer {
+    role: "Quality Reviewer",
+    model: "deepseek/deepseek-chat",
+    prompt: "You are a quality reviewer. Ensure content is accurate, coherent, and well-structured."
+}
+
+agent UrgentHandler {
+    role: "Urgent Response Handler",
+    model: "deepseek/deepseek-chat",
+    prompt: "Handle urgent requests with priority and efficiency."
+}
+
+agent NormalHandler {
+    role: "Standard Response Handler",
+    model: "deepseek/deepseek-chat",
+    prompt: "Handle standard requests with thorough analysis."
+}
+
+// 主流程
+flow main {
+    // 示例1: 简单管道
+    simple_result = "What is AI?" >> Researcher >> Writer;
+    print(simple_result);
+    
+    // 示例2: 分叉 - 将输入并行发送到多个Agent
+    // 使用 |>> 操作符等待所有结果
+    research_data = "Quantum Computing Applications";
+    parallel_results = research_data |>> [Researcher, Analyst, Writer];
+    print("Parallel results:");
+    print(parallel_results);
+    
+    // 示例3: 合流 - 将多个Agent的输出合并
+    // 使用 &>> 操作符合并结果
+    merged_result = [Researcher, Analyst] &>> Reviewer;
+    print("Merged and reviewed:");
+    print(merged_result);
+    
+    // 示例4: 复杂DAG拓扑 - 分叉后合流
+    // 研究数据并行处理后合并审查
+    topic = "Climate Change Solutions";
+    final_report = topic |>> [Researcher, Analyst] &>> Writer >> Reviewer;
+    print("Final report:");
+    print(final_report);
+    
+    // 示例5: 条件分支
+    // 根据输入特征选择不同的处理路径
+    user_query = "URGENT: System outage detected";
+    handled = user_query ?? UrgentHandler : NormalHandler;
+    print("Handled query:");
+    print(handled);
+}

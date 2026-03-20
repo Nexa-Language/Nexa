@@ -12,6 +12,7 @@ class NexaQuotaExceededError(Exception):
 
 from .memory import global_memory
 from .tools_registry import execute_tool
+from .cache_manager import get_cache_manager, NexaCacheManager
 
 class NexaAgent:
     def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None, model: str = STRONG_MODEL, role: str = "", memory_scope: str = "local", protocol=None, max_tokens=None, stream=False, cache=False, max_history_turns=None, experience=None):
@@ -87,35 +88,30 @@ class NexaAgent:
         return hashlib.md5(data.encode("utf-8")).hexdigest()
         
     def _check_cache(self, kwargs):
+        """使用增强的缓存管理器检查缓存"""
         if not self.cache:
             return None
-        cache_file = ".nexa_cache/llm_cache.json"
-        if not os.path.exists(cache_file):
-            return None
-        try:
-            with open(cache_file, "r", encoding="utf-8") as f:
-                cache_data = json.load(f)
-            key = self._get_cache_key(kwargs)
-            return cache_data.get(key)
-        except Exception:
-            return None
+        # 使用新的缓存管理器
+        cache_mgr = get_cache_manager()
+        return cache_mgr.get(
+            messages=self.messages,
+            model=self.model,
+            tools=kwargs.get("tools", []),
+            use_semantic=True
+        )
             
     def _write_cache(self, kwargs, result):
+        """使用增强的缓存管理器写入缓存"""
         if not self.cache:
             return
-        os.makedirs(".nexa_cache", exist_ok=True)
-        cache_file = ".nexa_cache/llm_cache.json"
-        cache_data = {}
-        if os.path.exists(cache_file):
-            try:
-                with open(cache_file, "r", encoding="utf-8") as f:
-                    cache_data = json.load(f)
-            except Exception:
-                pass
-        key = self._get_cache_key(kwargs)
-        cache_data[key] = result
-        with open(cache_file, "w", encoding="utf-8") as f:
-            json.dump(cache_data, f, ensure_ascii=False, indent=2)
+        # 使用新的缓存管理器
+        cache_mgr = get_cache_manager()
+        cache_mgr.set(
+            messages=self.messages,
+            model=self.model,
+            result=result,
+            tools=kwargs.get("tools", [])
+        )
 
     def _compact_context(self):
         if not self.max_history_turns:

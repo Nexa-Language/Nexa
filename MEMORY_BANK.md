@@ -17,16 +17,16 @@
 
 ## 1.2 v1.0+ 架构演进待办池 (Feature Backlog)
 以下内容已在主创团队决议后纳入：
-- [ ] **复杂拓扑 DAG 支持：** 扩展 `>>` 运算符，支持分叉、合流等高阶数据流转编排。
+- [x] **复杂拓扑 DAG 支持：** 扩展 `>>` 运算符，支持分叉、合流等高阶数据流转编排。（v0.9.6-rc 实现）
 - [x] **原生异常处理：** 引入 `try/catch` 语法块，允许开发者在脚本层捕获运行时异常。
-- [ ] **Rust AVM 底座：** 从 Python 脚本解释转译模式跨越至基于 Rust 编写的独立编译型 Agent Virtual Machine (AVM)。
-- [ ] **WASM 安全沙盒：** 在 AVM 中引入 WebAssembly，对外部 `tool` 执行提供强隔离与跨平台兼容性。
-- [ ] **可视化 DAG 编辑器：** 提供基于 Web 的节点拖拽界面，支持逆向生成 Nexa 代码。
-- [ ] **智能调度器 (Smart Scheduler)：** 在 AVM 层基于系统负载、Agent 优先级动态分配并发资源。
-- [ ] **向量虚存分页 (Context Paging)：** AVM 接管内存，自动执行对话历史的向量化置换与透明加载。
+- [ ] **Rust AVM 底座：** 从 Python 脚本解释转译模式跨越至基于 Rust 编写的独立编译型 Agent Virtual Machine (AVM)。（架构规划已完成）
+- [ ] **WASM 安全沙盒：** 在 AVM 中引入 WebAssembly，对外部 `tool` 执行提供强隔离与跨平台兼容性。（架构规划已完成）
+- [ ] **可视化 DAG 编辑器：** 提供基于 Web 的节点拖拽界面，支持逆向生成 Nexa 代码。（架构规划已完成）
+- [ ] **智能调度器 (Smart Scheduler)：** 在 AVM 层基于系统负载、Agent 优先级动态分配并发资源。（架构规划已完成）
+- [ ] **向量虚存分页 (Context Paging)：** AVM 接管内存，自动执行对话历史的向量化置换与透明加载。（架构规划已完成）
 - [x] **运行时动态反射：** 支持在执行期动态生成新 Agent 实例或动态重载 Model 配置。
-- [ ] **RBAC 权限访问控制：** 为不同 Agent 或流定义安全角色，确保工具调用的最小权限原则。
-- [ ] **Open-CLI 深度接入：** 原生集成类似 `spectreconsole/open-cli` 的宿主命令行交互标准。
+- [x] **RBAC 权限访问控制：** 为不同 Agent 或流定义安全角色，确保工具调用的最小权限原则。（v0.9.6-rc 实现）
+- [x] **Open-CLI 深度接入：** 原生集成类似 `spectreconsole/open-cli` 的宿主命令行交互标准。（v0.9.6-rc 实现）
 
 ## 2. 架构设计锚点 (Architecture Anchors)
 - **Parser 选型:** Python `Lark` 库 (Earley 算法)。前端必须具备可视化终端报错能力。
@@ -98,20 +98,83 @@
 - **AST/Runtime 变更细节：**
   - 修补 Lark 解析器的 `use_identifier` 及 `semantic_if_stmt` 增加可选字面量支持。代码生成器配合追加对应解析链并完成动态函数映射 (`fetch_mcp_tools`, `__nexa_inputs__` 等)。
 
-## 版本 v0.9.6-rc
+## 版本 v0.9.7-rc (The Enterprise & Cognitive Era)
 ### 核心特性
-- **Secrets引擎重构**:
-  - `secrets.nxs` 引入基于 AST 与 Regex 的混合块解析模型。
-  - 支持 `property_access` 链式调用（譬如 `secrets.default.MODEL_NAME["strong"]`）。
-  - 在语言层正式将 `include` 与 `uses` 进行规范，支持 `uses "secrets.nxs"` 直通底层密钥管理。
-- **上下文治理体系** (Context Governance):
-  - **静态高速缓存** (`cache: true`): 利用 `hashlib.md5` 提供调用签名，并在 `.nexa_cache/llm_cache.json` 中全量命中 LLM 缓存输出，极大减少重复Token请求计费。
-  - **滑动窗口重写与压缩** (`max_history_turns`): 利用独立的轻量级大语言模型(譬如`gpt-4o-mini` 或 `deepseek-chat`)进行上下文无损合并与浓缩总结，大幅提升多轮长时对话能力。
-  - **长图记忆植入** (`experience`): 主动读取并拉取 `.md` 知识库内容，合并注入 `system_prompt` 后段作为背景补充参数。
-  
-### 未来规划与已知局限
-- 目前 `uses "secrets.nxs"` 属于语言层的特殊保留字路径，尚未做到全对象模块化的引用导入，计划后续全面收敛为 `Module.Variable` 体系。
-- LLM 缓存系统暂未处理 `stream=True` 的全链路缓存异步回放，后续可扩展异步缓存发射器。
+- **复杂拓扑 DAG 支持**:
+  - 新增 DAG 操作符：`|>>` (分叉)、`&>>` (合流)、`??` (条件分支)。
+  - `src/runtime/dag_orchestrator.py`: 实现 `dag_fanout`, `dag_merge`, `dag_branch`, `dag_parallel_map` 等核心函数。
+  - 支持分叉(Fan-out)、合流(Fan-in)、条件分支、并行执行等高阶数据流转编排。
+  - 示例：`examples/15_dag_topology.nx`。
+
+- **增强缓存机制**:
+  - `src/runtime/cache_manager.py`: 多级缓存系统（内存 L1 + 磁盘 L2）。
+  - 语义缓存：基于输入相似度的智能匹配，减少重复 Token 消耗。
+  - TTL 支持、缓存统计、缓存预热、LRU 驱逐策略。
+
+- **上下文压缩工具 (Compactor)**:
+  - `src/runtime/compactor.py`: 智能压缩对话历史。
+  - 支持激进压缩（LLM 摘要）和渐进式压缩（分段处理）。
+  - 实体提取、决策追踪、知识保留。
+
+- **长期记忆系统**:
+  - `src/runtime/long_term_memory.py`: CLAUDE.md 风格的持久化记忆。
+  - 分类管理：经验、教训、知识、偏好。
+  - Markdown 格式存储，易于阅读和编辑。
+  - 自动学习：从对话中提取有价值信息。
+
+- **知识图谱记忆管理**:
+  - `src/runtime/knowledge_graph.py`: 结构化知识存储和推理。
+  - 实体管理、关系推理、路径查询。
+  - 支持从文本中自动提取知识三元组。
+  - DOT 格式导出（用于可视化）。
+
+- **长期记忆后端**:
+  - `src/runtime/memory_backend.py`: 大规模记忆存储支持。
+  - SQLite 后端：本地持久化，全文搜索 (FTS)。
+  - 向量后端：语义相似度搜索。
+  - 分层存储：内存 + 磁盘混合。
+
+- **RBAC 权限控制**:
+  - `src/runtime/rbac.py`: 角色基础的访问控制系统。
+  - 预定义角色：admin、agent_standard、agent_readonly 等。
+  - 工具访问控制、审计日志。
+  - 权限装饰器：`@require_permission`。
+
+- **Open-CLI 深度接入**:
+  - `src/runtime/opencli.py`: 交互式命令行系统。
+  - 富文本输出：颜色、表格、进度条。
+  - 内置命令：run、build、test、agent、memory、cache、config。
+  - 脚本执行支持。
+
+- **架构演进规划**:
+  - `docs/05_architecture_evolution.md`: 详细技术蓝图。
+  - Rust AVM 底座设计、WASM 安全沙盒规划。
+  - 可视化 DAG 编辑器、智能调度器。
+  - 向量虚存分页设计。
+
+### 新增文件
+- `src/runtime/dag_orchestrator.py` - DAG 编排器
+- `src/runtime/cache_manager.py` - 智能缓存管理器
+- `src/runtime/compactor.py` - 上下文压缩器
+- `src/runtime/long_term_memory.py` - 长期记忆系统
+- `src/runtime/knowledge_graph.py` - 知识图谱
+- `src/runtime/memory_backend.py` - 记忆后端
+- `src/runtime/rbac.py` - RBAC 权限控制
+- `src/runtime/opencli.py` - Open-CLI 系统
+- `docs/05_architecture_evolution.md` - 架构演进规划
+- `examples/15_dag_topology.nx` - DAG 拓扑示例
+
+### AST/Runtime 变更细节
+- 更新 `nexa_parser.py` 语法，支持 DAG 操作符。
+- 扩展 `ast_transformer.py`，新增 DAG 表达式节点类型。
+- 增强 `code_generator.py`，生成 DAG 调用代码。
+- 更新 `agent.py`，集成新的缓存管理器。
+
+### 踩坑记录
+- DAG 操作符解析需要处理多种操作符优先级。
+- 知识图谱实体合并时需要正确处理同名实体。
+
+---
 
 ## 版本 v0.9.6-rc
 ### 核心特性
