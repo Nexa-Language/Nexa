@@ -19,12 +19,71 @@
 
 ---
 
-## 🔥 **v0.9-alpha EPIC RELEASE**: Test Matrix & SDK Interop Era
+## 🔥 **v0.9.7-rc ENTERPRISE RELEASE**: Cognitive & Security Era
 
-Nexa v0.9-alpha 引入了底层的测试引擎、MCP 工具链支持以及大重构后的 Python SDK 动态加载机制：
+Nexa v0.9.7-rc 引入了企业级认知架构和安全增强，包括复杂 DAG 拓扑、智能缓存、知识图谱和 RBAC 权限控制：
 
-### 1. 原生测试与断言 (`test` & `assert`)
-首创针对 Agent 流程的测试套件，通过语义模糊断言保证系统迭代时不发生退化：
+### 1. 复杂拓扑 DAG 支持
+新增强大的 DAG 操作符，支持分叉、合流、条件分支：
+```nexa
+// 分叉：并行发送到多个 Agent
+results = input |>> [Researcher, Analyst, Writer];
+
+// 合流：合并多个结果
+report = [Researcher, Analyst] &>> Reviewer;
+
+// 条件分支：根据输入选择路径
+result = input ?? UrgentHandler : NormalHandler;
+```
+
+### 2. 智能缓存系统
+多级缓存 + 语义缓存，大幅减少 Token 消耗：
+```nexa
+agent CachedBot {
+    prompt: "...",
+    model: "deepseek/deepseek-chat",
+    cache: true  // 启用智能缓存
+}
+```
+
+### 3. 知识图谱记忆
+结构化知识存储和推理能力：
+```python
+from src.runtime.knowledge_graph import get_knowledge_graph
+kg = get_knowledge_graph()
+kg.add_relation("Nexa", "is_a", "Agent Language")
+```
+
+### 4. RBAC 权限控制
+角色基础的访问控制，确保最小权限原则：
+```python
+from src.runtime.rbac import get_rbac_manager, Permission
+rbac = get_rbac_manager()
+rbac.assign_role("DataBot", "agent_readonly")
+```
+
+### 5. 长期记忆系统
+CLAUDE.md 风格的持久化记忆，支持经验和知识积累：
+```nexa
+agent SmartBot {
+    prompt: "...",
+    experience: "bot_memory.md"  // 加载长期记忆
+}
+```
+
+### 6. Open-CLI 深度接入
+原生交互式命令行支持，富文本输出：
+```bash
+nexa > run script.nx --debug
+nexa > cache stats
+nexa > agent list
+```
+
+---
+
+## 📖 v0.9-alpha 特性回顾
+
+### 原生测试与断言 (`test` & `assert`)
 ```nexa
 test "login_agent" {
     result = LoginBot.run("user: admin");
@@ -32,24 +91,17 @@ test "login_agent" {
 }
 ```
 
-### 2. 生态集成的终极答案：MCP 支持 (`mcp: "..."`)
-直接无缝对齐 Model Context Protocol：
+### MCP 支持 (`mcp: "..."`)
 ```nexa
 tool SearchGlobal {
     mcp: "github.com/nexa-ai/search-mcp"
 }
 ```
 
-### 3. 高速启发式评估 (`fast_match`)
-在 `semantic_if` 中介入前置正则拦截，零损耗进行流转：
+### 高速启发式评估 (`fast_match`)
 ```nexa
 semantic_if "是一句日期提示" fast_match r"\d{4}-\d{2}" against req { ... }
 ```
-
-### 4. 转译器大升级 (`importlib` SDK Interop)
-再也没有生硬的字符串拼接！代码通过纯净的 `from src.api.nexa_runtime import NexaRuntime` 动态装载底层环境实例，为大规模部署提供支持。
-
-*(向下兼容 v0.8.x 引入的协议约束、模型路由和并发编排能力)*
 
 ---
 

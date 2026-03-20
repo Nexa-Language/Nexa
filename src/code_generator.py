@@ -13,6 +13,7 @@ from src.runtime.stdlib import STD_NAMESPACE_MAP
 from src.runtime.agent import NexaAgent
 from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
 from src.runtime.orchestrator import join_agents, nexa_pipeline
+from src.runtime.dag_orchestrator import dag_fanout, dag_merge, dag_branch, dag_parallel_map, SmartRouter
 from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
 from src.runtime.secrets import nexa_secrets
@@ -350,6 +351,37 @@ class CodeGenerator:
             if method:
                 return f"{method}.run({join_str})"
             return join_str
+        
+        # ==================== DAG 表达式代码生成 ====================
+        elif ex_type == "DAGForkExpression":
+            # 分叉表达式: dag_fanout(input, [Agent1, Agent2])
+            input_str = self._resolve_expression(expr["input"])
+            agents_list_str = "[ " + ", ".join([a for a in expr["agents"]]) + " ]"
+            return f"dag_fanout({input_str}, {agents_list_str})"
+        
+        elif ex_type == "DAGMergeExpression":
+            # 合流表达式: dag_merge([results], strategy="concat", merge_agent=Merger)
+            # 或 dag_merge(dag_fanout(...), strategy="consensus")
+            agents_list_str = "[ " + ", ".join([a for a in expr["agents"]]) + " ]"
+            strategy = expr.get("strategy", "concat")
+            merger = expr.get("merger")
+            if merger:
+                if isinstance(merger, dict):
+                    merger_str = self._resolve_expression(merger)
+                else:
+                    merger_str = str(merger)
+                return f"dag_merge({agents_list_str}, strategy=\"{strategy}\", merge_agent={merger_str})"
+            return f"dag_merge({agents_list_str}, strategy=\"{strategy}\")"
+        
+        elif ex_type == "DAGBranchExpression":
+            # 条件分支表达式: dag_branch(input, condition_fn, true_agent, false_agent)
+            input_str = self._resolve_expression(expr["input"])
+            true_agent = expr.get("true_agent")
+            false_agent = expr.get("false_agent")
+            true_agent_str = self._resolve_expression(true_agent) if true_agent else "None"
+            false_agent_str = self._resolve_expression(false_agent) if false_agent else "None"
+            # 默认条件函数：检查输入是否包含特定关键词
+            return f"dag_branch({input_str}, lambda x: True, {true_agent_str}, {false_agent_str})"
             
 
         elif ex_type == "FallbackExpr":

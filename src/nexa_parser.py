@@ -53,17 +53,33 @@ match_stmt: "match" IDENTIFIER "{" match_case* default_case? "}"
 match_case: "intent" "(" STRING_LITERAL ")" "=>" expression ","?
 default_case: "_" "=>" expression ","?
 
-?expression: fallback_expr | pipeline_expr | base_expr
+?expression: fallback_expr | pipeline_expr | dag_expr | base_expr
 
 fallback_expr: base_expr "fallback" expression
 
+// DAG 表达式支持: 分叉(||)、合流(&&)、管道(>>)
 pipeline_expr: base_expr (">>" base_expr)+
 
-?base_expr: join_call 
-          | method_call 
+// 新增DAG操作符
+dag_expr: dag_fork_expr | dag_merge_expr | dag_branch_expr
+
+// 分叉表达式: expr |>> [Agent1, Agent2, ...] 或 expr || [Agent1, Agent2]
+dag_fork_expr: base_expr ("|>>" | "||") identifier_list_as_expr
+
+// 合流表达式: [Agent1, Agent2] &>> MergerAgent 或 [Agent1, Agent2] && Merger
+dag_merge_expr: identifier_list_as_expr ("&>>" | "&&") base_expr
+
+// 条件分支表达式: expr ?> TrueAgent : FalseAgent
+dag_branch_expr: base_expr "??" base_expr ":" base_expr
+
+// 列表表达式转换为identifier列表
+identifier_list_as_expr: "[" identifier_list "]"
+
+?base_expr: join_call
+          | method_call
           | img_call
           | property_access
-          | STRING_LITERAL -> string_expr 
+          | STRING_LITERAL -> string_expr
           | IDENTIFIER -> id_expr
           | dict_access_expr
 

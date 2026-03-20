@@ -130,25 +130,85 @@ agent_body ::= (IDENTIFIER ":" STRING_LITERAL)+
 flow_decl ::= "flow" IDENTIFIER "{" flow_stmt* "}"
 test_decl ::= "test" STRING_LITERAL "{" flow_stmt* "}"
 
-flow_stmt ::= assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt
+flow_stmt ::= assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt | try_catch_stmt
 
 assignment_stmt ::= IDENTIFIER "=" expression ";"
 expr_stmt ::= expression ";"
 assert_stmt ::= "assert" STRING_LITERAL "against" IDENTIFIER ";"
+try_catch_stmt ::= "try" block "catch" "(" IDENTIFIER ")" block
 
 semantic_if_stmt ::= "semantic_if" STRING_LITERAL ["fast_match" REGEX_LITERAL] "against" IDENTIFIER "{" flow_stmt* "}" ("else" "{" flow_stmt* "}")?
 loop_stmt ::= "loop" "{" flow_stmt* "}" "until" "(" STRING_LITERAL ")"
 match_stmt ::= "match" IDENTIFIER "{" match_branch+ ("_" "=>" expression)? "}"
 match_branch ::= "intent" "(" STRING_LITERAL ")" "=>" expression ","
 
-expression ::= pipeline_expr
-pipeline_expr ::= base_expr (">>" IDENTIFIER)*
-base_expr ::= method_call | STRING_LITERAL | IDENTIFIER
+expression ::= dag_expr | pipeline_expr | fallback_expr | base_expr
 
-method_call ::= IDENTIFIER "." IDENTIFIER "(" (argument_list)? ")"
+# DAG 表达式 (v0.9.7+)
+dag_expr ::= dag_fork_expr | dag_merge_expr | dag_branch_expr
+dag_fork_expr ::= base_expr ("|>>" | "||") "[" identifier_list "]"
+dag_merge_expr ::= "[" identifier_list "]" ("&>>" | "&&") base_expr
+dag_branch_expr ::= base_expr "??" base_expr ":" base_expr
+
+pipeline_expr ::= base_expr (">>" base_expr)+
+fallback_expr ::= base_expr "fallback" expression
+
+base_expr ::= join_call | method_call | STRING_LITERAL | IDENTIFIER
+
+join_call ::= "join" "(" identifier_list ")" ["." IDENTIFIER "(" argument_list ")"]
+method_call ::= IDENTIFIER ("." IDENTIFIER)? "(" (argument_list)? ")"
 argument_list ::= expression ("," expression)*
 
 IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
 STRING_LITERAL ::= '"' [^"]* '"'
 REGEX_LITERAL ::= 'r"' [^"]* '"'
+```
+
+## 5. DAG 操作符 (v0.9.7+)
+
+Nexa v0.9.7 引入了用于复杂拓扑编排的 DAG 操作符。
+
+### 5.1 分叉操作符 (`|>>` 和 `||`)
+
+将输入并行发送到多个 Agent：
+
+```nexa
+// |>> 等待所有结果返回
+results = input |>> [Agent1, Agent2, Agent3];
+
+// || 不等待（fire-and-forget）
+input || [Logger, Analytics];
+```
+
+### 5.2 合流操作符 (`&>>` 和 `&&`)
+
+将多个结果合并：
+
+```nexa
+// &>> 顺序合流
+result = [Researcher, Analyst] &>> Reviewer;
+
+// && 共识合流（需要 Agent 达成一致）
+consensus = [Agent1, Agent2] && JudgeAgent;
+```
+
+### 5.3 条件分支操作符 (`??`)
+
+根据条件选择执行路径：
+
+```nexa
+// 根据输入特征选择处理 Agent
+result = input ?? UrgentHandler : NormalHandler;
+```
+
+### 5.4 复杂 DAG 拓扑
+
+组合使用操作符构建复杂流程：
+
+```nexa
+// 分叉后合流
+final = topic |>> [Researcher, Analyst] &>> Writer >> Reviewer;
+
+// 多阶段并行处理
+report = data |>> [Preprocess1, Preprocess2] &>> Aggregator >> Formatter;
 ```
