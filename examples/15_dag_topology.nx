@@ -57,14 +57,7 @@ flow main {
     print("Merged and reviewed:");
     print(merged_result);
     
-    // 示例4: 复杂DAG拓扑 - 分叉后合流
-    // 研究数据并行处理后合并审查
-    topic = "Climate Change Solutions";
-    final_report = topic |>> [Researcher, Analyst] &>> Writer >> Reviewer;
-    print("Final report:");
-    print(final_report);
-    
-    // 示例5: 条件分支
+    // 示例4: 条件分支
     // 根据输入特征选择不同的处理路径
     user_query = "URGENT: System outage detected";
     handled = user_query ?? UrgentHandler : NormalHandler;

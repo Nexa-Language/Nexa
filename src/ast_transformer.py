@@ -303,17 +303,29 @@ class NexaTransformer(Transformer):
         分叉表达式: expr |>> [Agent1, Agent2] 或 expr || [Agent1, Agent2]
         |>> 表示分叉后等待所有结果
         || 表示分叉后不等待（fire-and-forget）
+        
+        Lark 传递: args[0] = input_expr (expression)
+                   args[1] = agent list (from identifier_list_as_expr)
+        注意: 操作符 |>> 或 || 是 literal，不会作为单独节点传递
+        默认使用 |>> (wait_all=True)
         """
         input_expr = args[0]
-        operator = str(args[1]) if len(args) > 1 and hasattr(args[1], 'type') else "|>>"
-        agents = args[-1] if isinstance(args[-1], list) else []
+        
+        # agents 来自 identifier_list_as_expr
+        # 由于操作符是 literal token，args[1] 就是 agents 列表
+        agents = args[1] if len(args) > 1 else []
+        if not isinstance(agents, list):
+            agents = [str(agents)]
+        
+        # 默认操作符为 |>> (wait_all=True)
+        operator = "|>>"
         
         return {
             "type": "DAGForkExpression",
             "input": input_expr,
             "agents": agents,
             "operator": operator,
-            "wait_all": operator == "|>>"
+            "wait_all": True
         }
     
     @v_args(inline=False)
@@ -322,17 +334,24 @@ class NexaTransformer(Transformer):
         合流表达式: [Agent1, Agent2] &>> MergerAgent 或 [Agent1, Agent2] && MergerAgent
         &>> 表示顺序合流
         && 表示共识合流
+        
+        Lark 传递: args[0] = agent list (from identifier_list_as_expr)
+                   args[1] = merger expression
+        注意: 操作符 &>> 或 && 是 literal，不会作为单独节点传递
         """
+        # agents 来自 identifier_list_as_expr
         agents = args[0] if isinstance(args[0], list) else []
-        operator = str(args[1]) if len(args) > 1 and hasattr(args[1], 'type') else "&>>"
-        merger = args[-1]
+        if not isinstance(agents, list):
+            agents = [str(agents)]
+            
+        merger = args[1] if len(args) > 1 else None
         
         return {
             "type": "DAGMergeExpression",
             "agents": agents,
             "merger": merger,
-            "operator": operator,
-            "strategy": "consensus" if operator == "&&" else "concat"
+            "operator": "&>>",
+            "strategy": "concat"
         }
     
     @v_args(inline=False)
@@ -340,6 +359,10 @@ class NexaTransformer(Transformer):
         """
         条件分支表达式: expr ?? TrueAgent : FalseAgent
         类似三元运算符，但用于Agent选择
+        
+        Lark 传递: args[0] = input expression
+                   args[1] = true_agent expression
+                   args[2] = false_agent expression
         """
         input_expr = args[0]
         true_agent = args[1] if len(args) > 1 else None
@@ -354,8 +377,21 @@ class NexaTransformer(Transformer):
     
     @v_args(inline=False)
     def identifier_list_as_expr(self, args):
-        """将方括号内的标识符列表转换为列表"""
-        return [str(arg) for arg in args]
+        """将方括号内的标识符列表转换为列表
+        
+        Lark 传递的 args 来自 identifier_list 规则
+        需要将每个 Token 转换为字符串
+        """
+        result = []
+        for arg in args:
+            # identifier_list 可能包含多个 IDENTIFIER token
+            if hasattr(arg, '__iter__') and not isinstance(arg, str):
+                # 如果是可迭代对象但不是字符串，展开它
+                for sub_arg in arg:
+                    result.append(str(sub_arg))
+            else:
+                result.append(str(arg))
+        return result
 
     @v_args(inline=False)
     def join_call(self, args):

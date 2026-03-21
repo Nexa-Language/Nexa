@@ -60,17 +60,20 @@ fallback_expr: base_expr "fallback" expression
 // DAG 表达式支持: 分叉(||)、合流(&&)、管道(>>)
 pipeline_expr: base_expr (">>" base_expr)+
 
-// 新增DAG操作符
+// 新增DAG操作符 - 使用 expression 而非 base_expr 支持嵌套
 dag_expr: dag_fork_expr | dag_merge_expr | dag_branch_expr
 
 // 分叉表达式: expr |>> [Agent1, Agent2, ...] 或 expr || [Agent1, Agent2]
-dag_fork_expr: base_expr ("|>>" | "||") identifier_list_as_expr
+// 支持 expression 嵌套
+dag_fork_expr: expression ("|>>" | "||") identifier_list_as_expr
 
 // 合流表达式: [Agent1, Agent2] &>> MergerAgent 或 [Agent1, Agent2] && Merger
-dag_merge_expr: identifier_list_as_expr ("&>>" | "&&") base_expr
+// 支持 expression 嵌套
+dag_merge_expr: identifier_list_as_expr ("&>>" | "&&") expression
 
-// 条件分支表达式: expr ?> TrueAgent : FalseAgent
-dag_branch_expr: base_expr "??" base_expr ":" base_expr
+// 条件分支表达式: expr ?? TrueAgent : FalseAgent
+// 支持 expression 嵌套
+dag_branch_expr: expression "??" expression ":" expression
 
 // 列表表达式转换为identifier列表
 identifier_list_as_expr: "[" identifier_list "]"
