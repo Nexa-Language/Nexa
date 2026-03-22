@@ -1,0 +1,60 @@
+[package]
+name = "nexa-avm"
+version = "0.1.0"
+edition = "2021"
+authors = ["Nexa Team"]
+description = "Nexa Agent Virtual Machine - A high-performance runtime for AI agent orchestration"
+license = "MIT"
+repository = "https://github.com/nexa-lang/nexa"
+
+[dependencies]
+# Lexer
+logos = "0.14"
+
+# Async runtime
+tokio = { version = "1", features = ["full"] }
+
+# HTTP client for LLM
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "blocking"] }
+
+# Serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# WASM runtime (optional)
+wasmtime = { version = "20", optional = true }
+
+# Python FFI (optional)
+pyo3 = { version = "0.21", features = ["extension-module"], optional = true }
+
+# CLI
+clap = { version = "4", features = ["derive"] }
+
+# Utilities
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[dev-dependencies]
+criterion = "0.5"
+pretty_assertions = "1.4"
+
+[features]
+default = []
+wasm = ["wasmtime"]
+python-ffi = ["pyo3"]
+
+[[bin]]
+name = "avm"
+path = "src/main.rs"
+
+[lib]
+name = "nexa_avm"
+path = "src/lib.rs"
+
+# [[bench]]
+# name = "avm_bench"
+# harness = false

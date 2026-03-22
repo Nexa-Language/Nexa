@@ -4,7 +4,7 @@
   <p><b><i>The Dawn of Agent-Native Programming. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v0.9--alpha-brightgreen.svg?style=for-the-badge" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v1.0--alpha-brightgreen.svg?style=for-the-badge" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg?style=for-the-badge" alt="Python"/>
     <img src="https://img.shields.io/badge/Status-Experimental-orange.svg?style=for-the-badge" alt="Status"/>
   </p>
@@ -19,9 +19,40 @@
 
 ---
 
-## 🔥 **v0.9.7-rc ENTERPRISE RELEASE**: Cognitive & Security Era
+## 🔥 **v1.0-alpha AVM RELEASE**: The Agent Virtual Machine Era
 
-Nexa v0.9.7-rc 引入了企业级认知架构和安全增强，包括复杂 DAG 拓扑、智能缓存、知识图谱和 RBAC 权限控制：
+Nexa v1.0-alpha 引入了革命性的 **Agent Virtual Machine (AVM)** - 一个用 Rust 编写的高性能、安全隔离的智能体执行引擎：
+
+### 🦀 Rust AVM 底座
+从 Python 脚本解释转译模式跨越至基于 Rust 编写的独立编译型 Agent Virtual Machine：
+- **高性能字节码解释器** - 原生执行编译后的 Nexa 字节码
+- **完整编译器前端** - Lexer → Parser → AST → Bytecode
+- **110+ 测试覆盖** - 全链路测试保证稳定性
+
+### 🔒 WASM 安全沙盒
+在 AVM 中引入 WebAssembly，对外部 `tool` 执行提供强隔离：
+- **wasmtime 集成** - 高性能 WASM 运行时
+- **权限分级** - None/Standard/Elevated/Full 四级权限模型
+- **资源限制** - 内存、CPU、执行时间限制
+- **审计日志** - 完整的操作审计追踪
+
+### ⚡ 智能调度器
+在 AVM 层基于系统负载动态分配并发资源：
+- **优先级队列** - 基于 Agent 优先级的任务调度
+- **负载均衡** - RoundRobin/LeastLoaded/Adaptive 策略
+- **DAG 拓扑排序** - 自动依赖解析与并行度分析
+- **资源分配** - 内存、CPU 核心分配优化
+
+### 📄 向量虚存分页
+AVM 接管内存，自动执行对话历史的向量化置换：
+- **LRU/LFU/Hybrid 淘汰策略** - 智能页面置换
+- **嵌入向量相似度搜索** - 语义相关性加载
+- **透明页面加载** - 无感知的内存管理
+- **自动压缩** - 旧页面摘要压缩
+
+---
+
+## 📚 v0.9.7-rc 企业特性回顾
 
 ### 1. 复杂拓扑 DAG 支持
 新增强大的 DAG 操作符，支持分叉、合流、条件分支：

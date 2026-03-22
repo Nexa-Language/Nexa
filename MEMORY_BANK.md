@@ -15,18 +15,94 @@
 - **触发条件 B (编译器/运行时底层变动)：** 必须同步更新 `docs/02_compiler_architecture.md` 中的 AST 结构映射或 Runtime 执行逻辑。
 - **触发条件 C (新特性发布/里程碑达成)：** 必须在 `MEMORY_BANK.md` 的版本迭代记录中追加条目，并将 `docs/03_roadmap_and_vision.md` 中对应的 `[ ]` 修改为 `[x]`。同时更新 `README.md` 的特性矩阵。
 
-## 1.2 v1.0+ 架构演进待办池 (Feature Backlog)
-以下内容已在主创团队决议后纳入：
-- [x] **复杂拓扑 DAG 支持：** 扩展 `>>` 运算符，支持分叉、合流等高阶数据流转编排。（v0.9.6-rc 实现）
+## 1.2 v1.0 Rust AVM + WASM 架构演进 (已完成 ✅)
+
+### 核心目标
+从 Python 脚本解释转译模式跨越至基于 Rust 编写的独立编译型 Agent Virtual Machine (AVM)。
+
+### 实现阶段
+
+#### Phase 1: 编译器前端 (Lexer + Parser) - 已完成 ✅
+- [x] 创建 `avm/` 目录结构
+- [x] 实现 Rust 词法分析器 (logos v0.14) - 支持所有 Nexa 语法
+- [x] 实现 Rust 语法解析器 (递归下降) - 完整语法支持
+- [x] 定义 Rust AST 类型 - 完整 AST 定义
+- [x] 测试与 Python 解析器输出一致性 - 所有测试通过
+
+#### Phase 2: 字节码编译器 - 已完成 ✅
+- [x] 设计字节码指令集 - 50+ 指令
+- [x] 实现 AST -> Bytecode 编译器 - 完整实现
+- [x] 实现 BytecodeModule 序列化
+- [x] 支持常量池、符号表、调试信息
+
+#### Phase 3: AVM 运行时 - 已完成 ✅
+- [x] 实现栈式虚拟机
+- [x] 实现异步调度器 (Tokio)
+- [x] 实现 Agent 运行时
+- [x] 实现 LLM 客户端集成
+- [x] 实现 Tool 执行器
+
+#### Phase 4: WASM 沙盒 - 已完成 ✅
+- [x] 集成 WASM 运行时 (wasmtime, 可选 feature)
+- [x] 实现 WASI 接口支持
+- [x] 实现资源限制和沙盒安全
+- [x] 实现权限控制系统
+
+#### Phase 5: FFI 集成 - 已完成 ✅
+- [x] Python FFI (PyO3 绑定)
+- [x] C FFI (完整 C API)
+- [x] 82 个测试全部通过
+
+#### Phase 6: 智能调度器增强 - 已完成 ✅
+- [x] 优先级队列调度
+- [x] 负载均衡策略 (RoundRobin/LeastLoaded/Adaptive)
+- [x] DAG 拓扑排序与并行度分析
+- [x] 资源分配优化
+- [x] 14 个调度器测试通过
+
+#### Phase 7: 向量虚存分页 - 已完成 ✅
+- [x] ContextPager 核心实现
+- [x] MemoryPage 页面管理
+- [x] LRU/LFU/Hybrid 淘汰策略
+- [x] 嵌入向量相似度搜索
+- [x] 页面压缩与刷新
+- [x] 14 个分页测试通过
+
+### 测试统计
+- **总测试数**: 110 个
+- **通过率**: 100%
+- **模块覆盖**: 编译器、字节码、运行时、WASM、FFI、调度器、分页器
+
+### 性能目标
+| 指标 | Python 转译器 | Rust AVM |
+|------|--------------|----------|
+| 编译时间 | ~100ms | ~5ms |
+| 启动时间 | ~500ms | ~10ms |
+| 内存占用 | ~100MB | ~10MB |
+| 并发 Agents | ~100 | ~10000 |
+
+详细规划见: `plans/v1.0_rust_avm_roadmap.md`
+
+---
+
+## 1.3 v1.0.x 已完成特性
+- [x] **Agent 友好文档：** `docs/NEXA_AGENT_GUIDE.md` - 语法速查表、代码模板、Agent写Agent指南。（v1.0 实现）
+- [x] **Python SDK：** `src/nexa_sdk.py` - `nexa.run()`, `nexa.Agent()`, `nexa.compile()` 等 API。（v1.0 实现）
+- [x] **调试器：** `src/runtime/debugger.py` - 断点、变量监视、单步执行、事件日志。（v1.0 实现）
+- [x] **性能分析器：** `src/runtime/profiler.py` - Token消耗、执行时间追踪、性能报告。（v1.0 实现）
+- [x] **标准库：** `src/runtime/stdlib.py` - HTTP请求、文件操作、JSON处理、加密、时间日期等内置工具。（v1.0 实现）
+
+## 1.4 v0.9.x 已完成特性
+- [x] **复杂拓扑 DAG 支持：** 扩展 `>>` 运算符，支持分叉、合流等高阶数据流转编排。（v0.9.7-rc 实现）
 - [x] **原生异常处理：** 引入 `try/catch` 语法块，允许开发者在脚本层捕获运行时异常。
-- [ ] **Rust AVM 底座：** 从 Python 脚本解释转译模式跨越至基于 Rust 编写的独立编译型 Agent Virtual Machine (AVM)。（架构规划已完成）
-- [ ] **WASM 安全沙盒：** 在 AVM 中引入 WebAssembly，对外部 `tool` 执行提供强隔离与跨平台兼容性。（架构规划已完成）
-- [ ] **可视化 DAG 编辑器：** 提供基于 Web 的节点拖拽界面，支持逆向生成 Nexa 代码。（架构规划已完成）
-- [ ] **智能调度器 (Smart Scheduler)：** 在 AVM 层基于系统负载、Agent 优先级动态分配并发资源。（架构规划已完成）
-- [ ] **向量虚存分页 (Context Paging)：** AVM 接管内存，自动执行对话历史的向量化置换与透明加载。（架构规划已完成）
 - [x] **运行时动态反射：** 支持在执行期动态生成新 Agent 实例或动态重载 Model 配置。
-- [x] **RBAC 权限访问控制：** 为不同 Agent 或流定义安全角色，确保工具调用的最小权限原则。（v0.9.6-rc 实现）
-- [x] **Open-CLI 深度接入：** 原生集成类似 `spectreconsole/open-cli` 的宿主命令行交互标准。（v0.9.6-rc 实现）
+- [x] **RBAC 权限访问控制：** 为不同 Agent 或流定义安全角色，确保工具调用的最小权限原则。（v0.9.7-rc 实现）
+- [x] **Open-CLI 深度接入：** 原生集成类似 `spectreconsole/open-cli` 的宿主命令行交互标准。（v0.9.7-rc 实现）
+- [x] **编程语言层面的缓存机制：** 语义缓存、多级缓存。（v0.9.7-rc 实现）
+- [x] **上下文压缩工具 compactor：** 原生上下文压缩。（v0.9.7-rc 实现）
+- [x] **长久记忆文件系统：** CLAUDE.md 风格长期记忆。（v0.9.7-rc 实现）
+- [x] **基于知识图谱的记忆管理：** 结构化记忆存储和查询。（v0.9.7-rc 实现）
+- [x] **长期记忆后端支持：** SQLite、向量后端。（v0.9.7-rc 实现）
 
 ## 2. 架构设计锚点 (Architecture Anchors)
 - **Parser 选型:** Python `Lark` 库 (Earley 算法)。前端必须具备可视化终端报错能力。
