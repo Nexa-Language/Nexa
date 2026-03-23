@@ -107,7 +107,20 @@ class CodeGenerator:
             prompt = agent.get("prompt", "")
             uses = agent.get("uses", [])
             properties = agent.get("properties", {})
-            model = properties.get("model", '"minimax-m2.5"').strip('"')
+            model_raw = properties.get("model", '"minimax-m2.5"')
+            if isinstance(model_raw, dict) and model_raw.get("type") == "fallback_list":
+                # Handle fallback list - use primary model
+                models = model_raw.get("models", [])
+                primary_models = [m["value"] for m in models if not m.get("is_fallback", False)]
+                fallback_models = [m["value"] for m in models if m.get("is_fallback", False)]
+                model = primary_models[0] if primary_models else "minimax-m2.5"
+                fallback_model = fallback_models[0] if fallback_models else None
+            elif isinstance(model_raw, str):
+                model = model_raw.strip('"')
+                fallback_model = None
+            else:
+                model = "minimax-m2.5"
+                fallback_model = None
             role = properties.get("role", '""').strip('"')
             memory_scope = properties.get("memory", '"local"').strip('"')
             stream_val = properties.get("stream", '"false"').strip('"').lower()
