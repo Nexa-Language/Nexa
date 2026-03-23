@@ -5,3 +5,18 @@ docs/secert.md
 *.egg-info/
 build/
 dist/
+
+# Rust 编译产物
+avm/target/
+avm/Cargo.lock
+
+# Nexa 运行时缓存
+.nexa_cache/
+.nexa_knowledge/
+.nexa_security/
+
+# 临时测试文件
+test_secrets.py
+test_secrets2.py
+update_agent.patch
+validate_doc_examples.py

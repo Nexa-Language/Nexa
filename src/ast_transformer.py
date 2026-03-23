@@ -151,6 +151,90 @@ class NexaTransformer(Transformer):
     def list_val(self, i):
         return i
 
+    @v_args(inline=True)
+    def int_val(self, i):
+        return int(i)
+
+    @v_args(inline=True)
+    def true_val(self, _):
+        return True
+
+    @v_args(inline=True)
+    def false_val(self, _):
+        return False
+
+    @v_args(inline=False)
+    def fallback_list_val(self, args):
+        """处理 fallback_list_val 节点"""
+        return args[0]  # 返回 fallback_list
+
+    @v_args(inline=False)
+    def fallback_list(self, args):
+        """处理 fallback_list，返回带 fallback 标记的列表"""
+        result = []
+        for item in args:
+            if isinstance(item, dict):
+                result.append(item)
+            else:
+                result.append({"value": str(item).strip('"'), "is_fallback": False})
+        return {"type": "fallback_list", "models": result}
+
+    @v_args(inline=True)
+    def primary_model(self, item):
+        """处理主模型"""
+        from lark import Token
+        if isinstance(item, Token):
+            value = str(item).strip('"')
+            return {"value": value, "is_fallback": False}
+        return {"value": str(item).strip('"'), "is_fallback": False}
+
+    @v_args(inline=True)
+    def fallback_model(self, item):
+        """处理 fallback 模型"""
+        from lark import Token
+        if isinstance(item, Token):
+            value = str(item).strip('"')
+            return {"value": value, "is_fallback": True}
+        return {"value": str(item).strip('"'), "is_fallback": True}
+
+    @v_args(inline=False)
+    def if_stmt(self, args):
+        """if 语句"""
+        condition = args[0]
+        then_block = args[1]
+        else_block = args[2] if len(args) > 2 else []
+        return {
+            "type": "IfStatement",
+            "condition": condition,
+            "then_block": then_block,
+            "else_block": else_block
+        }
+
+    @v_args(inline=False)
+    def condition(self, args):
+        """条件表达式"""
+        return {
+            "type": "ConditionExpression",
+            "left": args[0],
+            "operator": str(args[1]),
+            "right": args[2]
+        }
+
+    @v_args(inline=False)
+    def comparison_op(self, args):
+        """比较运算符"""
+        return str(args[0]) if args else "=="
+
+    @v_args(inline=False)
+    def comparison_expr(self, args):
+        """比较表达式"""
+        return {
+            "type": "ComparisonExpression",
+            "left": args[0],
+            "operator": str(args[1]),
+            "right": args[2]
+        }
+
     @v_args(inline=False)
     def identifier_list(self, args):
         return [str(arg) for arg in args]
@@ -172,10 +256,49 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def flow_decl(self, args):
+        # flow_decl: "flow" IDENTIFIER ["(" param_list ")"] block
+        # 解析树结构: [name, params_or_None, block]
+        name = str(args[0])
+        params = []
+        body = []
+        
+        # args[1] 是参数列表（可能为 None）
+        # args[2] 是 block
+        if len(args) > 1:
+            # 检查 args[1] 是否是参数列表
+            if args[1] is not None:
+                if isinstance(args[1], list):
+                    # 检查是否是参数定义 (有 name 和 type 键)
+                    if len(args[1]) > 0 and isinstance(args[1][0], dict) and 'name' in args[1][0]:
+                        params = args[1]
+                    else:
+                        body = args[1]
+                elif isinstance(args[1], dict):
+                    body = [args[1]]
+        
+        # args[2] 是 block（如果有参数）
+        if len(args) > 2 and args[2] is not None:
+            if isinstance(args[2], list):
+                body = args[2]
+            elif isinstance(args[2], dict):
+                body = [args[2]]
+        
         return {
             "type": "FlowDeclaration",
+            "name": name,
+            "params": params,
+            "body": body
+        }
+    
+    @v_args(inline=False)
+    def param_list(self, args):
+        return [arg for arg in args if arg is not None]
+    
+    @v_args(inline=False)
+    def param(self, args):
+        return {
             "name": str(args[0]),
-            "body": args[1]
+            "type": str(args[1])
         }
 
     @v_args(inline=False)
@@ -357,14 +480,24 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def dag_branch_expr(self, args):
         """
-        条件分支表达式: expr ?? TrueAgent : FalseAgent
-        类似三元运算符，但用于Agent选择
-        
-        Lark 传递: args[0] = input expression
-                   args[1] = true_agent expression
-                   args[2] = false_agent expression
+        条件分支表达式:
+        1. expr ?? TrueAgent : FalseAgent (三元形式)
+        2. expr ?? { "case1" => action1 } (块形式)
         """
         input_expr = args[0]
+        
+        # 检查是否是块形式 (semantic_if_block 是列表)
+        if len(args) == 2:
+            # 块形式: args[1] 是 semantic_if_block (case 列表)
+            cases = args[1]
+            if isinstance(cases, list):
+                return {
+                    "type": "DAGBranchExpression",
+                    "input": input_expr,
+                    "cases": cases
+                }
+        
+        # 三元形式
         true_agent = args[1] if len(args) > 1 else None
         false_agent = args[2] if len(args) > 2 else None
         
@@ -463,6 +596,162 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def argument_list(self, args):
         return args
+
+    # 新增 DAG 操作符 transformer 方法
+    @v_args(inline=False)
+    def dag_chain_expr(self, args):
+        """链式 DAG 表达式: expr |>> [...] &>> Agent"""
+        return {
+            "type": "DAGChainExpression",
+            "fork": args[0],
+            "merge": args[1]
+        }
+
+    @v_args(inline=True)
+    def string_expr(self, s):
+        return {"type": "StringLiteral", "value": str(s).strip('"')}
+
+    @v_args(inline=True)
+    def id_expr(self, i):
+        return {"type": "Identifier", "value": str(i)}
+
+    @v_args(inline=False)
+    def binary_expr(self, args):
+        """二元表达式：字符串拼接等"""
+        if len(args) == 1:
+            return args[0]
+        result = args[0]
+        for i in range(1, len(args), 2):
+            op = str(args[i]) if i < len(args) else "+"
+            right = args[i+1] if i+1 < len(args) else {}
+            result = {
+                "type": "BinaryExpression",
+                "operator": op,
+                "left": result,
+                "right": right
+            }
+        return result
+
+    @v_args(inline=False)
+    def std_call(self, args):
+        """标准库调用: std.ns.func(...)"""
+        return {
+            "type": "StdCallExpression",
+            "namespace": str(args[0]),
+            "function": str(args[1]),
+            "arguments": args[2] if len(args) > 2 else []
+        }
+
+    @v_args(inline=False)
+    def semantic_if_expr(self, args):
+        """semantic_if 表达式形式: semantic_if (var, "condition") { ... }"""
+        return {
+            "type": "SemanticIfExpression",
+            "variable": str(args[0]),
+            "condition": str(args[1]).strip('"'),
+            "cases": args[2]
+        }
+
+    @v_args(inline=False)
+    def semantic_if_block(self, args):
+        """semantic_if 块: { "case1" => action1 }"""
+        return args
+
+    @v_args(inline=False)
+    def semantic_if_case(self, args):
+        """semantic_if case: "case" => action"""
+        return {
+            "pattern": str(args[0]).strip('"'),
+            "action": args[1]
+        }
+
+    @v_args(inline=True)
+    def string_val(self, s):
+        return str(s).strip('"')
+
+    @v_args(inline=True)
+    def int_val(self, i):
+        return int(i)
+
+    @v_args(inline=True)
+    def true_val(self, _):
+        return True
+
+    @v_args(inline=True)
+    def false_val(self, _):
+        return False
+
+    @v_args(inline=False)
+    def fallback_list_val(self, args):
+        """处理 fallback_list_val 节点"""
+        return args[0]
+
+    @v_args(inline=False)
+    def fallback_list(self, args):
+        """处理 fallback_list，返回带 fallback 标记的列表"""
+        result = []
+        for item in args:
+            if isinstance(item, dict):
+                result.append(item)
+            else:
+                result.append({"value": str(item).strip('"'), "is_fallback": False})
+        return {"type": "fallback_list", "models": result}
+
+    @v_args(inline=True)
+    def primary_model(self, item):
+        """处理主模型"""
+        from lark import Token
+        if isinstance(item, Token):
+            value = str(item).strip('"')
+            return {"value": value, "is_fallback": False}
+        return {"value": str(item).strip('"'), "is_fallback": False}
+
+    @v_args(inline=True)
+    def fallback_model(self, item):
+        """处理 fallback 模型"""
+        from lark import Token
+        if isinstance(item, Token):
+            value = str(item).strip('"')
+            return {"value": value, "is_fallback": True}
+        return {"value": str(item).strip('"'), "is_fallback": True}
+
+    @v_args(inline=False)
+    def if_stmt(self, args):
+        """if 语句"""
+        condition = args[0]
+        then_block = args[1]
+        else_block = args[2] if len(args) > 2 else []
+        return {
+            "type": "IfStatement",
+            "condition": condition,
+            "then_block": then_block,
+            "else_block": else_block
+        }
+
+    @v_args(inline=False)
+    def condition(self, args):
+        """条件表达式"""
+        return {
+            "type": "ConditionExpression",
+            "left": args[0],
+            "operator": str(args[1]),
+            "right": args[2]
+        }
+
+    @v_args(inline=False)
+    def comparison_op(self, args):
+        """比较运算符"""
+        return str(args[0]) if args else "=="
+
+    @v_args(inline=False)
+    def comparison_expr(self, args):
+        """比较表达式"""
+        return {
+            "type": "ComparisonExpression",
+            "left": args[0],
+            "operator": str(args[1]),
+            "right": args[2]
+        }
 
     @v_args(inline=True)
     def string_expr(self, s):
