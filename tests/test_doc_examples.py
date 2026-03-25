@@ -674,6 +674,261 @@ flow main {
 
 
 # ============================================================
+# Part 5: Reference Manual 新特性示例
+# ============================================================
+
+REFERENCE_EXAMPLES = [
+    # Agent 修饰器
+    DocExample(
+        name="agent_with_decorators",
+        source='''
+@limit(max_tokens=2048)
+@timeout(seconds=30)
+@retry(max_attempts=3)
+agent ConstrainedAgent {
+    role: "受限 Agent",
+    prompt: "严格遵守 Token 和时间限制",
+    model: "deepseek/deepseek-chat"
+}
+''',
+        doc_file="reference.md",
+        feature="agent 修饰器"
+    ),
+    # Tool MCP 声明
+    DocExample(
+        name="tool_mcp_declaration",
+        source='''
+tool WebSearch {
+    mcp: "github.com/nexa-ai/web-search-mcp"
+}
+''',
+        doc_file="reference.md",
+        feature="tool MCP 声明"
+    ),
+    # 枚举类型 Protocol
+    DocExample(
+        name="protocol_enum_type",
+        source='''
+protocol StatusResponse {
+    status: "active|inactive|pending",
+    message: "string"
+}
+
+agent StatusChecker implements StatusResponse {
+    role: "状态检查器",
+    prompt: "检查并返回状态信息",
+    model: "deepseek/deepseek-chat"
+}
+''',
+        doc_file="reference.md",
+        feature="枚举类型 Protocol"
+    ),
+    # DAG 并行不等待 ||
+    DocExample(
+        name="dag_fire_and_forget",
+        source='''
+agent Logger {
+    prompt: "记录日志",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Analytics {
+    prompt: "分析数据",
+    model: "deepseek/deepseek-chat"
+}
+
+flow main {
+    input = "用户操作"
+    input || [Logger, Analytics]
+    print("已触发后台任务")
+}
+''',
+        doc_file="reference.md",
+        feature="DAG || 并行不等待"
+    ),
+    # DAG 共识合流 &&
+    DocExample(
+        name="dag_consensus_merge",
+        source='''
+agent Agent1 {
+    prompt: "评审员1",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Agent2 {
+    prompt: "评审员2",
+    model: "deepseek/deepseek-chat"
+}
+
+agent JudgeAgent {
+    prompt: "裁决者",
+    model: "deepseek/deepseek-chat"
+}
+
+flow main {
+    proposal = "提案内容"
+    consensus = [Agent1, Agent2] && JudgeAgent
+    print(consensus)
+}
+''',
+        doc_file="reference.md",
+        feature="DAG && 共识合流"
+    ),
+    # 复杂 DAG 拓扑
+    DocExample(
+        name="complex_dag_topology",
+        source='''
+agent Researcher {
+    prompt: "研究员",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Analyst {
+    prompt: "分析师",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Writer {
+    prompt: "写手",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Reviewer {
+    prompt: "审核员",
+    model: "deepseek/deepseek-chat"
+}
+
+flow main {
+    topic = "研究主题"
+    final = topic |>> [Researcher, Analyst] &>> Writer >> Reviewer
+    print(final)
+}
+''',
+        doc_file="reference.md",
+        feature="复杂 DAG 拓扑"
+    ),
+    # Fallback 表达式
+    DocExample(
+        name="fallback_expression",
+        source='''
+agent PrimaryAgent {
+    prompt: "主要处理者",
+    model: "deepseek/deepseek-chat"
+}
+
+agent BackupAgent {
+    prompt: "备用处理者",
+    model: "deepseek/deepseek-chat"
+}
+
+flow main {
+    input = "请求"
+    result = PrimaryAgent.run(input) fallback BackupAgent.run(input)
+    print(result)
+}
+''',
+        doc_file="reference.md",
+        feature="fallback 表达式"
+    ),
+    # 记忆属性
+    DocExample(
+        name="memory_attributes",
+        source='''
+agent RememberingAgent {
+    role: "具备记忆的 Agent",
+    prompt: "记住用户的偏好和历史对话",
+    model: "deepseek/deepseek-chat",
+    memory: "long",
+    experience: true
+}
+''',
+        doc_file="reference.md",
+        feature="记忆属性"
+    ),
+    # Test 声明
+    DocExample(
+        name="test_declaration",
+        source='''
+agent WeatherBot {
+    prompt: "天气助手",
+    model: "deepseek/deepseek-chat"
+}
+
+test "天气查询测试" {
+    mock_input = "北京今天天气怎么样"
+    result = WeatherBot.run(mock_input)
+    assert "包含天气信息" against result
+    assert "包含温度数据" against result
+}
+''',
+        doc_file="reference.md",
+        feature="test 声明"
+    ),
+    # semantic_if with fast_match
+    DocExample(
+        name="semantic_if_fast_match",
+        source='''
+agent Scheduler {
+    prompt: "日程安排",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Clarifier {
+    prompt: "澄清助手",
+    model: "deepseek/deepseek-chat"
+}
+
+flow main {
+    user_input = "明天下午3点开会"
+    semantic_if "包含日期和地点信息"
+        fast_match r"\d{4}-\d{2}-\d{2}"
+        against user_input {
+        Scheduler.run(user_input)
+    } else {
+        Clarifier.run(user_input)
+    }
+}
+''',
+        doc_file="reference.md",
+        feature="semantic_if with fast_match"
+    ),
+    # 多阶段并行 DAG
+    DocExample(
+        name="multi_stage_parallel_dag",
+        source='''
+agent Preprocess1 {
+    prompt: "预处理1",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Preprocess2 {
+    prompt: "预处理2",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Aggregator {
+    prompt: "聚合器",
+    model: "deepseek/deepseek-chat"
+}
+
+agent Formatter {
+    prompt: "格式化器",
+    model: "deepseek/deepseek-chat"
+}
+
+flow main {
+    data = "原始数据"
+    report = data |>> [Preprocess1, Preprocess2] &>> Aggregator >> Formatter
+    print(report)
+}
+''',
+        doc_file="reference.md",
+        feature="多阶段并行 DAG"
+    ),
+]
+
+
+# ============================================================
 # 测试类
 # ============================================================
 
@@ -788,6 +1043,24 @@ class TestDocExamples(unittest.TestCase):
             for f in failed:
                 msg += f"  - {f['name']} ({f['feature']}): {f['error']}\n"
             self.fail(msg)
+    
+    def test_reference_examples(self):
+        """测试 Reference Manual 示例"""
+        failed = []
+        for example in REFERENCE_EXAMPLES:
+            success, error = self._test_example(example)
+            if not success:
+                failed.append({
+                    "name": example.name,
+                    "feature": example.feature,
+                    "error": error
+                })
+        
+        if failed:
+            msg = "Reference Manual 示例失败:\n"
+            for f in failed:
+                msg += f"  - {f['name']} ({f['feature']}): {f['error']}\n"
+            self.fail(msg)
 
 
 class TestDocExamplesSummary(unittest.TestCase):
@@ -796,11 +1069,12 @@ class TestDocExamplesSummary(unittest.TestCase):
     def test_summary(self):
         """输出测试汇总"""
         all_examples = (
-            PART1_EXAMPLES + 
-            PART2_EXAMPLES + 
-            PART3_EXAMPLES + 
-            PART4_EXAMPLES + 
-            QUICKSTART_EXAMPLES
+            PART1_EXAMPLES +
+            PART2_EXAMPLES +
+            PART3_EXAMPLES +
+            PART4_EXAMPLES +
+            QUICKSTART_EXAMPLES +
+            REFERENCE_EXAMPLES
         )
         
         total = len(all_examples)

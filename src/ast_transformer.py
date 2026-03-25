@@ -43,18 +43,66 @@ class NexaTransformer(Transformer):
     def tool_decl(self, args):
         name = str(args[0])
         body_args = args[1]
+        # Handle different tool body types
+        if isinstance(body_args, dict):
+            if body_args.get("type") == "mcp":
+                return {
+                    "type": "ToolDeclaration",
+                    "name": name,
+                    "mcp": body_args.get("mcp")
+                }
+            elif body_args.get("type") == "python":
+                return {
+                    "type": "ToolDeclaration",
+                    "name": name,
+                    "python": body_args.get("python")
+                }
+            else:
+                return {
+                    "type": "ToolDeclaration",
+                    "name": name,
+                    "description": body_args.get("description", ""),
+                    "parameters": body_args.get("parameters", {})
+                }
         return {
             "type": "ToolDeclaration",
             "name": name,
-            "description": body_args["description"],
-            "parameters": body_args["parameters"]
+            "description": body_args.get("description", ""),
+            "parameters": body_args.get("parameters", {})
         }
 
     @v_args(inline=False)
     def tool_body(self, args):
+        # Handle different tool_body types - this is a passthrough
+        if args and isinstance(args[0], dict):
+            return args[0]
+        # Legacy format
+        if len(args) >= 2:
+            return {
+                "description": str(args[0]).strip('"'),
+                "parameters": args[1]
+            }
+        return {"description": "", "parameters": {}}
+
+    @v_args(inline=False)
+    def tool_body_standard(self, args):
         return {
             "description": str(args[0]).strip('"'),
             "parameters": args[1]
+        }
+
+    @v_args(inline=False)
+    def tool_body_mcp(self, args):
+        return {
+            "type": "mcp",
+            "mcp": str(args[0]).strip('"')
+        }
+
+    @v_args(inline=False)
+    def tool_body_python(self, args):
+        return {
+            "type": "python",
+            "python": str(args[0]).strip('"')
         }
 
     
@@ -94,39 +142,115 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def agent_decl(self, args):
-        max_tokens = None
-        if args[0] is not None:
-            max_tokens = int(args[0].value)
-            
-        name = str(args[1])
+        # Handle decorators (multiple @limit, @timeout, etc.)
+        decorators = []
+        idx = 0
+        while idx < len(args):
+            arg = args[idx]
+            if isinstance(arg, dict) and arg.get("type") == "agent_decorator":
+                decorators.append(arg)
+                idx += 1
+            else:
+                break
+        
+        # Skip decorators to find name
+        name = str(args[idx]) if idx < len(args) else ""
+        idx += 1
         
         return_type = "str"
-        if args[2] is not None:
-            return_type = args[2]["value"] if isinstance(args[2], dict) else "str"
+        if idx < len(args) and args[idx] is not None:
+            if isinstance(args[idx], dict) and "value" in args[idx]:
+                return_type = args[idx]["value"]
+            idx += 1
+        else:
+            idx += 1
             
         uses = []
-        if args[3] is not None:
-            uses = args[3]
+        if idx < len(args) and args[idx] is not None:
+            uses = args[idx]
+            idx += 1
+        else:
+            idx += 1
             
         implements = None
-        if args[4] is not None:
-            implements = str(args[4])
+        if idx < len(args) and args[idx] is not None:
+            implements = str(args[idx])
+            idx += 1
+        else:
+            idx += 1
             
         properties = {}
-        for arg in args[5:]:
+        for arg in args[idx:]:
             if isinstance(arg, dict) and "key" in arg:
                 properties[arg["key"]] = arg["value"]
+        
+        # Extract decorator values
+        max_tokens = None
+        timeout = None
+        retry = None
+        temperature = None
+        for dec in decorators:
+            dec_name = dec.get("name", "")
+            dec_params = dec.get("params", {})
+            if dec_name == "limit":
+                max_tokens = dec_params.get("max_tokens")
+            elif dec_name == "timeout":
+                timeout = dec_params.get("seconds")
+            elif dec_name == "retry":
+                retry = dec_params.get("max_attempts")
+            elif dec_name == "temperature":
+                temperature = dec_params.get("value")
                 
         return {
             "type": "AgentDeclaration",
             "name": name,
+            "decorators": decorators,
             "max_tokens": max_tokens,
+            "timeout": timeout,
+            "retry": retry,
+            "temperature": temperature,
             "return_type": return_type,
             "uses": uses,
             "implements": implements,
             "properties": properties,
             "prompt": properties.get("prompt", "")
         }
+
+    @v_args(inline=False)
+    def agent_decorator(self, args):
+        name = str(args[0]) if args else ""
+        params = {}
+        for arg in args[1:]:
+            if isinstance(arg, dict):
+                params.update(arg)
+        return {"type": "agent_decorator", "name": name, "params": params}
+
+    @v_args(inline=False)
+    def agent_decorator_name(self, args):
+        return str(args[0]) if args else ""
+
+    @v_args(inline=False)
+    def agent_decorator_params(self, args):
+        params = {}
+        for arg in args:
+            if isinstance(arg, dict):
+                params.update(arg)
+        return params
+
+    @v_args(inline=False)
+    def agent_decorator_param(self, args):
+        key = str(args[0])
+        value = args[1]
+        if hasattr(value, 'value'):
+            value = value.value
+        try:
+            value = int(value)
+        except (ValueError, TypeError):
+            try:
+                value = float(value)
+            except (ValueError, TypeError):
+                pass
+        return {key: value}
 
     @v_args(inline=False)
     def return_type(self, args):

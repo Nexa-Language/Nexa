@@ -83,9 +83,36 @@ class CodeGenerator:
     def _generate_tools(self):
         for tool in self.tools:
             name = tool["name"]
-            desc = tool["description"]
-            props = ",\n        ".join([f'"{k}": {{"type": "{v}"}}' for k, v in tool["parameters"].items()])
-            reqs = ", ".join([f'"{k}"' for k in tool["parameters"].keys()])
+            
+            # Handle MCP tools
+            if "mcp" in tool:
+                tool_code = f"""__tool_{name}_schema = {{
+    "name": "{name}",
+    "mcp": "{tool['mcp']}"
+}}
+"""
+                self.code.append(tool_code)
+                continue
+            
+            # Handle Python tools
+            if "python" in tool:
+                tool_code = f"""__tool_{name}_schema = {{
+    "name": "{name}",
+    "python": "{tool['python']}"
+}}
+"""
+                self.code.append(tool_code)
+                continue
+            
+            # Handle standard tools
+            desc = tool.get("description", "")
+            parameters = tool.get("parameters", {})
+            if parameters:
+                props = ",\n        ".join([f'"{k}": {{"type": "{v}"}}' for k, v in parameters.items()])
+                reqs = ", ".join([f'"{k}"' for k in parameters.keys()])
+            else:
+                props = ""
+                reqs = ""
             
             tool_code = f"""__tool_{name}_schema = {{
     "name": "{name}",

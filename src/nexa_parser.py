@@ -10,7 +10,10 @@ import_stmt: "include" STRING_LITERAL ";"
 test_decl: "test" STRING_LITERAL block
 
 tool_decl: "tool" IDENTIFIER "{" tool_body "}"
-tool_body: "description" ":" STRING_LITERAL "," "parameters" ":" json_object
+tool_body: tool_body_standard | tool_body_mcp | tool_body_python
+tool_body_standard: "description" ":" STRING_LITERAL "," "parameters" ":" json_object
+tool_body_mcp: "mcp" ":" STRING_LITERAL
+tool_body_python: "python" ":" STRING_LITERAL
 
 protocol_decl: "protocol" IDENTIFIER "{" protocol_body* "}"
 protocol_body: IDENTIFIER ":" STRING_LITERAL ","?
@@ -18,7 +21,12 @@ protocol_body: IDENTIFIER ":" STRING_LITERAL ","?
 json_object: "{" [json_pair ("," json_pair)*] "}"
 json_pair: STRING_LITERAL ":" STRING_LITERAL
 
-agent_decl: ["@" "limit" "(" "max_tokens" "=" INT ")"] "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] "{" agent_property* "}"
+// Agent 修饰器支持: @limit, @timeout, @retry, @temperature
+agent_decl: agent_decorator* "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] "{" agent_property* "}"
+agent_decorator: "@" agent_decorator_name "(" agent_decorator_params ")"
+agent_decorator_name: "limit" | "timeout" | "retry" | "temperature"
+agent_decorator_params: agent_decorator_param ("," agent_decorator_param)*
+agent_decorator_param: IDENTIFIER "=" (INT | FLOAT)
 return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER
 
 agent_property: IDENTIFIER ":" agent_property_value ","?
@@ -64,9 +72,9 @@ assignment_stmt: IDENTIFIER "=" expression ";"?
 expr_stmt: expression ";"?
 
 // semantic_if 支持两种语法:
-// 1. 原有语法: semantic_if "condition" fast_match:"pattern" against var { ... }
+// 1. 原有语法: semantic_if "condition" fast_match r"pattern" against var { ... }
 // 2. 简化语法: semantic_if (var, "condition") { "case1" => action1, "case2" => action2 }
-semantic_if_stmt: "semantic_if" STRING_LITERAL ["fast_match" ":" STRING_LITERAL] "against" IDENTIFIER block ["else" block]
+semantic_if_stmt: "semantic_if" STRING_LITERAL ["fast_match" (STRING_LITERAL | REGEX_LITERAL)] "against" IDENTIFIER block ["else" block]
                | "semantic_if" "(" IDENTIFIER "," STRING_LITERAL ")" semantic_if_block
 
 loop_stmt: "loop" block "until" "(" expression ")"
@@ -75,23 +83,37 @@ match_stmt: "match" IDENTIFIER "{" match_case* default_case? "}"
 match_case: "intent" "(" STRING_LITERAL ")" "=>" expression ","?
 default_case: "_" "=>" expression ","?
 
-// DAG 表达式支持: 分叉(|>>)、合流(&>>)、管道(>>)、条件分支(??)
+// DAG 表达式支持: 分叉(|>>, ||)、合流(&>>, &&)、管道(>>)、条件分支(??)
 // 支持链式调用: expr |>> [A, B] &>> C
 ?expression: fallback_expr | pipeline_expr | dag_expr | base_expr
 
 fallback_expr: base_expr "fallback" expression
 
 // DAG 操作符 - 从左到右结合，支持链式调用
-dag_expr: dag_chain_expr | dag_fork_expr | dag_merge_expr | dag_branch_expr
+dag_expr: dag_chain_expr | dag_fork_expr | dag_merge_expr | dag_branch_expr | dag_fire_forget | dag_consensus
 
-// 链式 DAG 表达式: 支持 expr |>> [...] &>> Agent
-dag_chain_expr: dag_fork_expr "&>>" base_expr
+// 链式 DAG 表达式: 支持 expr |>> [...] &>> Agent 或 expr |>> [...] >> Agent
+dag_chain_expr: dag_fork_expr dag_chain_tail
+             | dag_fork_expr (">>" base_expr)+
 
-// 分叉表达式: expr |>> [Agent1, Agent2, ...] 
-dag_fork_expr: base_expr "|>>" identifier_list_as_expr
+dag_chain_tail: ("&>>" | "&&") base_expr
+             | ("&>>" | "&&") base_expr (">>" base_expr)*
 
-// 合流表达式: [Agent1, Agent2] &>> MergerAgent
-dag_merge_expr: identifier_list_as_expr "&>>" base_expr
+// 分叉表达式:
+// - expr |>> [Agent1, Agent2, ...] - 并行执行，等待所有结果
+// - expr || [Agent1, Agent2, ...] - 并行执行，不等待结果 (fire-and-forget)
+dag_fork_expr: base_expr ("|>>" | "||") identifier_list_as_expr
+
+// 合流表达式:
+// - [Agent1, Agent2] &>> MergerAgent - 顺序合流
+// - [Agent1, Agent2] && MergerAgent - 共识合流
+dag_merge_expr: identifier_list_as_expr ("&>>" | "&&") base_expr
+
+// Fire-and-forget 独立表达式
+dag_fire_forget: base_expr "||" identifier_list_as_expr
+
+// 共识合流独立表达式
+dag_consensus: identifier_list_as_expr "&&" base_expr
 
 // 条件分支表达式:
 // 1. 简单形式: expr ?? TrueAgent : FalseAgent
@@ -143,8 +165,10 @@ binary_expr: base_expr ("+" base_expr)+
 
 IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
 STRING_LITERAL: /"[^"]*"/
+REGEX_LITERAL: /r"[^"]*"/
 
 %import common.INT
+%import common.FLOAT
 %import common.WS
 %import common.C_COMMENT
 %import common.CPP_COMMENT
