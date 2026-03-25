@@ -266,3 +266,38 @@
 ### 未来规划与已知局限
 - 目前 `uses "secrets.nxs"` 属于语言层的特殊保留字路径，尚未做到全对象模块化的引用导入，计划后续全面收敛为 `Module.Variable` 体系。
 - LLM 缓存系统暂未处理 `stream=True` 的全链路缓存异步回放，后续可扩展异步缓存发射器。
+
+---
+
+## 版本 v1.0.x 文档示例验证与语法同步 (Documentation Validation & Syntax Sync)
+### 核心工作
+- **文档示例全覆盖测试**: 从 `~/proj/nexa-docs` 提取所有文档中的 Nexa 示例代码，共 42 个示例：
+  - Part 1 基础语法示例 (6 个)
+  - Part 2 高级特性示例 (6 个)
+  - Part 3 协议扩展示例 (5 个)
+  - Part 4 标准库示例 (4 个)
+  - Quickstart 快速入门示例 (10 个)
+  - Reference Manual 参考手册示例 (11 个)
+  
+- **Python 编译器语法修复**:
+  - `src/nexa_parser.py`: 新增 agent decorator 语法 (`@limit`, `@timeout`, `@retry`, `@temperature`)
+  - `src/nexa_parser.py`: 新增 MCP/Python tool body 语法 (`mcp: "..."`, `python: "..."`)
+  - `src/nexa_parser.py`: 新增 DAG `||` 和 `&&` 操作符 (`dag_fire_forget`, `dag_consensus`)
+  - `src/nexa_parser.py`: 新增复杂 DAG 拓扑规则 (`dag_chain_tail`)
+  - `src/ast_transformer.py`: 添加 `tool_body_mcp`, `tool_body_python`, `agent_decorator` 转换方法
+  - `src/code_generator.py`: 更新工具生成逻辑支持 MCP/Python 声明
+
+- **Rust AVM Lexer 同步**:
+  - `avm/src/compiler/lexer.rs`: 新增 token 类型 (`Mcp`, `Python`, `Print`, `Join`, `Std`, `Img`, `Limit`, `Timeout`, `Retry`, `Temperature`)
+  - `avm/src/compiler/lexer.rs`: 新增 `Regex(String)` 和 `Float(f64)` 字面量支持
+  - 更新 `Token::name()` 和 `Display` trait 实现
+
+### 测试结果
+- **Python 测试**: 42/42 示例通过 (100%)
+- **Rust AVM 测试**: 110/110 测试通过 (100%)
+
+### 踩坑记录
+- Agent decorator 需要使用 `@v_args(inline=False)` 来正确处理参数
+- DAG `||` 操作符需要单独的语法规则处理标识符列表
+- 复杂 DAG 拓扑需要 `dag_chain_tail` 规则来正确终止链式表达式
+- Rust lexer 新增 token 必须同步更新 `Token::name()` match 语句

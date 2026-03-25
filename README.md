@@ -8,6 +8,10 @@
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg?style=for-the-badge" alt="Python"/>
     <img src="https://img.shields.io/badge/Status-Experimental-orange.svg?style=for-the-badge" alt="Status"/>
   </p>
+  
+  **中文版** | **[English](README_EN.md)**
+  
+  📚 **文档**: [中文](https://ouyangyipeng.github.io/Nexa-docs/) | [English](https://ouyangyipeng.github.io/Nexa-docs/en/)
 </div>
 
 ---
@@ -159,10 +163,25 @@ nexa build examples/09_cognitive_architecture.nx
 
 ---
 
+## ✅ 文档示例验证 (Documentation Validation)
+
+所有文档示例代码已通过编译验证：
+- **Python 测试**: 42/42 示例通过 (100%)
+- **Rust AVM 测试**: 110/110 测试通过 (100%)
+
+新增语法支持：
+- **Agent Decorators**: `@limit`, `@timeout`, `@retry`, `@temperature`
+- **MCP/Python Tool Body**: `mcp: "..."`, `python: "..."`
+- **DAG Parallel Operators**: `||` (fire-forget), `&&` (consensus)
+- **Literal Types**: `Regex`, `Float`
+
+---
+
 ## 📖 Documentation
 - [x] [Nexa v0.9 Syntax Reference](docs/01_nexa_syntax_reference.md)
 - [x] [Compiler Architecture](docs/02_compiler_architecture.md)
 - [x] [Vision & Roadmap](docs/03_roadmap_and_vision.md)
+- [x] [Memory Bank](MEMORY_BANK.md) - 架构设计与版本历史
 
 <div align="center">
   <sub>Built with ❤️ by the Nexa Genesis Team for the next era of automation.</sub>

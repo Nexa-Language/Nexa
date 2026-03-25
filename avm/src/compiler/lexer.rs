@@ -56,6 +56,28 @@ pub enum Token {
     Else,
     #[token("fallback")]
     Fallback,
+    #[token("mcp")]
+    Mcp,
+    #[token("python")]
+    Python,
+    #[token("print")]
+    Print,
+    #[token("join")]
+    Join,
+    #[token("std")]
+    Std,
+    #[token("img")]
+    Img,
+    
+    // 修饰器关键字
+    #[token("limit")]
+    Limit,
+    #[token("timeout")]
+    Timeout,
+    #[token("retry")]
+    Retry,
+    #[token("temperature")]
+    Temperature,
     
     // 控制流关键字
     #[token("assert")]
@@ -124,8 +146,19 @@ pub enum Token {
     })]
     String(String),
     
+    // 正则表达式字面量 r"..."
+    #[regex(r#"r"[^"]*""#, |lex| {
+        let s = lex.slice();
+        // 移除 r" 前缀和 " 后缀
+        s[2..s.len()-1].to_string()
+    })]
+    Regex(String),
+    
     #[regex(r"[0-9]+", |lex| lex.slice().parse().ok())]
     Int(i64),
+    
+    #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse().ok())]
+    Float(f64),
     
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
@@ -213,6 +246,18 @@ impl Token {
             Token::Comment => "comment",
             Token::BlockComment => "block_comment",
             Token::Whitespace => "whitespace",
+            Token::Mcp => "mcp",
+            Token::Python => "python",
+            Token::Print => "print",
+            Token::Join => "join",
+            Token::Std => "std",
+            Token::Img => "img",
+            Token::Limit => "limit",
+            Token::Timeout => "timeout",
+            Token::Retry => "retry",
+            Token::Temperature => "temperature",
+            Token::Regex(_) => "regex",
+            Token::Float(_) => "float",
         }
     }
 }
@@ -224,6 +269,8 @@ impl fmt::Display for Token {
             Token::Int(n) => write!(f, "{}", n),
             Token::Bool(b) => write!(f, "{}", b),
             Token::Null => write!(f, "null"),
+            Token::Regex(r) => write!(f, "r\"{}\"", r),
+            Token::Float(n) => write!(f, "{}", n),
             _ => write!(f, "{}", self.name()),
         }
     }
