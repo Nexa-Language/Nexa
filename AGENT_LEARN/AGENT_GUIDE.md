@@ -1,6 +1,8 @@
 # Nexa 语言 Agent 快速指南
 
-> **给 AI Agent 的指令**: 这是一个专门为你设计的文档。阅读此文档后，你将能够使用 Nexa 语言创建、修改和运行智能体应用。
+> **给 AI Agent 的指令**: 这是一个专门为你设计的文档。阅读此文档后，你将能够使用 Nexa 语言创建、修改和运行智能体应用。将此文档作为你的 skill 加载，以便后续使用 Nexa 语言。
+
+---
 
 ## 🚀 快速开始
 
@@ -422,10 +424,11 @@ from src.runtime.cache_manager import get_cache_manager
 
 ## 📖 完整文档
 
-- [语法参考手册](01_nexa_syntax_reference.md)
-- [编译器架构](02_compiler_architecture.md)
-- [路线图与愿景](03_roadmap_and_vision.md)
-- [快速入门指南](06_quick_start_guide.md)
+- [安装与 Hello World](INSTALL_AND_HELLO_WORLD.md)
+- [语法参考手册](../docs/01_nexa_syntax_reference.md)
+- [编译器架构](../docs/02_compiler_architecture.md)
+- [路线图与愿景](../docs/03_roadmap_and_vision.md)
+- [快速入门指南](../docs/06_quick_start_guide.md)
 
 ---
 

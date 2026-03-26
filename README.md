@@ -144,21 +144,38 @@ semantic_if "是一句日期提示" fast_match r"\d{4}-\d{2}" against req { ... 
 
 ### 1. 全局安装
 ```bash
-git clone https://github.com/your-org/nexa.git
-cd nexa
+git clone https://github.com/ouyangyipeng/Nexa.git
+cd Nexa
 pip install -e .
 ```
 
-### 2. 执行与测试工作流
+### 2. Agent 工具安装法 🤖
+如果你正在使用 AI Agent 工具（如 Claude Code、Cursor、Copilot 等），只需输入以下指令：
+
+```
+按照 https://github.com/ouyangyipeng/Nexa/AGENT_LEARN 的指引，安装并试运行这门语言
+```
+
+你的 Agent 将会：
+1. 自动访问 `AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md` 完成安装
+2. 运行 Hello World 程序验证安装
+3. 将 `AGENT_LEARN/AGENT_GUIDE.md` 作为 skill 加载
+4. 掌握 Nexa 语言的语法和用法
+
+**Agent 专用文档目录**:
+- [`AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md`](AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md) - 安装与 Hello World 指南
+- [`AGENT_LEARN/AGENT_GUIDE.md`](AGENT_LEARN/AGENT_GUIDE.md) - Agent 语法速查与代码模板
+
+### 3. 执行与测试工作流
 ```bash
 # 执行流
-nexa run examples/09_cognitive_architecture.nx
+python -m src.cli run examples/01_hello_world.nx
 
 # 进行语义断言测试 (v0.9+)
-nexa test examples/v0.9_test_suite.nx
+python -m src.cli test examples/12_v0.9_features.nx
 
 # 审计生成的纯净 Python 代码栈
-nexa build examples/09_cognitive_architecture.nx
+python -m src.cli build examples/01_hello_world.nx
 ```
 
 ---
