@@ -1,0 +1,19 @@
+// 测试 Protocol 功能
+
+protocol ReviewResult {
+    score: "int",
+    summary: "string",
+    recommendation: "string"
+}
+
+agent Reviewer implements ReviewResult {
+    role: "代码审查员",
+    prompt: "审查代码并给出评分和总结"
+}
+
+flow main {
+    code = "def hello(): print('hello world')";
+    result = Reviewer.run(code);
+    print("评分: " + result.score);
+    print("总结: " + result.summary);
+}

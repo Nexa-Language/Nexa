@@ -1,13 +1,31 @@
 from openai import OpenAI
 import os
 
+from .secrets import nexa_secrets
+
+# 动态获取配置
+_base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
+_api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+
+# 如果没有配置，使用默认值
+if not _base_url:
+    _base_url = "https://aihub.arcsysu.cn/v1"  # 默认使用 aihub
+
+if not _api_key:
+    # 在开发阶段，如果没有配置，给出警告而不是报错
+    print("[Warning] API key not configured. Please create secrets.nxs with API_KEY or OPENAI_API_KEY.")
+    print("[Warning] Using fallback configuration for development.")
+    _api_key = os.environ.get("NEXA_DEV_API_KEY", "")
+
 client = OpenAI(
-    base_url="https://aihub.arcsysu.cn/v1",
-    api_key="sk-lDc9yRMvfPzpxXKuuXB2LA"
+    base_url=_base_url,
+    api_key=_api_key
 )
 
-STRONG_MODEL = "minimax-m2.5"
-WEAK_MODEL = "deepseek-chat"
+# 从 secrets 获取模型配置
+_model_config = nexa_secrets.get_model_config()
+STRONG_MODEL = _model_config.get("strong", "minimax-m2.5")
+WEAK_MODEL = _model_config.get("weak", "deepseek-chat")
 
 
 import base64

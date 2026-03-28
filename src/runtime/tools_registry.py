@@ -86,15 +86,29 @@ LOCAL_TOOLS = {
 
 def execute_tool(name: str, args_json: str) -> str:
     print(f"    [ToolRegistry] Executing {name} with args {args_json} ...")
-    if name not in LOCAL_TOOLS:
-        return f"Error: Tool '{name}' not found locally."
     
     try:
-        args = json.loads(args_json)
-        result = LOCAL_TOOLS[name](**args)
+        args = json.loads(args_json) if args_json else {}
+    except json.JSONDecodeError:
+        args = {}
+    
+    # First try LOCAL_TOOLS
+    if name in LOCAL_TOOLS:
+        try:
+            result = LOCAL_TOOLS[name](**args)
+            print(f"    [ToolRegistry] Execution result: {result}")
+            return str(result)
+        except Exception as e:
+            err = f"Error executing tool {name}: {str(e)}"
+            print(f"    [ToolRegistry] {err}")
+            return err
+    
+    # Then try stdlib tools
+    try:
+        result = execute_stdlib_tool(name, **args)
         print(f"    [ToolRegistry] Execution result: {result}")
         return str(result)
     except Exception as e:
-        err = f"Error executing tool {name}: {str(e)}"
+        err = f"Error: Tool '{name}' not found locally or in stdlib. {str(e)}"
         print(f"    [ToolRegistry] {err}")
         return err

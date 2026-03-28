@@ -23,3 +23,9 @@ validate_doc_examples.py
 
 # 实验课
 /Labs
+
+# 敏感密钥文件
+secrets.nxs
+
+# 杂项
+head
