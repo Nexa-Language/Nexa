@@ -29,3 +29,10 @@ secrets.nxs
 
 # 杂项
 head
+
+# 生成的 Python 文件 (保留 examples/*.py 作为参考)
+# examples/*.py 由 .nx 编译生成，可选择提交或忽略
+
+# 临时文件
+examples/today_news.md
+examples/secrets.nxs
