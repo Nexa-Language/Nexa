@@ -56,7 +56,10 @@ block: "{" flow_stmt* "}"
 semantic_if_block: "{" semantic_if_case* "}"
 semantic_if_case: STRING_LITERAL "=>" expression ","?
 
-?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt | try_catch_stmt | print_stmt | if_stmt
+?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt | try_catch_stmt | print_stmt | if_stmt | break_stmt
+
+// break 语句 - 用于循环中断
+break_stmt: "break" ";"
 
 // 传统 if 语句
 if_stmt: "if" "(" condition ")" block ["else" block]

@@ -2,7 +2,11 @@ import sys
 import os
 import argparse
 import subprocess
+import shutil
 from pathlib import Path
+
+# Version info
+NEXA_VERSION = "0.9.7-alpha"
 
 # Add src dir to sys.path to allow imports when running directly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -157,8 +161,26 @@ def test_file(nx_file_path: str):
         print(f"\033[91m💥 {failed} failed, {passed} passed.\033[0m")
         sys.exit(1)
 
+def clear_cache():
+    """
+    Clear the Nexa cache directory.
+    """
+    cache_dir = Path(".nexa_cache")
+    if cache_dir.exists():
+        shutil.rmtree(cache_dir)
+        print("✅ Cache cleared successfully.")
+    else:
+        print("ℹ️ No cache directory found.")
+
+def show_version():
+    """
+    Display the Nexa version.
+    """
+    print(f"Nexa v{NEXA_VERSION}")
+
 def main():
     parser = argparse.ArgumentParser(description="Nexa Language CLI v0.9")
+    parser.add_argument("-v", "--version", action="store_true", help="Show version and exit")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
     # Build command
@@ -173,7 +195,17 @@ def main():
     test_parser = subparsers.add_parser("test", help="Compile and run tests in a .nx file")
     test_parser.add_argument("file", help="Path to the .nx source file")
     
+    # Cache command
+    cache_parser = subparsers.add_parser("cache", help="Manage cache")
+    cache_subparsers = cache_parser.add_subparsers(dest="cache_command", help="Cache commands")
+    clear_parser = cache_subparsers.add_parser("clear", help="Clear the cache directory")
+    
     args = parser.parse_args()
+    
+    # Handle --version flag
+    if args.version:
+        show_version()
+        return
     
     if args.command == "build":
         build_file(args.file)
@@ -181,6 +213,11 @@ def main():
         run_file(args.file)
     elif args.command == "test":
         test_file(args.file)
+    elif args.command == "cache":
+        if args.cache_command == "clear":
+            clear_cache()
+        else:
+            print("Usage: nexa cache clear")
     else:
         parser.print_help()
 
