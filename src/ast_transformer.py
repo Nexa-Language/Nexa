@@ -741,16 +741,20 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def binary_expr(self, args):
-        """二元表达式：字符串拼接等"""
+        """二元表达式：字符串拼接等
+        语法: binary_expr: base_expr ("+" base_expr)+
+        由于 "+" 是 literal token，args 只包含 base_expr 列表
+        """
         if len(args) == 1:
             return args[0]
+        
+        # args 是 [base_expr, base_expr, ...]，操作符固定为 "+"
         result = args[0]
-        for i in range(1, len(args), 2):
-            op = str(args[i]) if i < len(args) else "+"
-            right = args[i+1] if i+1 < len(args) else {}
+        for i in range(1, len(args)):
+            right = args[i]
             result = {
                 "type": "BinaryExpression",
-                "operator": op,
+                "operator": "+",
                 "left": result,
                 "right": right
             }

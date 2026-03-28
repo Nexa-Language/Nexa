@@ -358,6 +358,11 @@ class CodeGenerator:
             if expr["value"] == "secrets":
                 return "nexa_secrets"
             return expr["value"]
+        elif ex_type == "BinaryExpression":
+            left = self._resolve_expression(expr["left"])
+            right = self._resolve_expression(expr["right"])
+            op = expr["operator"]
+            return f"str({left}) {op} str({right})"
         elif ex_type == "MethodCallExpression":
             obj = expr["object"]
             method = expr["method"]
@@ -367,6 +372,9 @@ class CodeGenerator:
             func = expr["function"]
             if func == "img":
                 func = "nexa_img_loader"
+            elif func == "secret":
+                # secret("KEY") -> nexa_secrets.get("KEY")
+                func = "nexa_secrets.get"
             args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
             return f'{func}({args_str})'
         elif ex_type == "PipelineExpression":

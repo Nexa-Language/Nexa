@@ -20,6 +20,19 @@ class NexaAgent:
         self.system_prompt = prompt
         if role:
             self.system_prompt = f"Role: {role}. {self.system_prompt}".strip()
+        
+        # 如果有 protocol，添加 JSON 格式要求到 system prompt
+        self.protocol = protocol
+        if self.protocol:
+            # 获取 protocol 的字段定义
+            if hasattr(self.protocol, 'model_json_schema'):
+                schema = self.protocol.model_json_schema()
+                fields = list(schema.get('properties', {}).keys())
+            else:
+                fields = [f for f in dir(self.protocol) if not f.startswith('_')]
+            
+            json_instruction = f"\n\nIMPORTANT: You MUST respond with a valid JSON object containing these fields: {', '.join(fields)}. Do not include any text outside the JSON object."
+            self.system_prompt += json_instruction
             
         if experience and os.path.exists(experience):
             with open(experience, "r", encoding="utf-8") as f:
@@ -34,7 +47,7 @@ class NexaAgent:
             self.provider, self.model = model.split("/", 1)
             
         self.memory_scope = memory_scope
-        self.protocol = protocol
+        # protocol 已在上面处理
         self.max_tokens = max_tokens
         self.stream = stream
         self.cache = cache
@@ -56,21 +69,32 @@ class NexaAgent:
         if not self.messages and self.system_prompt:
             self.messages.append({"role": "system", "content": self.system_prompt})
             
-        # Init Client
-        api_key = nexa_secrets.get(f"{self.provider.upper()}_API_KEY")
-        base_url = nexa_secrets.get(f"{self.provider.upper()}_BASE_URL")
+        # Init Client - 使用新的 secrets API
+        api_key, base_url = nexa_secrets.get_provider_config(self.provider)
         
-        # Fallbacks for existing environment
+        # 如果 provider 特定配置不存在，尝试通用配置
         if not api_key:
-            api_key = "sk-lDc9yRMvfPzpxXKuuXB2LA" if self.provider in ["minimax", "deepseek"] else (nexa_secrets.get("OPENAI_API_KEY") or "sk-lDc9yRMvfPzpxXKuuXB2LA")
-            
+            api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+        if not base_url:
+            base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
+        
+        # Provider-specific defaults for base_url (if not configured)
         if not base_url:
             if self.provider == "deepseek":
                 base_url = "https://api.deepseek.com/v1"
             elif self.provider == "minimax":
                 base_url = "https://aihub.arcsysu.cn/v1"
-            else:
+            elif self.provider == "openai":
                 base_url = "https://api.openai.com/v1"
+            else:
+                base_url = nexa_secrets.get("BASE_URL", "https://api.openai.com/v1")
+        
+        # 验证 API key 存在
+        if not api_key:
+            raise ValueError(
+                f"API key not found for provider '{self.provider}'. "
+                f"Please configure secrets.nxs with API_KEY or {self.provider.upper()}_API_KEY."
+            )
                 
         self.client = OpenAI(api_key=api_key, base_url=base_url)
 
@@ -224,12 +248,13 @@ class NexaAgent:
                 if self.protocol:
                     try:
                         parsed_reply = json.loads(reply)
-                        self.protocol.model_validate(parsed_reply)
+                        # 验证并返回 Pydantic 模型实例
+                        validated = self.protocol.model_validate(parsed_reply)
                         self.messages.append({"role": "assistant", "content": reply})
                         print(f"< [{self.name} replied (JSON)]: {reply}\n")
                         self._write_cache(kwargs, reply)
                         self._save_memory()
-                        return reply
+                        return validated  # 返回 Pydantic 模型实例，支持属性访问
                         
                     except Exception as e:
                         retries -= 1

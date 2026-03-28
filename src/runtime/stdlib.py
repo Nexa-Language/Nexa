@@ -71,8 +71,43 @@ def _http_get(url: str, headers: Dict = None, timeout: int = 30) -> str:
         return f"HTTP GET Error: {str(e)}"
 
 
-def _http_post(url: str, data: str, headers: Dict = None, 
+def _http_post(url: str, data: str, headers: Dict = None,
                content_type: str = "application/json", timeout: int = 30) -> str:
+    """HTTP POST 请求"""
+    try:
+        import requests
+        req_headers = headers or {}
+        if content_type:
+            req_headers["Content-Type"] = content_type
+        resp = requests.post(url, data=data, headers=req_headers, timeout=timeout)
+        return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def _http_put(url: str, data: str, headers: Dict = None,
+              content_type: str = "application/json", timeout: int = 30) -> str:
+    """HTTP PUT 请求"""
+    try:
+        import requests
+        req_headers = headers or {}
+        if content_type:
+            req_headers["Content-Type"] = content_type
+        resp = requests.put(url, data=data, headers=req_headers, timeout=timeout)
+        return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
+    except Exception as e:
+        return f"Error: {str(e)}"
+
+
+def _http_delete(url: str, headers: Dict = None, timeout: int = 30) -> str:
+    """HTTP DELETE 请求"""
+    try:
+        import requests
+        req_headers = headers or {}
+        resp = requests.delete(url, headers=req_headers, timeout=timeout)
+        return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
+    except Exception as e:
+        return f"Error: {str(e)}"
     """HTTP POST 请求"""
     try:
         import urllib.request
@@ -322,6 +357,21 @@ def _time_parse(text: str, format: str = "%Y-%m-%d") -> str:
         return f"Time Parse Error: {str(e)}"
 
 
+def _time_sleep(seconds: int) -> str:
+    """休眠指定秒数"""
+    import time
+    time.sleep(seconds)
+    return json.dumps({"sleep": seconds})
+
+
+    
+
+def _time_timestamp() -> str:
+    """获取当前时间戳"""
+    import time
+    return json.dumps({"timestamp": int(time.time())})
+
+
 def _time_format(iso_string: str, format: str = "%Y-%m-%d %H:%M:%S") -> str:
     """格式化时间"""
     try:
@@ -386,6 +436,65 @@ def _math_random(min_val: int, max_val: int) -> str:
     return str(random.randint(min_val, max_val))
 
 
+# ==================== Shell 工具 ====================
+
+def _shell_exec(command: str, timeout: int = 30) -> str:
+    """执行 shell 命令"""
+    import subprocess
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            capture_output=True,
+            text=True,
+            timeout=timeout
+        )
+        return json.dumps({
+            "stdout": result.stdout,
+            "stderr": result.stderr,
+            "returncode": result.returncode,
+            "success": result.returncode == 0
+        })
+    except subprocess.TimeoutExpired:
+        return json.dumps({
+            "stdout": "",
+            "stderr": f"Command timed out after {timeout} seconds",
+            "returncode": -1,
+            "success": False
+        })
+    except Exception as e:
+        return json.dumps({
+            "stdout": "",
+            "stderr": str(e),
+            "returncode": -1,
+            "success": False
+        })
+
+
+def _shell_which(command: str) -> str:
+    """查找命令路径"""
+    import shutil
+    path = shutil.which(command)
+    return json.dumps({
+        "command": command,
+        "path": path,
+        "found": path is not None
+    })
+
+
+# ==================== 交互工具 ====================
+
+def _ask_human(prompt: str, default: str = "") -> str:
+    """请求用户输入"""
+    try:
+        if default:
+            result = input(f"{prompt} [{default}]: ")
+            return result if result else default
+        return input(f"{prompt}: ")
+    except EOFError:
+        return default or ""
+
+
 # ==================== 标准库注册 ====================
 
 def get_stdlib_tools() -> Dict[str, StdTool]:
@@ -420,6 +529,33 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 "required": ["url", "data"]
             },
             handler=_http_post
+        ),
+        "http_put": StdTool(
+            name="http_put",
+            description="发送 HTTP PUT 请求",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "请求 URL"},
+                    "data": {"type": "string", "description": "请求体"},
+                    "headers": {"type": "object", "description": "请求头"}
+                },
+                "required": ["url", "data"]
+            },
+            handler=_http_put
+        ),
+        "http_delete": StdTool(
+            name="http_delete",
+            description="发送 HTTP DELETE 请求",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "请求 URL"},
+                    "headers": {"type": "object", "description": "请求头"}
+                },
+                "required": ["url"]
+            },
+            handler=_http_delete
         ),
         
         # 文件
@@ -461,6 +597,31 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             },
             handler=_file_exists
         ),
+        "file_append": StdTool(
+            name="file_append",
+            description="追加文件内容",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件路径"},
+                    "content": {"type": "string", "description": "追加内容"}
+                },
+                "required": ["path", "content"]
+            },
+            handler=_file_append
+        ),
+        "file_delete": StdTool(
+            name="file_delete",
+            description="删除文件",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "文件路径"}
+                },
+                "required": ["path"]
+            },
+            handler=_file_delete
+        ),
         "file_list": StdTool(
             name="file_list",
             description="列出目录文件",
@@ -500,6 +661,19 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 "required": ["text", "path"]
             },
             handler=_json_get
+        ),
+        "json_stringify": StdTool(
+            name="json_stringify",
+            description="序列化为 JSON",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "data": {"type": "string", "description": "数据对象"},
+                    "indent": {"type": "integer", "description": "缩进空格数"}
+                },
+                "required": ["data"]
+            },
+            handler=_json_stringify
         ),
         
         # 正则
@@ -638,6 +812,41 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             },
             handler=_time_diff
         ),
+        "time_format": StdTool(
+            name="time_format",
+            description="格式化时间",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "iso_string": {"type": "string", "description": "ISO 时间字符串"},
+                    "format": {"type": "string", "description": "输出格式"}
+                },
+                "required": ["iso_string"]
+            },
+            handler=_time_format
+        ),
+        "time_sleep": StdTool(
+            name="time_sleep",
+            description="休眠指定秒数",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "seconds": {"type": "integer", "description": "休眠秒数"}
+                },
+                "required": ["seconds"]
+            },
+            handler=_time_sleep
+        ),
+        "time_timestamp": StdTool(
+            name="time_timestamp",
+            description="获取当前时间戳",
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            handler=_time_timestamp
+        ),
         
         # 数学
         "math_calc": StdTool(
@@ -665,6 +874,48 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             },
             handler=_math_random
         ),
+        
+        # Shell
+        "shell_exec": StdTool(
+            name="shell_exec",
+            description="执行 shell 命令",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "要执行的命令"},
+                    "timeout": {"type": "integer", "description": "超时秒数"}
+                },
+                "required": ["command"]
+            },
+            handler=_shell_exec
+        ),
+        "shell_which": StdTool(
+            name="shell_which",
+            description="查找命令路径",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "命令名称"}
+                },
+                "required": ["command"]
+            },
+            handler=_shell_which
+        ),
+        
+        # 交互
+        "ask_human": StdTool(
+            name="ask_human",
+            description="请求用户输入",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "提示信息"},
+                    "default": {"type": "string", "description": "默认值"}
+                },
+                "required": ["prompt"]
+            },
+            handler=_ask_human
+        ),
     }
 
 
@@ -690,14 +941,16 @@ def execute_stdlib_tool(name: str, **kwargs) -> str:
 # ==================== 命名空间映射 ====================
 
 STD_NAMESPACE_MAP = {
-    "std.fs": ["file_read", "file_write", "file_exists", "file_list"],
-    "std.http": ["http_get", "http_post"],
-    "std.time": ["time_now", "time_diff"],
+    "std.fs": ["file_read", "file_write", "file_exists", "file_list", "file_append", "file_delete"],
+    "std.http": ["http_get", "http_post", "http_put", "http_delete"],
+    "std.time": ["time_now", "time_diff", "time_format", "time_sleep", "time_timestamp"],
     "std.text": ["text_split", "text_replace", "text_upper", "text_lower"],
-    "std.json": ["json_parse", "json_get"],
+    "std.json": ["json_parse", "json_get", "json_stringify"],
     "std.hash": ["hash_md5", "hash_sha256", "base64_encode", "base64_decode"],
     "std.math": ["math_calc", "math_random"],
     "std.regex": ["regex_match", "regex_replace"],
+    "std.shell": ["shell_exec", "shell_which"],
+    "std.ask_human": ["ask_human"],
 }
 
 STD_TOOLS_SCHEMA = {}

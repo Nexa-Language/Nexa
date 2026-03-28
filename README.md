@@ -194,11 +194,92 @@ python -m src.cli build examples/01_hello_world.nx
 
 ---
 
+## 🔧 v1.0 文档验证与功能修复 (2026-03-28)
+
+对 `nexa-docs` 全部 15 个文档进行了系统性验证，发现并修复了 8 个遗留问题，确保文档描述的功能与实际实现完全一致。
+
+### 修复 1: secrets.nxs 解析重构
+
+**问题**: `secrets.py` 的 `get()` 方法只返回环境变量，不返回解析后的 config 块内容；两种 `secrets.nxs` 格式不兼容；`agent.py` 使用硬编码的无效 API key。
+
+**修复**: 重构 `src/runtime/secrets.py`，支持扁平格式 (`KEY = "value"`) 和 config 块格式 (`config default { ... }`)，新增 `get_provider_config()` 和 `get_model_config()` 方法。修改 `agent.py` 和 `core.py` 移除硬编码配置。
+
+### 修复 2: `secret()` 函数支持
+
+**问题**: 文档中描述的 `secret("KEY")` 函数在代码生成时未处理，导致运行时 NameError。
+
+**修复**: 在 `src/code_generator.py` 中将 `secret()` 调用转换为 `nexa_secrets.get()`。
+
+### 修复 3: `std.shell` 命名空间
+
+**问题**: `std.shell` 标准库命名空间不存在，文档中描述的 `std.shell.execute` 无法使用。
+
+**修复**: 在 `src/runtime/stdlib.py` 中添加 `shell_exec` 和 `shell_which` 工具，注册到 `STD_NAMESPACE_MAP`。
+
+### 修复 4: `std.ask_human` 命名空间
+
+**问题**: `std.ask_human` 标准库命名空间不存在，人在回路功能无法使用。
+
+**修复**: 在 `src/runtime/stdlib.py` 中添加 `ask_human` 工具，注册到 `STD_NAMESPACE_MAP`。
+
+### 修复 5: 工具执行查找逻辑
+
+**问题**: `tools_registry.py` 的 `execute_tool()` 只查找 `LOCAL_TOOLS`，不查找 stdlib 工具，导致标准库工具调用失败。
+
+**修复**: 修改 `execute_tool()` 添加 stdlib 工具查找逻辑，优先查找 LOCAL_TOOLS，然后查找 stdlib。
+
+### 修复 6: Protocol 结构化输出
+
+**问题**: Agent 没有自动添加 JSON 格式要求到 system prompt；`run()` 返回字符串而不是支持属性访问的 Pydantic 对象。
+
+**修复**: 在 `agent.py` 中为 protocol 自动添加 JSON 格式指令；`run()` 返回 Pydantic 模型实例而非字符串。
+
+### 修复 7: BinaryExpression 解析
+
+**问题**: `binary_expr` transformer 方法错误地将 `PropertyAccess` 作为 operator 处理；`BinaryExpression` 没有在 `_resolve_expression` 中处理。
+
+**修复**: 修正 `ast_transformer.py` 的 `binary_expr` 方法；在 `code_generator.py` 中添加 `BinaryExpression` 处理。
+
+### 修复 8: 标准库工具扩展
+
+**问题**: 文档中描述的多个标准库工具未实现。
+
+**修复**: 新增 10+ 标准库工具，完整覆盖文档描述的所有命名空间：
+
+| 命名空间 | 工具 |
+|---------|------|
+| `std.fs` | read, write, exists, list, **append**, **delete** |
+| `std.http` | get, post, **put**, **delete** |
+| `std.time` | now, diff, **format**, **sleep**, **timestamp** |
+| `std.json` | parse, get, **stringify** |
+| `std.shell` | **exec**, **which** |
+| `std.ask_human` | **call** |
+
+### 修改文件清单
+
+| 文件 | 修改类型 |
+|-----|---------|
+| `src/runtime/secrets.py` | 重构 |
+| `src/runtime/agent.py` | 修改 |
+| `src/runtime/core.py` | 修改 |
+| `src/runtime/stdlib.py` | 添加功能 |
+| `src/runtime/tools_registry.py` | 修改 |
+| `src/code_generator.py` | 修改 |
+| `src/ast_transformer.py` | 修改 |
+| `secrets.nxs` | 更新格式 |
+| `examples/test_protocol.nx` | 新增测试 |
+| `docs/validation_report.md` | 新增文档 |
+
+> 详细验证报告见 [`docs/validation_report.md`](docs/validation_report.md)，完整修复记录见 [`docs/03_roadmap_and_vision.md`](docs/03_roadmap_and_vision.md)。
+
+---
+
 ## 📖 Documentation
 - [x] [Nexa v0.9 Syntax Reference](docs/01_nexa_syntax_reference.md)
 - [x] [Compiler Architecture](docs/02_compiler_architecture.md)
 - [x] [Vision & Roadmap](docs/03_roadmap_and_vision.md)
 - [x] [Memory Bank](MEMORY_BANK.md) - 架构设计与版本历史
+- [x] [Documentation Validation Report](docs/validation_report.md) - 文档验证与修复报告
 
 <div align="center">
   <sub>Built with ❤️ by the Nexa Genesis Team for the next era of automation.</sub>
