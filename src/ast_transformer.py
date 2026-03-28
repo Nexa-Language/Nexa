@@ -473,6 +473,12 @@ class NexaTransformer(Transformer):
         }
 
     @v_args(inline=False)
+    def break_stmt(self, args):
+        return {
+            "type": "BreakStatement"
+        }
+
+    @v_args(inline=False)
     def semantic_if_stmt(self, args):
         condition = str(args[0]).strip('"')
         fast_match = str(args[1]).strip('"') if args[1] else None

@@ -274,6 +274,64 @@ python -m src.cli build examples/01_hello_world.nx
 
 ---
 
+## 🔧 v0.9.7-alpha 文档验证第二轮 (2026-03-28)
+
+对 `nexa-docs` 进行第二轮系统性验证，发现并修复了 9 个原语/属性未实现问题。
+
+### 新增功能
+
+| 功能 | 文件 | 说明 |
+|-----|------|------|
+| **CLI `--version`** | `src/cli.py` | 添加版本显示参数 |
+| **CLI `cache clear`** | `src/cli.py` | 添加缓存清理命令 |
+| **Agent `timeout`** | `src/runtime/agent.py` | 执行超时控制（默认 30s） |
+| **Agent `retry`** | `src/runtime/agent.py` | 重试次数控制（默认 3 次） |
+| **`runtime.meta`** | `src/runtime/meta.py` | 循环元数据（loop_count/last_result） |
+| **`break` 语句** | `src/nexa_parser.py` | 循环中断语句支持 |
+| **`reason()` 原语** | `src/runtime/reason.py` | 类型感知推理原语 |
+| **`wait_for_human()`** | `src/runtime/hitl.py` | 人在回路审批原语 |
+
+### reason() 原语使用示例
+
+```python
+from src.runtime.reason import reason, reason_int, reason_bool
+
+# 类型感知推理
+count = reason_int("How many planets in the solar system?")
+approved = reason_bool("Should I proceed with this action?")
+data = reason_dict("Generate a user profile JSON")
+```
+
+### wait_for_human() 原语使用示例
+
+```python
+from src.runtime.hitl import wait_for_human, ApprovalStatus
+
+# 请求人工审批
+status = wait_for_human("Please approve this plan", channel="Slack", timeout=300)
+
+if status == ApprovalStatus.APPROVED:
+    proceed()
+elif status == ApprovalStatus.REJECTED:
+    handle_rejection()
+else:
+    handle_timeout()
+```
+
+### 新增文件清单
+
+| 文件 | 说明 |
+|-----|------|
+| `src/runtime/meta.py` | Runtime 元数据模块 |
+| `src/runtime/reason.py` | 类型感知推理原语 |
+| `src/runtime/hitl.py` | Human-in-the-loop 原语 |
+| `tests/test_v097_validation.py` | 综合验证测试套件 |
+| `docs/validation_report_v2.md` | 第二轮验证报告 |
+
+> 详细修复记录见 [`docs/03_roadmap_and_vision.md`](docs/03_roadmap_and_vision.md) 阶段 8。
+
+---
+
 ## 📖 Documentation
 - [x] [Nexa v0.9 Syntax Reference](docs/01_nexa_syntax_reference.md)
 - [x] [Compiler Architecture](docs/02_compiler_architecture.md)

@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from .core import client, STRONG_MODEL
 from .secrets import nexa_secrets
 from openai import OpenAI
@@ -10,12 +10,19 @@ import hashlib
 class NexaQuotaExceededError(Exception):
     pass
 
+class NexaTimeoutError(Exception):
+    """Raised when agent execution times out"""
+    pass
+
 from .memory import global_memory
 from .tools_registry import execute_tool
 from .cache_manager import get_cache_manager, NexaCacheManager
 
 class NexaAgent:
-    def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None, model: str = STRONG_MODEL, role: str = "", memory_scope: str = "local", protocol=None, max_tokens=None, stream=False, cache=False, max_history_turns=None, experience=None):
+    def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None,
+                 model: str = STRONG_MODEL, role: str = "", memory_scope: str = "local",
+                 protocol=None, max_tokens=None, stream=False, cache=False,
+                 max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3):
         self.name = name
         self.system_prompt = prompt
         if role:
@@ -53,6 +60,10 @@ class NexaAgent:
         self.cache = cache
         self.max_history_turns = max_history_turns
         self.messages = []
+        
+        # 新增: timeout 和 retry 属性
+        self.timeout = timeout  # 请求超时时间（秒）
+        self.retry = retry      # 最大重试次数
         
         # Load from persistent memory
         self.memory_file = None
@@ -170,6 +181,28 @@ class NexaAgent:
                         print(f"[{self.name} Context Compaction Failed]: {e}")
 
     def run(self, *args) -> str:
+        import signal
+        from contextlib import contextmanager
+        
+        @contextmanager
+        def timeout_context(seconds):
+            """超时上下文管理器"""
+            def timeout_handler(signum, frame):
+                raise NexaTimeoutError(f"Agent {self.name} execution timed out after {seconds} seconds")
+            
+            # 只在非 Windows 系统上使用 SIGALRM
+            if hasattr(signal, 'SIGALRM'):
+                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(seconds)
+                try:
+                    yield
+                finally:
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+            else:
+                # Windows 系统不支持 SIGALRM，直接执行
+                yield
+        
         user_input = " ".join([str(arg) for arg in args])
         
         # Pull context from memory if specified
@@ -191,7 +224,9 @@ class NexaAgent:
         if self.tools:
             kwargs["tools"] = [{"type": "function", "function": t} for t in self.tools]
             
-        retries = 3
+        # 使用可配置的 retry 次数
+        retries = self.retry
+        
         # Tool Execution Loop
         while True:
             kwargs["messages"] = self.messages
@@ -203,73 +238,82 @@ class NexaAgent:
                 self._save_memory()
                 return cached_result
 
-            if self.stream and not self.tools and not self.protocol:
-                kwargs["stream"] = True
-                print(f"< [{self.name} replied]: ", end="")
-                sys.stdout.flush()
-                response = self.client.chat.completions.create(**kwargs)
-                accumulated_reply = ""
-                for chunk in response:
-                    content = chunk.choices[0].delta.content
-                    if content:
-                        sys.stdout.write(content)
+            try:
+                with timeout_context(self.timeout):
+                    if self.stream and not self.tools and not self.protocol:
+                        kwargs["stream"] = True
+                        print(f"< [{self.name} replied]: ", end="")
                         sys.stdout.flush()
-                        accumulated_reply += content
-                print("\n")
-                self.messages.append({"role": "assistant", "content": accumulated_reply})
-                self._write_cache(kwargs, accumulated_reply)
-                self._save_memory()
-                return accumulated_reply
-            
-            # Non-streaming or Tool/Protocol mode
-            if "stream" in kwargs:
-                del kwargs["stream"]
-                
-            response = self.client.chat.completions.create(**kwargs)
-            msg = response.choices[0].message
-            
-            if msg.tool_calls:
-                msg_dict = msg.dict(exclude_none=True) if hasattr(msg, "dict") else dict(msg)
-                self.messages.append(msg_dict)
-                for tc in msg.tool_calls:
-                    print(f"[{self.name} requested TOOL CALL]: {tc.function.name} -> {tc.function.arguments}")
-                    result = execute_tool(tc.function.name, tc.function.arguments)
-                    tool_message = {
-                        "role": "tool",
-                        "tool_call_id": tc.id,
-                        "name": tc.function.name,
-                        "content": result
-                    }
-                    self.messages.append(tool_message)
-                continue
-            else:
-                reply = msg.content or ""
-                
-                if self.protocol:
-                    try:
-                        parsed_reply = json.loads(reply)
-                        # 验证并返回 Pydantic 模型实例
-                        validated = self.protocol.model_validate(parsed_reply)
+                        response = self.client.chat.completions.create(**kwargs)
+                        accumulated_reply = ""
+                        for chunk in response:
+                            content = chunk.choices[0].delta.content
+                            if content:
+                                sys.stdout.write(content)
+                                sys.stdout.flush()
+                                accumulated_reply += content
+                        print("\n")
+                        self.messages.append({"role": "assistant", "content": accumulated_reply})
+                        self._write_cache(kwargs, accumulated_reply)
+                        self._save_memory()
+                        return accumulated_reply
+                    
+                    # Non-streaming or Tool/Protocol mode
+                    if "stream" in kwargs:
+                        del kwargs["stream"]
+                        
+                    response = self.client.chat.completions.create(**kwargs)
+                    msg = response.choices[0].message
+                    
+                    if msg.tool_calls:
+                        msg_dict = msg.dict(exclude_none=True) if hasattr(msg, "dict") else dict(msg)
+                        self.messages.append(msg_dict)
+                        for tc in msg.tool_calls:
+                            print(f"[{self.name} requested TOOL CALL]: {tc.function.name} -> {tc.function.arguments}")
+                            result = execute_tool(tc.function.name, tc.function.arguments)
+                            tool_message = {
+                                "role": "tool",
+                                "tool_call_id": tc.id,
+                                "name": tc.function.name,
+                                "content": result
+                            }
+                            self.messages.append(tool_message)
+                        continue
+                    else:
+                        reply = msg.content or ""
+                        
+                        if self.protocol:
+                            try:
+                                parsed_reply = json.loads(reply)
+                                # 验证并返回 Pydantic 模型实例
+                                validated = self.protocol.model_validate(parsed_reply)
+                                self.messages.append({"role": "assistant", "content": reply})
+                                print(f"< [{self.name} replied (JSON)]: {reply}\n")
+                                self._write_cache(kwargs, reply)
+                                self._save_memory()
+                                return validated  # 返回 Pydantic 模型实例，支持属性访问
+                                
+                            except Exception as e:
+                                retries -= 1
+                                if retries <= 0:
+                                    raise ValueError(f"Agent {self.name} failed to conform to protocol {self.protocol.__name__}: {str(e)}")
+                                print(f"\n[{self.name} Schema Error, Retrying] {str(e)}")
+                                self.messages.append({"role": "assistant", "content": reply})
+                                self.messages.append({"role": "system", "content": f"Your last response failed schema validation. Please fix and return valid JSON. Error: {str(e)}"})
+                                continue
+                        
                         self.messages.append({"role": "assistant", "content": reply})
-                        print(f"< [{self.name} replied (JSON)]: {reply}\n")
+                        print(f"< [{self.name} replied]: {reply}\n")
                         self._write_cache(kwargs, reply)
                         self._save_memory()
-                        return validated  # 返回 Pydantic 模型实例，支持属性访问
+                        return reply
                         
-                    except Exception as e:
-                        retries -= 1
-                        if retries <= 0:
-                            raise ValueError(f"Agent {self.name} failed to conform to protocol {self.protocol.__name__}: {str(e)}")
-                        print(f"\n[{self.name} Schema Error, Retrying] {str(e)}")
-                        self.messages.append({"role": "assistant", "content": reply})
-                        self.messages.append({"role": "system", "content": f"Your last response failed schema validation. Please fix and return valid JSON. Error: {str(e)}"})
-                        continue
-                
-                self.messages.append({"role": "assistant", "content": reply})
-                print(f"< [{self.name} replied]: {reply}\n")
-                self._write_cache(kwargs, reply)
-                self._save_memory()
-                return reply
+            except NexaTimeoutError as e:
+                retries -= 1
+                if retries <= 0:
+                    raise
+                print(f"\n[{self.name} Timeout, Retrying... ({retries} attempts left)]")
+                continue
 
     def clone(self, new_name: str, **kwargs):
         # 提取可以覆盖的属性
@@ -283,6 +327,8 @@ class NexaAgent:
         stream = kwargs.get("stream", self.stream)
         cache = kwargs.get("cache", getattr(self, "cache", False))
         max_history_turns = kwargs.get("max_history_turns", getattr(self, "max_history_turns", None))
+        timeout = kwargs.get("timeout", self.timeout)
+        retry = kwargs.get("retry", self.retry)
         
         return NexaAgent(
             name=new_name,
@@ -295,7 +341,9 @@ class NexaAgent:
             max_tokens=max_tokens,
             stream=stream,
             cache=cache,
-            max_history_turns=max_history_turns
+            max_history_turns=max_history_turns,
+            timeout=timeout,
+            retry=retry
         )
 
     def __rshift__(self, other):

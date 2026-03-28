@@ -19,6 +19,9 @@ from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
 from src.runtime.secrets import nexa_secrets
 from src.runtime.core import nexa_fallback, nexa_img_loader
 from src.runtime.mcp_client import fetch_mcp_tools
+from src.runtime.meta import runtime, get_loop_count, get_last_result, set_loop_count, set_last_result
+from src.runtime.reason import reason, reason_float, reason_int, reason_bool, reason_str, reason_dict, reason_list, reason_model
+from src.runtime.hitl import wait_for_human, ApprovalStatus, HITLManager
 
 # ==========================================
 # [Target Code] 自动生成的编排逻辑
@@ -156,6 +159,9 @@ class CodeGenerator:
             cache = "True" if cache_val == "true" else "False"
             max_history_turns = properties.get("max_history_turns", 'None').strip('"')
             experience = properties.get("experience", '""').strip('"')
+            # 新增: timeout 和 retry 属性
+            timeout = properties.get("timeout", "30")
+            retry = properties.get("retry", "3")
 
             
             tool_refs_list = []
@@ -226,6 +232,9 @@ class CodeGenerator:
                 self.code.append(f'    protocol={implements},')
             if max_tokens:
                 self.code.append(f'    max_tokens={max_tokens},')
+            # 新增: timeout 和 retry 参数
+            self.code.append(f'    timeout={timeout},')
+            self.code.append(f'    retry={retry},')
             self.code.append(f'    tools=[{tool_refs}]')
             self.code.append(f')\n')
             
@@ -263,6 +272,9 @@ class CodeGenerator:
         elif st_type == "AssertStatement":
             val_str = self._resolve_expression(stmt["expression"])
             self.code.append(f"{self._indent()}assert {val_str}")
+            
+        elif st_type == "BreakStatement":
+            self.code.append(f"{self._indent()}break")
             
         elif st_type == "SemanticIfStatement":
             cond = stmt["condition"]
@@ -311,8 +323,13 @@ class CodeGenerator:
                 self.indent_level -= 1
 
         elif st_type == "LoopUntilStatement":
+            # 初始化循环元数据 - 使用 runtime.meta
+            self.code.append(f"{self._indent()}set_loop_count(0)")
+            self.code.append(f"{self._indent()}set_last_result(None)")
             self.code.append(f"{self._indent()}while True:")
             self.indent_level += 1
+            # 循环开始时增加计数器
+            self.code.append(f"{self._indent()}set_loop_count(get_loop_count() + 1)")
             for sub_stmt in stmt["body"]:
                 self._generate_statement(sub_stmt)
             cond_str = self._resolve_expression(stmt["condition"])

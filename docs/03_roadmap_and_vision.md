@@ -323,6 +323,259 @@ STD_NAMESPACE_MAP = {
 
 ---
 
+## 阶段 8: v0.9.7-alpha 文档验证与功能补全 (2026-03-28 完成 ✅)
+
+本次对 `nexa-docs` 文档进行了第二轮系统性验证，发现并修复了多个原语和属性未实现的问题。
+
+### 8.1 CLI 功能补全
+
+**问题描述**：
+- CLI 缺少 `--version` 参数显示版本信息
+- CLI 缺少 `cache clear` 命令清理缓存
+
+**修复内容**：
+- 在 `src/cli.py` 添加 `NEXA_VERSION = "0.9.7-alpha"` 常量
+- 添加 `show_version()` 函数打印版本信息
+- 添加 `clear_cache()` 函数清理 `.nexa_cache` 目录
+- 在 `main()` 函数添加 `-v/--version` 参数处理
+
+**代码变更**：
+```python
+# cli.py
+NEXA_VERSION = "0.9.7-alpha"
+
+def clear_cache():
+    cache_dir = Path(".nexa_cache")
+    if cache_dir.exists():
+        shutil.rmtree(cache_dir)
+        print("✅ Cache cleared successfully.")
+
+def show_version():
+    print(f"Nexa v{NEXA_VERSION}")
+
+# main() 中添加
+parser.add_argument("-v", "--version", action="store_true", help="Show version and exit")
+```
+
+### 8.2 Agent timeout/retry 属性
+
+**问题描述**：
+- Agent 缺少 `timeout` 属性控制执行超时
+- Agent 缺少 `retry` 属性控制重试次数
+
+**修复内容**：
+- 在 `src/runtime/agent.py` 的 `__init__` 添加 `timeout: int = 30` 和 `retry: int = 3` 参数
+- 在 `run()` 方法添加 `timeout_context` 上下文管理器
+- 在 `clone()` 方法保留 timeout 和 retry 属性
+
+**代码变更**：
+```python
+# agent.py
+def __init__(self, ..., timeout: int = 30, retry: int = 3):
+    self.timeout = timeout
+    self.retry = retry
+
+# run() 中添加超时控制
+@contextmanager
+def timeout_context(seconds):
+    def timeout_handler(signum, frame):
+        raise TimeoutError(f"Agent execution timed out after {seconds} seconds")
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(seconds)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
+
+with timeout_context(self.timeout):
+    # ... execution code
+```
+
+### 8.3 runtime.meta 模块
+
+**问题描述**：
+- `runtime.meta.loop_count` 未实现，无法获取循环计数
+- `runtime.meta.last_result` 未实现，无法获取上次循环结果
+
+**修复内容**：
+- 创建 `src/runtime/meta.py` 模块
+- 实现 `RuntimeMeta` 类包含 `loop_count` 和 `last_result` 属性
+- 实现 `MetaProxy` 类提供 `runtime.meta` 访问接口
+- 实现 `get_loop_count()`, `set_loop_count()`, `get_last_result()`, `set_last_result()` 函数
+- 创建全局 `runtime` 对象
+
+**代码变更**：
+```python
+# meta.py
+class RuntimeMeta:
+    def __init__(self):
+        self._loop_count = 0
+        self._last_result = None
+    
+    @property
+    def loop_count(self) -> int:
+        return self._loop_count
+    
+    @property
+    def last_result(self):
+        return self._last_result
+
+class MetaProxy:
+    def __init__(self):
+        self._current_meta = RuntimeMeta()
+    
+    @property
+    def meta(self) -> RuntimeMeta:
+        return self._current_meta
+
+runtime = MetaProxy()
+```
+
+### 8.4 break 语句支持
+
+**问题描述**：
+- Parser 不支持 `break;` 语句
+- Code Generator 不处理 BreakStatement
+
+**修复内容**：
+- 在 `src/nexa_parser.py` 添加 `break_stmt` 语法规则
+- 在 `src/ast_transformer.py` 添加 `break_stmt` transformer
+- 在 `src/code_generator.py` 添加 BreakStatement 处理
+
+**代码变更**：
+```python
+# nexa_parser.py grammar
+?flow_stmt: ... | break_stmt
+break_stmt: "break" ";"
+
+# ast_transformer.py
+def break_stmt(self, args):
+    return {"type": "BreakStatement"}
+
+# code_generator.py
+elif stmt_type == "BreakStatement":
+    self.code.append(f"{self._indent()}break")
+```
+
+### 8.5 reason() 原语
+
+**问题描述**：
+- `reason()` 原语未实现，无法进行类型感知推理
+- 文档中描述的 `reason<T>()` 类型推断功能不存在
+
+**修复内容**：
+- 创建 `src/runtime/reason.py` 模块
+- 实现 `reason()` 主函数支持类型推断
+- 实现便捷函数：`reason_float()`, `reason_int()`, `reason_bool()`, `reason_str()`, `reason_dict()`, `reason_list()`
+- 实现 `reason_model()` 支持 Pydantic 模型返回
+
+**代码变更**：
+```python
+# reason.py
+def reason(prompt: str, context: Any = None, model: str = None,
+           return_type: Type[T] = None, max_tokens: int = 2048,
+           temperature: float = 0.7) -> T:
+    """
+    Context-aware reasoning primitive with type inference.
+    
+    Usage:
+        result = reason("What is the capital of France?")
+        count = reason_int("How many planets in the solar system?")
+        approved = reason_bool("Should I proceed with this action?")
+    """
+    # Build prompt with context
+    full_prompt = _build_prompt(prompt, context, return_type)
+    
+    # Call LLM
+    response = _call_llm(full_prompt, model, max_tokens, temperature)
+    
+    # Parse response to target type
+    return _parse_response(response, return_type)
+```
+
+### 8.6 wait_for_human() 原语
+
+**问题描述**：
+- `wait_for_human()` HITL 原语未实现
+- 文档中描述的人机交互审批功能不存在
+
+**修复内容**：
+- 创建 `src/runtime/hitl.py` 模块
+- 实现 `ApprovalStatus` 枚举（APPROVED/REJECTED/TIMEOUT/CANCELLED/PENDING）
+- 实现 `HITLManager` 管理类
+- 实现 `CLIBackend` 用于本地开发测试
+- 实现 `FileBackend` 用于异步审批流程
+- 实现 `SlackBackend` 用于 Slack 集成（可选）
+- 实现 `wait_for_human()` 主函数
+
+**代码变更**：
+```python
+# hitl.py
+class ApprovalStatus(Enum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    TIMEOUT = "timeout"
+    CANCELLED = "cancelled"
+    PENDING = "pending"
+
+def wait_for_human(prompt: str, channel: Optional[str] = None,
+                   timeout: Optional[int] = None,
+                   context: Optional[Dict[str, Any]] = None) -> ApprovalStatus:
+    """
+    Wait for human approval/input.
+    
+    Usage:
+        status = wait_for_human("Please approve this plan", channel="Slack")
+        if status == ApprovalStatus.APPROVED:
+            # proceed
+        elif status == ApprovalStatus.REJECTED:
+            # handle rejection
+    """
+    return get_hitl_manager().wait_for_human(prompt, channel, timeout, context)
+```
+
+### 8.7 Code Generator BOILERPLATE 更新
+
+**修复内容**：
+- 更新 `src/code_generator.py` 的 BOILERPLATE 导入所有新模块
+
+**代码变更**：
+```python
+# code_generator.py BOILERPLATE
+from src.runtime.meta import runtime, get_loop_count, get_last_result, set_loop_count, set_last_result
+from src.runtime.reason import reason, reason_float, reason_int, reason_bool, reason_str, reason_dict, reason_list, reason_model
+from src.runtime.hitl import wait_for_human, ApprovalStatus, HITLManager
+```
+
+### 8.8 测试验证
+
+创建 `tests/test_v097_validation.py` 综合测试套件，验证所有修复：
+- ✅ CLI version 常量
+- ✅ Agent timeout/retry 属性
+- ✅ runtime.meta.loop_count/last_result
+- ✅ reason() 原语导入
+- ✅ wait_for_human() 原语导入
+- ✅ ApprovalStatus 枚举
+- ✅ Code Generator 导入
+
+### 8.9 修改文件清单
+
+| 文件 | 修改类型 | 说明 |
+|-----|---------|------|
+| `src/cli.py` | 添加功能 | --version 参数、cache clear 命令 |
+| `src/runtime/agent.py` | 添加属性 | timeout、retry 参数和超时控制 |
+| `src/runtime/meta.py` | 新增模块 | runtime.meta.loop_count/last_result |
+| `src/runtime/reason.py` | 新增模块 | reason() 类型感知推理原语 |
+| `src/runtime/hitl.py` | 新增模块 | wait_for_human() HITL 原语 |
+| `src/nexa_parser.py` | 添加语法 | break_stmt 语法规则 |
+| `src/ast_transformer.py` | 添加方法 | break_stmt transformer |
+| `src/code_generator.py` | 更新导入 | BOILERPLATE 导入新模块、BreakStatement |
+| `tests/test_v097_validation.py` | 新增测试 | 综合验证测试套件 |
+| `docs/validation_report_v2.md` | 新增文档 | 第二轮验证报告 |
+
+---
+
 ### 社区生态与学术
 1. **开源贡献**：建立开放的贡献流程和代码审查机制。
 2. **理论基础论文**：分享非确定性计算的确定性控制流、基于模型的 `loop ... until` 与原生 `semantic_if` 等。
