@@ -736,6 +736,26 @@ class NexaTransformer(Transformer):
             "fork": args[0],
             "merge": args[1]
         }
+    
+    @v_args(inline=False)
+    def dag_chain_tail(self, args):
+        """处理 dag_chain_tail: (&>> | &&) base_expr
+        args 可能包含: [操作符token, base_expr] 或更多元素
+        返回合流 agent 的标识符
+        """
+        # 过滤掉操作符 token，只保留 base_expr
+        # args 结构: [Token('&>>'), base_expr] 或 [Token('&&'), base_expr]
+        for arg in args:
+            if isinstance(arg, dict) and arg.get("type") == "Identifier":
+                return arg
+            elif type(arg).__name__ == "Token":
+                continue
+            else:
+                # 可能是其他表达式类型
+                return arg
+        # 如果没找到，返回最后一个非 token 元素
+        non_tokens = [a for a in args if type(a).__name__ != "Token"]
+        return non_tokens[-1] if non_tokens else {"type": "Identifier", "value": "Unknown"}
 
     @v_args(inline=True)
     def string_expr(self, s):
