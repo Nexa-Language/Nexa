@@ -182,16 +182,25 @@ class NexaAgent:
 
     def run(self, *args) -> str:
         import signal
+        import threading
         from contextlib import contextmanager
         
         @contextmanager
         def timeout_context(seconds):
-            """超时上下文管理器"""
+            """超时上下文管理器
+            
+            注意：signal.SIGALRM 只能在主线程工作。
+            在子线程（如 dag_fanout 的 ThreadPoolExecutor）中，
+            我们跳过 signal 超时机制，依赖 API 客户端自身的超时。
+            """
             def timeout_handler(signum, frame):
                 raise NexaTimeoutError(f"Agent {self.name} execution timed out after {seconds} seconds")
             
-            # 只在非 Windows 系统上使用 SIGALRM
-            if hasattr(signal, 'SIGALRM'):
+            # 检测是否在主线程 - signal 只能在主线程工作
+            is_main_thread = threading.current_thread() is threading.main_thread()
+            
+            # 只在主线程且非 Windows 系统上使用 SIGALRM
+            if hasattr(signal, 'SIGALRM') and is_main_thread:
                 old_handler = signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(seconds)
                 try:
