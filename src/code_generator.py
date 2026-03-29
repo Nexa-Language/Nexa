@@ -65,8 +65,18 @@ class CodeGenerator:
         self._generate_flows()
         self._generate_tests()
         
+        # 检测是否有 flow main 入口点
+        has_flow_main = any(f["name"] == "main" for f in self.flows)
+        
         self.code.append("if __name__ == \"__main__\":")
-        self.code.append("    flow_main()")
+        if has_flow_main:
+            self.code.append("    flow_main()")
+        else:
+            # 如果没有 flow main，运行所有定义的 flow
+            for f in self.flows:
+                flow_name = f["name"]
+                self.code.append(f"    print(\"\\n=== Running flow: {flow_name} ===\")")
+                self.code.append(f"    flow_{flow_name}()")
         self.code.append("")
         
         return "\n".join(self.code)
@@ -447,7 +457,28 @@ class CodeGenerator:
             false_agent_str = self._resolve_expression(false_agent) if false_agent else "None"
             # 默认条件函数：检查输入是否包含特定关键词
             return f"dag_branch({input_str}, lambda x: True, {true_agent_str}, {false_agent_str})"
+        
+        elif ex_type == "DAGChainExpression":
+            # 链式 DAG 表达式: expr |>> [...] &>> Agent
+            # 生成: dag_merge(dag_fanout(input, [Agents]), strategy="concat", merge_agent=Merger)
+            fork_expr = expr["fork"]  # DAGForkExpression
+            merge_expr = expr["merge"]  # dag_chain_tail
             
+            # 解析 fork 部分
+            fork_input = self._resolve_expression(fork_expr["input"])
+            fork_agents = "[ " + ", ".join([a for a in fork_expr["agents"]]) + " ]"
+            fanout_code = f"dag_fanout({fork_input}, {fork_agents})"
+            
+            # 解析 merge 部分 - merge_expr 可能是 Identifier 或包含 merge agent 的结构
+            if isinstance(merge_expr, dict):
+                if merge_expr.get("type") == "Identifier":
+                    merge_agent = merge_expr["value"]
+                else:
+                    merge_agent = self._resolve_expression(merge_expr)
+            else:
+                merge_agent = str(merge_expr)
+            
+            return f"dag_merge({fanout_code}, strategy=\"concat\", merge_agent={merge_agent})"
 
         elif ex_type == "FallbackExpr":
             primary_code = self._resolve_expression(expr["primary"])
