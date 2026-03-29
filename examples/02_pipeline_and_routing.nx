@@ -11,7 +11,8 @@ agent WeatherBot {
 agent NewsBot {
     role: "News Expert",
     model: "minimax-m2.5",
-    prompt: "You summarize today's big news."
+    prompt: "You summarize today's big news. Use std.http_get tool to fetch news from news APIs or websites if available. If no tool is available, summarize based on your knowledge of recent major world events.",
+    uses: "std.http"
 }
 
 agent SmallTalkBot {
@@ -23,7 +24,7 @@ agent SmallTalkBot {
 agent Translator {
     role: "Translator",
     model: "minimax-m2.5",
-    prompt: "Translate everything to French."
+    prompt: "You are a professional translation agent. Your ONLY task is to translate the input text to French. Do not respond conversationally. Do not comment on the source or content. Output ONLY the French translation, nothing else."
 }
 
 flow main {
