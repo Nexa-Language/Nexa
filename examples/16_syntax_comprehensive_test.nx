@@ -1,0 +1,124 @@
+// Nexa 语法特征综合测试
+// 测试各种语法特征的边界情况和极端条件
+
+// ============== 测试1: Protocol 类型约束 ==============
+protocol AnalysisResult {
+    score: "int",
+    summary: "string",
+    is_valid: "boolean"
+}
+
+// ============== 测试2: Agent 基础属性 ==============
+agent SimpleAgent {
+    role: "Simple Test Agent",
+    model: "deepseek/deepseek-chat",
+    prompt: "Respond with a short greeting."
+}
+
+agent AgentWithCache {
+    role: "Cached Agent",
+    model: "deepseek/deepseek-chat",
+    prompt: "Repeat the input exactly.",
+    cache: true
+}
+
+// ============== 测试3: 多阶段管道 ==============
+agent Translator {
+    role: "Translator",
+    model: "deepseek/deepseek-chat",
+    prompt: "Translate the input to Chinese."
+}
+
+agent Summarizer {
+    role: "Summarizer",
+    model: "deepseek/deepseek-chat",
+    prompt: "Summarize the input in one sentence."
+}
+
+// ============== 测试4: DAG 并行操作 ==============
+agent Worker1 {
+    role: "Worker 1",
+    model: "deepseek/deepseek-chat",
+    prompt: "Count the number of words in the input. Just return the number."
+}
+
+agent Worker2 {
+    role: "Worker 2",
+    model: "deepseek/deepseek-chat",
+    prompt: "Count the number of characters in the input. Just return the number."
+}
+
+agent Aggregator {
+    role: "Aggregator",
+    model: "deepseek/deepseek-chat",
+    prompt: "Combine all inputs into a summary."
+}
+
+// ============== 测试5: Try/Catch ==============
+agent RiskyAgent {
+    role: "Risky Agent",
+    model: "deepseek/deepseek-chat",
+    prompt: "Process the input."
+}
+
+agent FallbackAgent {
+    role: "Fallback Agent",
+    model: "deepseek/deepseek-chat",
+    prompt: "Say 'fallback executed'."
+}
+
+// ============== Flow 测试 ==============
+
+// 测试 DAG 并行分叉
+flow test_dag_fanout {
+    input_text = "The quick brown fox jumps over the lazy dog."
+    
+    // 并行分叉到多个 Worker
+    results = input_text |>> [Worker1, Worker2]
+    
+    print("DAG Fan-out results:")
+    print(results)
+}
+
+// 测试 DAG 链式操作 (分叉后合流)
+flow test_dag_chain {
+    input_text = "Artificial intelligence is transforming industries worldwide."
+    
+    // 分叉后合流
+    final = input_text |>> [Worker1, Worker2] &>> Aggregator
+    
+    print("DAG Chain result:")
+    print(final)
+}
+
+// 测试 Try/Catch
+flow test_try_catch {
+    try {
+        result = RiskyAgent.run("Process this")
+        print("Success:")
+        print(result)
+    } catch (err) {
+        print("Caught error:")
+        print(err)
+        fallback_result = FallbackAgent.run("error occurred")
+        print(fallback_result)
+    }
+}
+
+// 主入口点
+flow main {
+    print("========== Nexa 语法特征综合测试 ==========")
+    print("")
+    
+    print("=== Test 1: DAG Fan-out ===")
+    test_dag_fanout()
+    
+    print("=== Test 2: DAG Chain ===")
+    test_dag_chain()
+    
+    print("=== Test 3: Try/Catch ===")
+    test_try_catch()
+    
+    print("")
+    print("========== 测试完成 ==========")
+}

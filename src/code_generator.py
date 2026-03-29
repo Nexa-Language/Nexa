@@ -402,6 +402,14 @@ class CodeGenerator:
             elif func == "secret":
                 # secret("KEY") -> nexa_secrets.get("KEY")
                 func = "nexa_secrets.get"
+            elif func == "print":
+                # print 保持原样
+                pass
+            else:
+                # 检查是否是 flow 调用 - flow 名称需要添加 flow_ 前缀
+                flow_names = [f["name"] for f in self.flows]
+                if func in flow_names:
+                    func = f"flow_{func}"
             args_str = ", ".join([self._resolve_expression(a) for a in expr.get("arguments", [])])
             return f'{func}({args_str})'
         elif ex_type == "PipelineExpression":
