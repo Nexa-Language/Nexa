@@ -1,0 +1,128 @@
+/*
+ * Nexa v1.0.1-beta 示例：传统控制流与 Python 逃生舱
+ * 
+ * 本示例展示 v1.0.1-beta 新增的核心特性：
+ * 1. 传统 if/else if/else 控制流（确定性条件判断）
+ * 2. for each 循环（集合遍历）
+ * 3. while 循环（条件循环）
+ * 4. break/continue 循环控制
+ * 5. Python 逃生舱（原生 Python 代码嵌入）
+ */
+
+// ==========================================
+// Agent 定义
+// ==========================================
+
+agent DataProcessor {
+    model: "gpt-4"
+    prompt: "You are a data processing assistant."
+}
+
+agent ReportGenerator {
+    model: "gpt-4"
+    prompt: "You are a report generation specialist."
+}
+
+// ==========================================
+// Flow 1: 传统 if/else if/else 示例
+// ==========================================
+
+flow demo_traditional_if {
+    score = 85;
+    
+    if (score >= 90) {
+        result = "优秀";
+    } else if (score >= 80) {
+        result = "良好";
+    } else if (score >= 70) {
+        result = "中等";
+    } else if (score >= 60) {
+        result = "及格";
+    } else {
+        result = "不及格";
+    }
+    
+    print(result);
+}
+
+// ==========================================
+// Flow 2: while 循环示例
+// ==========================================
+
+flow demo_while_loop {
+    counter = 0;
+    
+    while (counter < 5) {
+        print(counter);
+        counter = counter + 1;
+    }
+    
+    print("循环结束");
+}
+
+// ==========================================
+// Flow 3: for each 循环示例
+// ==========================================
+
+flow demo_foreach_loop {
+    for each item in data_list {
+        processed = DataProcessor.run(item);
+        print(processed);
+    }
+}
+
+// ==========================================
+// Flow 4: break 和 continue 示例
+// ==========================================
+
+flow demo_break_continue {
+    idx = 0;
+    
+    while (idx < 10) {
+        if (idx == 5) {
+            print("找到目标");
+            break;
+        }
+        idx = idx + 1;
+    }
+    
+    print("搜索结束");
+}
+
+// ==========================================
+// Flow 5: Python 逃生舱示例
+// ==========================================
+
+flow demo_python_escape {
+    python! """
+import math
+
+# 计算圆的面积
+radius = 5
+area = math.pi * radius ** 2
+print(f"半径 {radius} 的圆面积为: {area:.2f}")
+
+# 计算阶乘
+n = 10
+factorial = 1
+for i in range(1, n + 1):
+    factorial *= i
+print(f"{n} 的阶乘是: {factorial}")
+"""
+}
+
+// ==========================================
+// 测试入口
+// ==========================================
+
+test "v101_beta_features" {
+    score = 75;
+    
+    if (score >= 60) {
+        status = "pass";
+    } else {
+        status = "fail";
+    }
+    
+    print("v1.0.1-beta 特性测试通过");
+}

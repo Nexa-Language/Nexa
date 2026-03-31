@@ -161,7 +161,8 @@ class CodeGenerator:
             else:
                 model = "minimax-m2.5"
                 fallback_model = None
-            role = properties.get("role", '""').strip('"')
+            role_raw = properties.get("role", "")
+            role = role_raw  # 保留原始值，不 strip
             memory_scope = properties.get("memory", '"local"').strip('"')
             stream_val = properties.get("stream", '"false"').strip('"').lower()
             stream = "True" if stream_val == "true" else "False"
@@ -227,9 +228,17 @@ class CodeGenerator:
             
             self.code.append(f'{name} = NexaAgent(')
             self.code.append(f'    name="{name}",')
-            self.code.append(f'    prompt="{prompt}",')
+            # 处理多行 prompt，使用三引号
+            if '\n' in prompt:
+                self.code.append(f'    prompt="""{prompt}""",')
+            else:
+                self.code.append(f'    prompt="{prompt}",')
             self.code.append(f'    model="{model}",')
-            self.code.append(f'    role="{role}",')
+            # 处理多行 role，使用三引号
+            if '\n' in role:
+                self.code.append(f'    role="""{role}""",')
+            else:
+                self.code.append(f'    role="{role}",')
             self.code.append(f'    memory_scope="{memory_scope}",')
             self.code.append(f'    stream={stream},')
             self.code.append(f'    cache={cache},')
@@ -362,6 +371,110 @@ class CodeGenerator:
                 self._generate_statement(sub_stmt)
             self.indent_level -= 1
 
+        # ===== v1.0.1-beta: 传统控制流 =====
+        elif st_type == "TraditionalIfStatement":
+            # 传统 if/else if/else
+            cond_str = self._resolve_condition(stmt["condition"])
+            self.code.append(f"{self._indent()}if {cond_str}:")
+            self.indent_level += 1
+            for sub_stmt in stmt.get("then_block", []):
+                self._generate_statement(sub_stmt)
+            self.indent_level -= 1
+            
+            # else if 子句
+            for else_if in stmt.get("else_if_clauses", []):
+                cond_str = self._resolve_condition(else_if["condition"])
+                self.code.append(f"{self._indent()}elif {cond_str}:")
+                self.indent_level += 1
+                for sub_stmt in else_if.get("block", []):
+                    self._generate_statement(sub_stmt)
+                self.indent_level -= 1
+            
+            # else 子句
+            if stmt.get("else_block"):
+                self.code.append(f"{self._indent()}else:")
+                self.indent_level += 1
+                for sub_stmt in stmt["else_block"]:
+                    self._generate_statement(sub_stmt)
+                self.indent_level -= 1
+
+        elif st_type == "ForEachStatement":
+            # for each 循环
+            iterator = stmt["iterator"]
+            iterable_str = self._resolve_expression(stmt["iterable"])
+            
+            if stmt.get("index"):
+                # 带索引: for index, item in enumerate(iterable)
+                index = stmt["index"]
+                self.code.append(f"{self._indent()}for {index}, {iterator} in enumerate({iterable_str}):")
+            else:
+                # 简单遍历: for item in iterable
+                self.code.append(f"{self._indent()}for {iterator} in {iterable_str}:")
+            
+            self.indent_level += 1
+            for sub_stmt in stmt.get("body", []):
+                self._generate_statement(sub_stmt)
+            self.indent_level -= 1
+
+        elif st_type == "WhileStatement":
+            # while 循环
+            cond_str = self._resolve_condition(stmt["condition"])
+            self.code.append(f"{self._indent()}while {cond_str}:")
+            self.indent_level += 1
+            for sub_stmt in stmt.get("body", []):
+                self._generate_statement(sub_stmt)
+            self.indent_level -= 1
+
+        elif st_type == "ContinueStatement":
+            self.code.append(f"{self._indent()}continue")
+
+        elif st_type == "PythonEscapeStatement":
+            # Python 逃生舱 - 直接注入 Python 代码
+            python_code = stmt.get("code", "")
+            if python_code:
+                # 按行分割并添加当前缩进
+                lines = python_code.split('\n')
+                for line in lines:
+                    if line.strip():  # 跳过空行
+                        self.code.append(f"{self._indent()}{line}")
+                    else:
+                        self.code.append("")
+
+    def _resolve_condition(self, cond):
+        """解析条件表达式 - v1.0.1-beta"""
+        if cond is None:
+            return "True"
+        
+        cond_type = cond.get("type")
+        
+        if cond_type == "ComparisonExpression":
+            left = self._resolve_expression(cond["left"])
+            op = cond["operator"]
+            right = self._resolve_expression(cond["right"])
+            return f"{left} {op} {right}"
+        
+        elif cond_type == "LogicalExpression":
+            left = self._resolve_condition(cond["left"])
+            op = cond["operator"]
+            right = self._resolve_condition(cond["right"])
+            return f"({left} {op} {right})"
+        
+        elif cond_type == "ConditionExpression":
+            left = self._resolve_expression(cond["left"])
+            op = cond["operator"]
+            right = self._resolve_expression(cond["right"])
+            return f"{left} {op} {right}"
+        
+        elif cond_type == "BooleanLiteral":
+            return "True" if cond.get("value") else "False"
+        
+        elif cond_type == "Identifier":
+            return cond["value"]
+        
+        else:
+            # 默认处理为表达式
+            return self._resolve_expression(cond)
+
     def _resolve_expression(self, expr):
         ex_type = expr.get("type")
         if ex_type == "KeywordArgument":
@@ -385,10 +498,35 @@ class CodeGenerator:
             if expr["value"] == "secrets":
                 return "nexa_secrets"
             return expr["value"]
+        # ===== v1.0.1-beta: 新增字面量类型 =====
+        elif ex_type == "IntLiteral":
+            return str(expr["value"])
+        
+        elif ex_type == "FloatLiteral":
+            return str(expr["value"])
+        
+        elif ex_type == "BooleanLiteral":
+            return "True" if expr["value"] else "False"
+        
+        elif ex_type == "ComparisonExpression":
+            left = self._resolve_expression(expr["left"])
+            op = expr["operator"]
+            right = self._resolve_expression(expr["right"])
+            return f"{left} {op} {right}"
+        
+        elif ex_type == "LogicalExpression":
+            left = self._resolve_expression(expr["left"])
+            op = expr["operator"]
+            right = self._resolve_expression(expr["right"])
+            return f"({left} {op} {right})"
+        
         elif ex_type == "BinaryExpression":
             left = self._resolve_expression(expr["left"])
             right = self._resolve_expression(expr["right"])
             op = expr["operator"]
+            # 数值运算不需要 str() 转换
+            if op in ["+", "-", "*", "/"]:
+                return f"({left} {op} {right})"
             return f"str({left}) {op} str({right})"
         elif ex_type == "MethodCallExpression":
             obj = expr["object"]
