@@ -1,6 +1,15 @@
-# Nexa 语法参考手册 (v0.9-alpha)
+# Nexa 语法参考手册 (v1.0.1-beta)
 
-本手册涵盖了 Nexa 语言从基础语法到 v0.9-alpha 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言及 MCP 扩展。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
+本手册涵盖了 Nexa 语言从基础语法到 v1.0.1-beta 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展以及传统控制流。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
+
+## 🆕 v1.0.1-beta 新特性
+
+本版本新增以下核心特性：
+
+1. **传统控制流** - 确定性的 if/else if/else、for each、while、break、continue
+2. **Python 逃生舱** - 使用 `python! """..."""` 直接嵌入 Python 代码
+3. **二元运算符扩展** - 支持 +、-、*、/、% 算术运算
+4. **比较运算符** - 支持 ==、!=、<、>、<=、>= 比较运算
 
 ## 1. 核心层级结构 (Core Hierarchy)
 
@@ -212,3 +221,202 @@ final = topic |>> [Researcher, Analyst] &>> Writer >> Reviewer;
 // 多阶段并行处理
 report = data |>> [Preprocess1, Preprocess2] &>> Aggregator >> Formatter;
 ```
+
+## 6. 传统控制流 (v1.0.1-beta)
+
+v1.0.1-beta 引入了确定性传统控制流，与语义控制流（semantic_if、loop...until）明确区分。
+
+### 6.1 传统 if/else if/else 语句
+
+使用确定性比较运算符进行条件判断：
+
+```nexa
+// 基本语法
+if (condition) {
+    // then block
+} else if (another_condition) {
+    // else if block
+} else {
+    // else block
+}
+
+// 示例：分数等级判断
+score = 85;
+
+if (score >= 90) {
+    result = "优秀";
+} else if (score >= 80) {
+    result = "良好";
+} else if (score >= 60) {
+    result = "及格";
+} else {
+    result = "不及格";
+}
+```
+
+**比较运算符**：
+| 运算符 | 含义 |
+|--------|------|
+| `==` | 等于 |
+| `!=` | 不等于 |
+| `<` | 小于 |
+| `>` | 大于 |
+| `<=` | 小于等于 |
+| `>=` | 大于等于 |
+
+**逻辑运算符**：
+- `and` - 逻辑与
+- `or` - 逻辑或
+
+### 6.2 for each 循环
+
+遍历集合或数组：
+
+```nexa
+// 基本语法
+for each item in collection {
+    // 处理 item
+}
+
+// 带索引遍历
+for each index, item in collection {
+    // 使用 index 和 item
+}
+
+// 示例
+for each item in data_list {
+    processed = DataProcessor.run(item);
+    print(processed);
+}
+```
+
+### 6.3 while 循环
+
+基于条件的循环：
+
+```nexa
+// 基本语法
+while (condition) {
+    // 循环体
+}
+
+// 示例
+counter = 0;
+while (counter < 5) {
+    print(counter);
+    counter = counter + 1;
+}
+```
+
+### 6.4 break 和 continue
+
+循环控制语句：
+
+```nexa
+// break - 立即终止循环
+while (counter < 10) {
+    if (counter == 5) {
+        break;  // 当 counter == 5 时退出循环
+    }
+    counter = counter + 1;
+}
+
+// continue - 跳过当前迭代
+for each num in numbers {
+    if (num % 2 == 0) {
+        continue;  // 跳过偶数
+    }
+    print(num);  // 只打印奇数
+}
+```
+
+### 6.5 二元运算符
+
+v1.0.1-beta 支持基本算术运算：
+
+| 运算符 | 含义 | 示例 |
+|--------|------|------|
+| `+` | 加法 | `x + y` |
+| `-` | 减法 | `x - y` |
+| `*` | 乘法 | `x * y` |
+| `/` | 除法 | `x / y` |
+| `%` | 取模 | `x % y` |
+
+```nexa
+count = count + 1;
+average = total / count;
+remainder = num % 2;
+```
+
+### 6.6 与语义控制流的区别
+
+| 特性 | 传统控制流 | 语义控制流 |
+|------|-----------|-----------|
+| 条件判断 | 确定性比较 | LLM 语义判断 |
+| 语法 | `if (x > 5)` | `semantic_if "条件" against var` |
+| 循环终止 | `while (x < 10)` | `loop...until(语义条件)` |
+| 执行确定性 | 完全确定 | 依赖 LLM 输出 |
+
+## 7. Python 逃生舱 (v1.0.1-beta)
+
+当需要直接使用 Python 功能时，可以使用 `python!` 关键字嵌入原生 Python 代码。
+
+### 7.1 基本语法
+
+```nexa
+python! """
+# Python 代码
+import math
+result = math.sqrt(16)
+print(result)
+"""
+```
+
+### 7.2 使用场景
+
+1. **复杂算法实现**：
+```nexa
+python! """
+import math
+
+def calculate_statistics(data):
+    n = len(data)
+    mean = sum(data) / n
+    variance = sum((x - mean) ** 2 for x in data) / n
+    return mean, math.sqrt(variance)
+
+data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+mean, std = calculate_statistics(data)
+print(f"Mean: {mean}, Std: {std}")
+"""
+```
+
+2. **第三方库调用**：
+```nexa
+python! """
+import os
+import json
+
+# 文件操作
+files = os.listdir('.')
+config = {"files": files}
+print(json.dumps(config, indent=2))
+"""
+```
+
+3. **性能关键代码**：
+```nexa
+python! """
+# 快速数据处理
+data = list(range(1000000))
+filtered = [x for x in data if x % 2 == 0]
+print(f"Filtered {len(filtered)} even numbers")
+"""
+```
+
+### 7.3 安全设计
+
+Python 逃生舱使用 `python!` 关键字和三引号定界符，避免了：
+- Markdown 代码块冲突（不使用 ```）
+- 大括号嵌套问题（不使用 {}）
+- 清晰的边界标识

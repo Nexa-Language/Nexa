@@ -268,6 +268,15 @@ class NexaTransformer(Transformer):
         return str(s).strip('"')
 
     @v_args(inline=True)
+    def multiline_string_val(self, s):
+        """处理多行字符串，移除三引号并保留内部换行"""
+        s = str(s)
+        # 移除开头和结尾的三引号
+        if s.startswith('"""') and s.endswith('"""'):
+            return s[3:-3]
+        return s
+
+    @v_args(inline=True)
     def id_val(self, i):
         return str(i)
 
@@ -336,26 +345,33 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def condition(self, args):
-        """条件表达式"""
+        """条件表达式 - v1.0.1-beta 使用 CMP_OP 终端"""
+        from lark import Token
+        op = args[1]
+        if isinstance(op, Token):
+            op = str(op)
         return {
             "type": "ConditionExpression",
             "left": args[0],
-            "operator": str(args[1]),
+            "operator": op,
             "right": args[2]
         }
 
     @v_args(inline=False)
-    def comparison_op(self, args):
-        """比较运算符"""
-        return str(args[0]) if args else "=="
-
-    @v_args(inline=False)
     def comparison_expr(self, args):
-        """比较表达式"""
+        """比较表达式 - v1.0.1-beta 使用 CMP_OP 终端"""
+        if len(args) == 1:
+            # 简单布尔判断 (只有表达式)
+            return args[0]
+        # args: [left, CMP_OP token, right]
+        from lark import Token
+        op = args[1]
+        if isinstance(op, Token):
+            op = str(op)
         return {
             "type": "ComparisonExpression",
             "left": args[0],
-            "operator": str(args[1]),
+            "operator": op,
             "right": args[2]
         }
 
@@ -476,6 +492,145 @@ class NexaTransformer(Transformer):
     def break_stmt(self, args):
         return {
             "type": "BreakStatement"
+        }
+
+    @v_args(inline=False)
+    def continue_stmt(self, args):
+        """continue 语句 - v1.0.1-beta"""
+        return {
+            "type": "ContinueStatement"
+        }
+
+    @v_args(inline=False)
+    def traditional_if_stmt(self, args):
+        """传统 if/else if/else 语句 - v1.0.1-beta
+        处理各种形式的 if 语句：
+        1. if (...) { } - 无 else
+        2. if (...) { } else { } - 只有 else
+        3. if (...) { } else if (...) { } else { } - else if 链
+        """
+        condition = args[0]
+        then_block = args[1] if len(args) > 1 else []
+        
+        # 收集 else if 和 else 子句
+        else_if_clauses = []
+        else_block = []
+        
+        # 处理剩余参数
+        i = 2
+        while i < len(args):
+            arg = args[i]
+            
+            # 检查是否是条件（来自 else if）
+            if isinstance(arg, dict) and arg.get("type") in ["ComparisonExpression", "LogicalExpression", "Identifier"]:
+                # 这是一个 else if 的条件
+                if i + 1 < len(args):
+                    block = args[i + 1]
+                    if isinstance(block, list):
+                        else_if_clauses.append({
+                            "type": "ElseIfClause",
+                            "condition": arg,
+                            "block": block
+                        })
+                        i += 2
+                        continue
+            
+            # 检查是否是 block（来自 else）
+            elif isinstance(arg, list):
+                # 这是 else 的 block
+                else_block = arg
+                i += 1
+                continue
+            
+            i += 1
+        
+        return {
+            "type": "TraditionalIfStatement",
+            "condition": condition,
+            "then_block": then_block,
+            "else_if_clauses": else_if_clauses,
+            "else_block": else_block
+        }
+
+    @v_args(inline=False)
+    def traditional_condition(self, args):
+        """传统条件表达式"""
+        return args[0] if args else {"type": "BooleanLiteral", "value": True}
+
+    @v_args(inline=False)
+    def logical_expr(self, args):
+        """逻辑表达式 - 支持 and/or"""
+        if len(args) == 1:
+            return args[0]
+        
+        # 构建逻辑表达式链
+        result = args[0]
+        i = 1
+        while i < len(args):
+            operator = str(args[i])
+            right = args[i + 1]
+            result = {
+                "type": "LogicalExpression",
+                "left": result,
+                "operator": operator,
+                "right": right
+            }
+            i += 2
+        
+        return result
+
+    @v_args(inline=False)
+    def foreach_stmt(self, args):
+        """for each 循环 - v1.0.1-beta"""
+        if len(args) == 3:
+            # for each item in iterable { block }
+            return {
+                "type": "ForEachStatement",
+                "iterator": str(args[0]),
+                "index": None,
+                "iterable": args[1],
+                "body": args[2]
+            }
+        elif len(args) == 4:
+            # for each item, index in iterable { block }
+            return {
+                "type": "ForEachStatement",
+                "iterator": str(args[0]),
+                "index": str(args[1]),
+                "iterable": args[2],
+                "body": args[3]
+            }
+        return {"type": "ForEachStatement", "iterator": "", "iterable": None, "body": []}
+
+    @v_args(inline=False)
+    def while_stmt(self, args):
+        """while 循环 - v1.0.1-beta"""
+        return {
+            "type": "WhileStatement",
+            "condition": args[0] if args else {"type": "BooleanLiteral", "value": True},
+            "body": args[1] if len(args) > 1 else []
+        }
+
+    @v_args(inline=False)
+    def python_escape_stmt(self, args):
+        """Python 逃生舱 - v1.0.1-beta
+        语法: python! \"\"\"code\"\"\"
+        """
+        # 提取 Python 代码块 - MULTILINE_STRING
+        python_code = ""
+        if args:
+            raw = str(args[0])
+            # 移除三引号
+            if raw.startswith('"""') and raw.endswith('"""'):
+                python_code = raw[3:-3]
+            else:
+                python_code = raw
+        # 移除首尾空白但保留内部换行
+        python_code = python_code.strip()
+        
+        return {
+            "type": "PythonEscapeStatement",
+            "code": python_code
         }
 
     @v_args(inline=False)
@@ -767,14 +922,27 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def binary_expr(self, args):
-        """二元表达式：字符串拼接等
-        语法: binary_expr: base_expr ("+" base_expr)+
-        由于 "+" 是 literal token，args 只包含 base_expr 列表
+        """二元表达式：支持加减乘除 - v1.0.1-beta
+        语法: binary_expr: base_expr BINARY_OP base_expr
+        使用 BINARY_OP 终端确保操作符正确匹配
         """
         if len(args) == 1:
             return args[0]
         
-        # args 是 [base_expr, base_expr, ...]，操作符固定为 "+"
+        # args 是 [left, BINARY_OP token, right]
+        from lark import Token
+        if len(args) == 3:
+            op = args[1]
+            if isinstance(op, Token):
+                op = str(op)
+            return {
+                "type": "BinaryExpression",
+                "left": args[0],
+                "operator": op,
+                "right": args[2]
+            }
+        
+        # 兼容旧语法: base_expr ("+" base_expr)+
         result = args[0]
         for i in range(1, len(args)):
             right = args[i]
@@ -785,6 +953,39 @@ class NexaTransformer(Transformer):
                 "right": right
             }
         return result
+
+    @v_args(inline=False)
+    def binary_op(self, args):
+        """二元运算符"""
+        return str(args[0]) if args else "+"
+
+    @v_args(inline=True)
+    def int_expr(self, val):
+        """整数字面量"""
+        return {"type": "IntLiteral", "value": int(val)}
+
+    @v_args(inline=True)
+    def float_expr(self, val):
+        """浮点数字面量"""
+        return {"type": "FloatLiteral", "value": float(val)}
+
+    @v_args(inline=False)
+    def true_expr(self, args):
+        """布尔 true"""
+        return {"type": "BooleanLiteral", "value": True}
+
+    @v_args(inline=False)
+    def false_expr(self, args):
+        """布尔 false"""
+        return {"type": "BooleanLiteral", "value": False}
+
+    @v_args(inline=True)
+    def multiline_string_expr(self, val):
+        """多行字符串表达式"""
+        s = str(val)
+        if s.startswith('"""') and s.endswith('"""'):
+            return {"type": "StringLiteral", "value": s[3:-3]}
+        return {"type": "StringLiteral", "value": s}
 
     @v_args(inline=False)
     def std_call(self, args):

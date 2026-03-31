@@ -85,7 +85,51 @@
 
 ---
 
-## 1.3 v1.0.x 已完成特性
+## 1.3 v1.0.1-beta 新增特性 (2026-03-31)
+
+### 核心功能
+- [x] **传统控制流：** 确定性的 if/else if/else、for each、while、break、continue 语句。
+- [x] **Python 逃生舱：** 使用 `python! """..."""` 语法直接嵌入 Python 代码。
+- [x] **二元运算符扩展：** 支持 +、-、*、/、% 算术运算。
+- [x] **比较运算符：** 支持 ==、!=、<、>、<=、>= 比较运算。
+- [x] **逻辑运算符：** 支持 and、or 逻辑运算。
+
+### 实现细节
+- **Parser 层修改：** `src/nexa_parser.py` - 新增 EBNF 规则
+  - `traditional_if_stmt`: 传统 if/else if/else 语句
+  - `foreach_stmt`: for each 循环
+  - `while_stmt`: while 循环
+  - `python_escape_stmt`: Python 逃生舱
+  - `CMP_OP`: 比较运算符终端
+  - `BINARY_OP`: 二元运算符终端
+
+- **AST Transformer 层修改：** `src/ast_transformer.py` - 新增 AST 节点转换
+  - `TraditionalIfStatement`: 传统 if 语句 AST
+  - `ForEachStatement`: for each 循环 AST
+  - `WhileStatement`: while 循环 AST
+  - `PythonEscapeStatement`: Python 逃生舱 AST
+  - `BinaryExpression`: 二元表达式 AST
+  - `ComparisonExpression`: 比较表达式 AST
+
+- **Code Generator 层修改：** `src/code_generator.py` - 新增代码生成
+  - 生成 Python if/elif/else 语句
+  - 生成 Python for/in 循环
+  - 生成 Python while 循环
+  - 生成原生 Python 代码块
+
+### 已知问题
+- **else-if 链解析：** Earley 解析器在处理连续 else-if 时存在歧义问题，当前版本建议使用单一 if-else 或嵌套 if 结构。
+
+### 文件变更
+- `src/nexa_parser.py` - Parser 层
+- `src/ast_transformer.py` - Transformer 层
+- `src/code_generator.py` - Code Generator 层
+- `docs/01_nexa_syntax_reference.md` - 语法文档
+- `examples/16_native_controls_and_python.nx` - 示例文件
+
+---
+
+## 1.4 v1.0.x 已完成特性
 - [x] **Agent 友好文档：** `docs/NEXA_AGENT_GUIDE.md` - 语法速查表、代码模板、Agent写Agent指南。（v1.0 实现）
 - [x] **Python SDK：** `src/nexa_sdk.py` - `nexa.run()`, `nexa.Agent()`, `nexa.compile()` 等 API。（v1.0 实现）
 - [x] **调试器：** `src/runtime/debugger.py` - 断点、变量监视、单步执行、事件日志。（v1.0 实现）

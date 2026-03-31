@@ -30,13 +30,14 @@ agent_decorator_param: IDENTIFIER "=" (INT | FLOAT)
 return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER
 
 agent_property: IDENTIFIER ":" agent_property_value ","?
-?agent_property_value: STRING_LITERAL -> string_val
-                     | IDENTIFIER -> id_val
-                     | "[" identifier_list "]" -> list_val
-                     | "[" fallback_list "]" -> fallback_list_val
-                     | INT -> int_val
-                     | "true" -> true_val
-                     | "false" -> false_val
+ ?agent_property_value: STRING_LITERAL -> string_val
+                      | MULTILINE_STRING -> multiline_string_val
+                      | IDENTIFIER -> id_val
+                      | "[" identifier_list "]" -> list_val
+                      | "[" fallback_list "]" -> fallback_list_val
+                      | INT -> int_val
+                      | "true" -> true_val
+                      | "false" -> false_val
 
 fallback_list: fallback_item ("," fallback_item)*
 fallback_item: STRING_LITERAL -> primary_model
@@ -56,15 +57,57 @@ block: "{" flow_stmt* "}"
 semantic_if_block: "{" semantic_if_case* "}"
 semantic_if_case: STRING_LITERAL "=>" expression ","?
 
-?flow_stmt: assignment_stmt | expr_stmt | semantic_if_stmt | loop_stmt | match_stmt | assert_stmt | try_catch_stmt | print_stmt | if_stmt | break_stmt
+// v1.0.1-beta: 扩展 flow_stmt 支持传统控制流和 Python 逃生舱
+?flow_stmt: assignment_stmt
+          | expr_stmt
+          | semantic_if_stmt
+          | traditional_if_stmt    // 新增: 传统 if/else if/else
+          | foreach_stmt           // 新增: for each 循环
+          | while_stmt             // 新增: while 循环
+          | loop_stmt
+          | match_stmt
+          | assert_stmt
+          | try_catch_stmt
+          | print_stmt
+          | break_stmt
+          | continue_stmt          // 新增: continue
+          | python_escape_stmt     // 新增: Python 逃生舱
 
 // break 语句 - 用于循环中断
 break_stmt: "break" ";"
 
-// 传统 if 语句
+// continue 语句 - 用于循环跳过
+continue_stmt: "continue" ";"
+
+// 传统 if/else if/else 语句 (确定性条件分支) - v1.0.1-beta
+// 使用 ~ 进行贪婪匹配（Lark 的 + 量词是贪婪的）
+traditional_if_stmt: "if" "(" traditional_condition ")" block ("else" "if" "(" traditional_condition ")" block)+ ("else" block)?
+                   | "if" "(" traditional_condition ")" block "else" block
+                   | "if" "(" traditional_condition ")" block
+
+// 简化版 if (无 else if 链)
+simple_if_stmt: "if" "(" traditional_condition ")" block
+// 条件表达式支持逻辑运算符 and/or
+traditional_condition: logical_expr
+logical_expr: comparison_expr (("and" | "or") comparison_expr)*
+
+// 比较表达式 - 使用 CMP_OP 终端确保多字符操作符优先匹配
+comparison_expr: expression CMP_OP expression
+               | expression  // 简单布尔判断
+
+// for each 循环 - 数组/集合遍历
+foreach_stmt: "for" "each" IDENTIFIER "in" expression block
+            | "for" "each" IDENTIFIER "," IDENTIFIER "in" expression block  // 带索引
+
+// while 循环 - 确定性条件循环
+while_stmt: "while" "(" traditional_condition ")" block
+
+// Python 逃生舱 - 使用 python! 关键字后跟多行字符串
+python_escape_stmt: "python!" MULTILINE_STRING
+
+// 保留原有 if_stmt 兼容性 (简化版)
 if_stmt: "if" "(" condition ")" block ["else" block]
-condition: expression comparison_op expression
-comparison_op: "==" | "!=" | "<" | ">" | "<=" | ">="
+condition: expression CMP_OP expression
 print_stmt: "print" "(" expression ")" ";"?
 
 try_catch_stmt: "try" block "catch" "(" IDENTIFIER ")" block
@@ -132,6 +175,7 @@ pipeline_expr: base_expr (">>" base_expr)+
 // 列表表达式转换为identifier列表
 identifier_list_as_expr: "[" identifier_list "]"
 
+// v1.0.1-beta: base_expr 支持更多字面量类型
 ?base_expr: join_call
           | method_call
           | img_call
@@ -141,11 +185,13 @@ identifier_list_as_expr: "[" identifier_list "]"
           | comparison_expr
           | semantic_if_expr
           | STRING_LITERAL -> string_expr
+          | MULTILINE_STRING -> multiline_string_expr
+          | INT -> int_expr
+          | FLOAT -> float_expr
+          | "true" -> true_expr
+          | "false" -> false_expr
           | IDENTIFIER -> id_expr
           | dict_access_expr
-
-// 比较表达式
-comparison_expr: expression comparison_op expression
 
 // semantic_if 表达式形式: semantic_if (var, "condition") { "case1" => action1 }
 semantic_if_expr: "semantic_if" "(" IDENTIFIER "," STRING_LITERAL ")" semantic_if_block
@@ -163,12 +209,28 @@ img_call: "img" "(" STRING_LITERAL ")"
 kwarg: IDENTIFIER "=" expression
 argument_list: argument ("," argument)*
 
-// 二元运算符 (字符串拼接等)
-binary_expr: base_expr ("+" base_expr)+
+// v1.0.1-beta: 二元运算符扩展 (支持加减乘除取模)
+binary_expr: base_expr BINARY_OP base_expr
 
-IDENTIFIER: /[a-zA-Z_][a-zA-Z0-9_]*/
+// v1.0.1-beta: 操作符终端定义 (确保正确匹配)
+CMP_OP: ">=" | "<=" | "==" | "!=" | ">" | "<"
+BINARY_OP: "+" | "-" | "*" | "/" | "%"
+
+// v1.0.1-beta: 声明关键字优先级
+%declare ELSE
+
+// v1.0.1-beta: IDENTIFIER 定义
+// 使用负向断言确保关键字不会被当作标识符匹配
+// 注意：使用 \b 边界确保只排除完整关键字，不排除前缀匹配如 test_xxx
+IDENTIFIER: /(?!if\b|else\b|for\b|each\b|in\b|while\b|break\b|continue\b|agent\b|tool\b|flow\b|protocol\b|test\b|match\b|loop\b|until\b|print\b|try\b|catch\b|assert\b|true\b|false\b|join\b|std\b|img\b)[a-zA-Z_][a-zA-Z0-9_]*/
 STRING_LITERAL: /"[^"]*"/
+MULTILINE_STRING: /\"\"\"([^\""]|\"{1,2}([^\""]|$))*?\"\"\"/
 REGEX_LITERAL: /r"[^"]*"/
+
+// Python 逃生舱定界符 - 使用安全定界符避免 Markdown 和大括号冲突
+// 匹配 <|python|> 和 <|end|> 之间的所有内容（使用非贪婪匹配）
+PYTHON_ESCAPE_OPEN: /<\|python\|>/
+PYTHON_ESCAPE_CLOSE: /<\|end\|>/
 
 %import common.INT
 %import common.FLOAT
@@ -182,7 +244,7 @@ REGEX_LITERAL: /r"[^"]*"/
 
 def get_parser():
     """初始化并返回 Lark 解析器实例"""
-    return Lark(nexa_grammar, start='program', parser='earley')
+    return Lark(nexa_grammar, start='program', parser='earley', ambiguity='explicit')
 
 def parse(text):
     """解析 Nexa 源代码文本并返回 AST (字典格式)"""
