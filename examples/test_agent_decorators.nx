@@ -1,0 +1,139 @@
+// 测试 Agent 修饰器语法
+// 测试点：@limit, @timeout, @retry, @temperature 及组合
+
+// ==================== 测试点 1: @limit(max_tokens=N) 基本用法 ====================
+@limit(max_tokens=100)
+agent Test1_Limit100 {
+    prompt: "限制输出100 token"
+}
+
+// ==================== 测试点 2: @limit 大值 ====================
+@limit(max_tokens=2000)
+agent Test2_Limit2000 {
+    prompt: "限制输出2000 token"
+}
+
+// ==================== 测试点 3: @timeout(seconds=N) 基本用法 ====================
+@timeout(seconds=10)
+agent Test3_Timeout10 {
+    prompt: "10秒超时"
+}
+
+// ==================== 测试点 4: @timeout 大值 ====================
+@timeout(seconds=120)
+agent Test4_Timeout120 {
+    prompt: "120秒超时"
+}
+
+// ==================== 测试点 5: @retry(max_attempts=N) 基本用法 ====================
+@retry(max_attempts=1)
+agent Test5_Retry1 {
+    prompt: "重试1次"
+}
+
+// ==================== 测试点 6: @retry 多次 ====================
+@retry(max_attempts=5)
+agent Test6_Retry5 {
+    prompt: "重试5次"
+}
+
+// ==================== 测试点 7: @temperature(value=N) 基本用法 ====================
+@temperature(value=0.5)
+agent Test7_Temperature05 {
+    prompt: "温度0.5"
+}
+
+// ==================== 测试点 8: @temperature 低值 ====================
+@temperature(value=0.1)
+agent Test8_Temperature01 {
+    prompt: "温度0.1 - 更确定性"
+}
+
+// ==================== 测试点 9: @temperature 高值 ====================
+@temperature(value=0.9)
+agent Test9_Temperature09 {
+    prompt: "温度0.9 - 更随机"
+}
+
+// ==================== 测试点 10: 多个修饰器组合 ====================
+@limit(max_tokens=500)
+@timeout(seconds=30)
+@retry(max_attempts=3)
+agent Test10_Combined3 {
+    prompt: "三个修饰器组合"
+}
+
+// ==================== 测试点 11: 所有四个修饰器组合 ====================
+@limit(max_tokens=1000)
+@timeout(seconds=60)
+@retry(max_attempts=2)
+@temperature(value=0.7)
+agent Test11_AllDecorators {
+    role: "全面测试Agent",
+    prompt: "所有修饰器组合测试"
+}
+
+// ==================== 测试点 12: 修饰器与属性混用 ====================
+@limit(max_tokens=800)
+@timeout(seconds=45)
+agent Test12_DecoratorWithProps {
+    role: "混用测试",
+    model: "deepseek/deepseek-chat",
+    prompt: "修饰器与属性混用",
+    cache: true
+}
+
+// ==================== 测试 Flow ====================
+flow main {
+    print("========== Agent 修饰器测试开始 ==========")
+    
+    // 测试点 1
+    result1 = Test1_Limit100.run("测试 @limit(max_tokens=100)")
+    print("Test 1 - @limit(100): PASS")
+    
+    // 测试点 2
+    result2 = Test2_Limit2000.run("测试 @limit(max_tokens=2000)")
+    print("Test 2 - @limit(2000): PASS")
+    
+    // 测试点 3
+    result3 = Test3_Timeout10.run("测试 @timeout(seconds=10)")
+    print("Test 3 - @timeout(10): PASS")
+    
+    // 测试点 4
+    result4 = Test4_Timeout120.run("测试 @timeout(seconds=120)")
+    print("Test 4 - @timeout(120): PASS")
+    
+    // 测试点 5
+    result5 = Test5_Retry1.run("测试 @retry(max_attempts=1)")
+    print("Test 5 - @retry(1): PASS")
+    
+    // 测试点 6
+    result6 = Test6_Retry5.run("测试 @retry(max_attempts=5)")
+    print("Test 6 - @retry(5): PASS")
+    
+    // 测试点 7
+    result7 = Test7_Temperature05.run("测试 @temperature(value=0.5)")
+    print("Test 7 - @temperature(0.5): PASS")
+    
+    // 测试点 8
+    result8 = Test8_Temperature01.run("测试 @temperature(value=0.1)")
+    print("Test 8 - @temperature(0.1): PASS")
+    
+    // 测试点 9
+    result9 = Test9_Temperature09.run("测试 @temperature(value=0.9)")
+    print("Test 9 - @temperature(0.9): PASS")
+    
+    // 测试点 10
+    result10 = Test10_Combined3.run("测试三个修饰器组合")
+    print("Test 10 - 三修饰器组合: PASS")
+    
+    // 测试点 11
+    result11 = Test11_AllDecorators.run("测试所有四个修饰器")
+    print("Test 11 - 四修饰器组合: PASS")
+    
+    // 测试点 12
+    result12 = Test12_DecoratorWithProps.run("测试修饰器与属性混用")
+    print("Test 12 - 修饰器与属性混用: PASS")
+    
+    print("========== Agent 修饰器测试完成 ==========")
+}

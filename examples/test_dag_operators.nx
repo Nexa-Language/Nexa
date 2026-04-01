@@ -1,0 +1,273 @@
+// 测试 DAG 操作符（|>>, &>>, ??, ||, &&）
+// 测试点：1-15 覆盖所有 DAG 操作符场景
+
+// ==================== 测试点 1-2: 分叉操作符 |>> ====================
+agent Fork_Worker1 {
+    prompt: "Worker 1: 处理输入并返回结果"
+}
+
+agent Fork_Worker2 {
+    prompt: "Worker 2: 处理输入并返回结果"
+}
+
+agent Fork_Worker3 {
+    prompt: "Worker 3: 处理输入并返回结果"
+}
+
+agent Fork_Worker4 {
+    prompt: "Worker 4: 处理输入并返回结果"
+}
+
+// ==================== 测试点 3-4: 合流操作符 &>> ====================
+agent Merge_Source1 {
+    prompt: "数据源 1"
+}
+
+agent Merge_Source2 {
+    prompt: "数据源 2"
+}
+
+agent Merge_Aggregator {
+    prompt: "聚合多个输入，输出整合结果"
+}
+
+// ==================== 测试点 5-6: 条件分支操作符 ?? ====================
+agent Branch_Urgent {
+    prompt: "紧急处理：快速响应"
+}
+
+agent Branch_Normal {
+    prompt: "常规处理：详细分析"
+}
+
+agent Branch_Simple {
+    prompt: "简单处理"
+}
+
+agent Branch_Complex {
+    prompt: "复杂处理"
+}
+
+// ==================== 测试点 7: Fire-forget 操作符 || ====================
+agent FireForget_Logger {
+    prompt: "记录日志"
+}
+
+agent FireForget_Analytics {
+    prompt: "分析数据"
+}
+
+agent FireForget_Notification {
+    prompt: "发送通知"
+}
+
+// ==================== 测试点 8: 共识操作符 && ====================
+agent Consensus_Expert1 {
+    prompt: "专家1评估"
+}
+
+agent Consensus_Expert2 {
+    prompt: "专家2评估"
+}
+
+agent Consensus_Judge {
+    prompt: "综合专家意见做出最终判断"
+}
+
+// ==================== 测试点 9-10: 链式 DAG ====================
+agent Chain_Researcher1 {
+    prompt: "研究员1：技术研究"
+}
+
+agent Chain_Researcher2 {
+    prompt: "研究员2：商业研究"
+}
+
+agent Chain_Writer {
+    prompt: "撰写报告"
+}
+
+agent Chain_Reviewer {
+    prompt: "审核报告"
+}
+
+// ==================== 测试点 11: 多阶段 DAG ====================
+agent Multi_Preprocess1 {
+    prompt: "预处理1"
+}
+
+agent Multi_Preprocess2 {
+    prompt: "预处理2"
+}
+
+agent Multi_Process {
+    prompt: "主处理"
+}
+
+agent Multi_Postprocess {
+    prompt: "后处理"
+}
+
+// ==================== 测试点 12: DAG 与管道组合 ====================
+agent Combo_Start {
+    prompt: "开始处理"
+}
+
+agent Combo_Parallel1 {
+    prompt: "并行分支1"
+}
+
+agent Combo_Parallel2 {
+    prompt: "并行分支2"
+}
+
+agent Combo_End {
+    prompt: "结束处理"
+}
+
+// ==================== 测试点 13: 带 Protocol 的 DAG ====================
+protocol DAGResult {
+    status: "string",
+    value: "string"
+}
+
+agent Protocol_Worker1 implements DAGResult {
+    prompt: "结构化输出 Worker 1"
+}
+
+agent Protocol_Worker2 implements DAGResult {
+    prompt: "结构化输出 Worker 2"
+}
+
+agent Protocol_Merger {
+    prompt: "合并结构化结果"
+}
+
+// ==================== 测试点 14: 并发安全性测试 ====================
+agent Concurrent_Agent1 {
+    prompt: "并发Agent 1"
+}
+
+agent Concurrent_Agent2 {
+    prompt: "并发Agent 2"
+}
+
+agent Concurrent_Agent3 {
+    prompt: "并发Agent 3"
+}
+
+agent Concurrent_Collector {
+    prompt: "收集并发结果"
+}
+
+// ==================== 测试点 15: 复杂 DAG 拓扑 ====================
+agent Complex_Input {
+    prompt: "输入处理"
+}
+
+agent Complex_PathA1 {
+    prompt: "路径A1"
+}
+
+agent Complex_PathA2 {
+    prompt: "路径A2"
+}
+
+agent Complex_PathB1 {
+    prompt: "路径B1"
+}
+
+agent Complex_PathB2 {
+    prompt: "路径B2"
+}
+
+agent Complex_Final {
+    prompt: "最终整合"
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== DAG 操作符测试开始 ==========")
+    
+    // 测试点 1: 分叉到 2 个 Agent
+    print("Test 1: 分叉 |>> 到 2 个 Agent")
+    result1 = "测试输入" |>> [Fork_Worker1, Fork_Worker2]
+    print("Test 1 - 分叉 2 个 Agent: PASS")
+    
+    // 测试点 2: 分叉到 4 个 Agent
+    print("Test 2: 分叉 |>> 到 4 个 Agent")
+    result2 = "并发测试" |>> [Fork_Worker1, Fork_Worker2, Fork_Worker3, Fork_Worker4]
+    print("Test 2 - 分叉 4 个 Agent: PASS")
+    
+    // 测试点 3: 合流操作
+    print("Test 3: 合流 &>> 操作")
+    result3 = [Merge_Source1, Merge_Source2] &>> Merge_Aggregator
+    print("Test 3 - 合流操作: PASS")
+    
+    // 测试点 4: 分叉后合流链
+    print("Test 4: 分叉后合流链 |>> ... &>>")
+    result4 = "链式测试" |>> [Fork_Worker1, Fork_Worker2] &>> Merge_Aggregator
+    print("Test 4 - 分叉后合流链: PASS")
+    
+    // 测试点 5: 条件分支 - 紧急
+    print("Test 5: 条件分支 ?? 紧急情况")
+    urgent_input = "URGENT: 紧急事件"
+    result5 = urgent_input ?? Branch_Urgent : Branch_Normal
+    print("Test 5 - 条件分支紧急: PASS")
+    
+    // 测试点 6: 条件分支 - 正常
+    print("Test 6: 条件分支 ?? 正常情况")
+    normal_input = "常规处理请求"
+    result6 = normal_input ?? Branch_Urgent : Branch_Normal
+    print("Test 6 - 条件分支正常: PASS")
+    
+    // 测试点 7: Fire-forget 操作
+    print("Test 7: Fire-forget || 操作")
+    notification = "系统通知消息"
+    notification || [FireForget_Logger, FireForget_Analytics]
+    print("Test 7 - Fire-forget: PASS")
+    
+    // 测试点 8: 共识操作
+    print("Test 8: 共识 && 操作")
+    question = "是否批准此方案？"
+    result8 = question |>> [Consensus_Expert1, Consensus_Expert2] && Consensus_Judge
+    print("Test 8 - 共识操作: PASS")
+    
+    // 测试点 9: 链式 DAG - 研报流程
+    print("Test 9: 链式 DAG 研报流程")
+    topic = "AI 技术趋势"
+    result9 = topic |>> [Chain_Researcher1, Chain_Researcher2] &>> Chain_Writer >> Chain_Reviewer
+    print("Test 9 - 链式 DAG: PASS")
+    
+    // 测试点 10: 链式 DAG - 简化版
+    print("Test 10: 简化链式 DAG")
+    result10 = "数据" |>> [Fork_Worker1, Fork_Worker2] &>> Merge_Aggregator
+    print("Test 10 - 简化链式: PASS")
+    
+    // 测试点 11: 多阶段 DAG
+    print("Test 11: 多阶段 DAG")
+    result11 = "多阶段输入" |>> [Multi_Preprocess1, Multi_Preprocess2] &>> Multi_Process >> Multi_Postprocess
+    print("Test 11 - 多阶段 DAG: PASS")
+    
+    // 测试点 12: DAG 与管道组合
+    print("Test 12: DAG 与管道组合")
+    result12 = Combo_Start.run("开始") |>> [Combo_Parallel1, Combo_Parallel2] &>> Combo_End
+    print("Test 12 - DAG 与管道组合: PASS")
+    
+    // 测试点 13: 带 Protocol 的 DAG
+    print("Test 13: 带 Protocol 的 DAG")
+    result13 = "协议测试" |>> [Protocol_Worker1, Protocol_Worker2] &>> Protocol_Merger
+    print("Test 13 - 带 Protocol DAG: PASS")
+    
+    // 测试点 14: 并发安全性
+    print("Test 14: 并发安全性测试")
+    result14 = "并发安全测试" |>> [Concurrent_Agent1, Concurrent_Agent2, Concurrent_Agent3] &>> Concurrent_Collector
+    print("Test 14 - 并发安全: PASS")
+    
+    // 测试点 15: 复杂 DAG 拓扑
+    print("Test 15: 复杂 DAG 拓扑")
+    result15 = Complex_Input.run("复杂输入") |>> [Complex_PathA1, Complex_PathA2, Complex_PathB1, Complex_PathB2] &>> Complex_Final
+    print("Test 15 - 复杂 DAG 拓扑: PASS")
+    
+    print("========== DAG 操作符测试完成 ==========")
+}

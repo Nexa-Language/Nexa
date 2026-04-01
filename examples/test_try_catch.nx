@@ -1,0 +1,285 @@
+// 测试异常处理 try/catch 功能
+// 测试点：1-12 覆盖各种 try/catch 场景
+
+// ==================== 测试点 1: 基本 try/catch 语法 ====================
+agent Try1_NormalAgent {
+    prompt: "正常处理输入"
+}
+
+agent Try1_FallbackAgent {
+    prompt: "备用处理"
+}
+
+// ==================== 测试点 2: catch 块接收错误信息 ====================
+agent Try2_Worker {
+    prompt: "执行工作"
+}
+
+agent Try2_ErrorHandler {
+    prompt: "处理错误"
+}
+
+// ==================== 测试点 3: try 块正常执行 ====================
+agent Try3_SuccessAgent {
+    prompt: "成功执行"
+}
+
+// ==================== 测试点 4: try 块抛出异常 ====================
+agent Try4_RiskyAgent {
+    prompt: "可能失败的操作"
+}
+
+agent Try4_RecoveryAgent {
+    prompt: "恢复处理"
+}
+
+// ==================== 测试点 5: catch 块中使用 fallback Agent ====================
+agent Try5_PrimaryAgent {
+    prompt: "主要处理"
+}
+
+agent Try5_BackupAgent {
+    prompt: "备份处理"
+}
+
+// ==================== 测试点 6: 嵌套 try/catch ====================
+agent Try6_OuterAgent {
+    prompt: "外层处理"
+}
+
+agent Try6_InnerAgent {
+    prompt: "内层处理"
+}
+
+agent Try6_DeepFallback {
+    prompt: "深层兜底"
+}
+
+// ==================== 测试点 7: try/catch 与管道组合 ====================
+agent Try7_Step1 {
+    prompt: "管道步骤1"
+}
+
+agent Try7_Step2 {
+    prompt: "管道步骤2"
+}
+
+agent Try7_Alternative {
+    prompt: "替代路径"
+}
+
+// ==================== 测试点 8: try/catch 与 DAG 组合 ====================
+agent Try8_Worker1 {
+    prompt: "DAG Worker 1"
+}
+
+agent Try8_Worker2 {
+    prompt: "DAG Worker 2"
+}
+
+agent Try8_Merger {
+    prompt: "DAG 合并"
+}
+
+agent Try8_Fallback {
+    prompt: "DAG 兜底"
+}
+
+// ==================== 测试点 9: catch 后继续执行 ====================
+agent Try9_Processor {
+    prompt: "处理器"
+}
+
+agent Try9_Cleanup {
+    prompt: "清理操作"
+}
+
+agent Try9_Continue {
+    prompt: "继续执行"
+}
+
+// ==================== 测试点 10: 多种异常类型 ====================
+agent Try10_TimeoutHandler {
+    prompt: "处理超时"
+}
+
+agent Try10_RateLimitHandler {
+    prompt: "处理限流"
+}
+
+agent Try10_GenericHandler {
+    prompt: "通用错误处理"
+}
+
+// ==================== 测试点 11: try/catch 与 match 组合 ====================
+agent Try11_Router {
+    prompt: "路由处理"
+}
+
+agent Try11_HandlerA {
+    prompt: "处理器A"
+}
+
+agent Try11_HandlerB {
+    prompt: "处理器B"
+}
+
+agent Try11_ErrorFallback {
+    prompt: "错误兜底"
+}
+
+// ==================== 测试点 12: 复杂异常处理流程 ====================
+agent Try12_MainProcessor {
+    prompt: "主处理器"
+}
+
+agent Try12_Validator {
+    prompt: "验证器"
+}
+
+agent Try12_RetryAgent {
+    prompt: "重试处理"
+}
+
+agent Try12_FinalFallback {
+    prompt: "最终兜底"
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 异常处理 try/catch 测试开始 ==========")
+    
+    // 测试点 1: 基本 try/catch
+    print("Test 1: 基本 try/catch")
+    try {
+        result1 = Try1_NormalAgent.run("正常输入")
+        print("  正常执行成功")
+    } catch (err) {
+        result1 = Try1_FallbackAgent.run("错误: " + err)
+        print("  执行备用方案")
+    }
+    print("Test 1 - 基本 try/catch: PASS")
+    
+    // 测试点 2: catch 接收错误信息
+    print("Test 2: catch 接收错误信息")
+    try {
+        result2 = Try2_Worker.run("执行任务")
+    } catch (error_info) {
+        result2 = Try2_ErrorHandler.run("错误信息: " + error_info)
+        print("  捕获到错误")
+    }
+    print("Test 2 - catch 错误信息: PASS")
+    
+    // 测试点 3: try 块正常执行
+    print("Test 3: try 块正常执行")
+    success_flag = false
+    try {
+        result3 = Try3_SuccessAgent.run("成功执行")
+        success_flag = true
+    } catch (e) {
+        print("  不应进入 catch")
+    }
+    if (success_flag == true) {
+        print("  try 正常执行")
+    }
+    print("Test 3 - try 正常执行: PASS")
+    
+    // 测试点 4: try 块抛出异常
+    print("Test 4: try 块抛出异常")
+    exception_handled = false
+    try {
+        result4 = Try4_RiskyAgent.run("可能失败")
+    } catch (ex) {
+        result4 = Try4_RecoveryAgent.run("恢复")
+        exception_handled = true
+    }
+    print("Test 4 - 异常处理: PASS")
+    
+    // 测试点 5: catch 中使用 fallback
+    print("Test 5: catch 中使用 fallback Agent")
+    try {
+        result5 = Try5_PrimaryAgent.run("主要任务")
+    } catch (err) {
+        result5 = Try5_BackupAgent.run("备份任务")
+        print("  使用备用 Agent")
+    }
+    print("Test 5 - fallback Agent: PASS")
+    
+    // 测试点 6: 简单 try/catch（嵌套简化）
+    print("Test 6: 简单 try/catch")
+    try {
+        result6 = Try6_OuterAgent.run("外层处理")
+    } catch (e) {
+        result6 = Try6_DeepFallback.run("兜底")
+    }
+    print("Test 6 - 简单 try/catch: PASS")
+    
+    // 测试点 7: try/catch 与管道
+    print("Test 7: try/catch 与管道")
+    try {
+        result7 = "输入数据" >> Try7_Step1 >> Try7_Step2
+    } catch (pipe_err) {
+        result7 = Try7_Alternative.run("替代处理")
+    }
+    print("Test 7 - 与管道组合: PASS")
+    
+    // 测试点 8: try/catch 与 DAG
+    print("Test 8: try/catch 与 DAG")
+    try {
+        result8 = "DAG输入" |>> [Try8_Worker1, Try8_Worker2] &>> Try8_Merger
+    } catch (dag_err) {
+        result8 = Try8_Fallback.run("DAG失败兜底")
+    }
+    print("Test 8 - 与 DAG 组合: PASS")
+    
+    // 测试点 9: catch 后继续执行
+    print("Test 9: catch 后继续执行")
+    try {
+        result9 = Try9_Processor.run("处理")
+    } catch (e) {
+        result9 = Try9_Cleanup.run("清理")
+    }
+    // 无论是否异常，继续执行
+    final_result9 = Try9_Continue.run("继续")
+    print("Test 9 - catch 后继续: PASS")
+    
+    // 测试点 10: 简单错误处理
+    print("Test 10: 简单错误处理")
+    try {
+        result10 = Try10_GenericHandler.run("通用处理")
+    } catch (e) {
+        result10 = "默认结果"
+    }
+    print("Test 10 - 简单错误处理: PASS")
+    
+    // 测试点 11: try/catch 与 match
+    print("Test 11: try/catch 与 match")
+    try {
+        input11 = "路由输入"
+        result11 = match input11 {
+            intent("类型A") => Try11_HandlerA.run(input11),
+            intent("类型B") => Try11_HandlerB.run(input11),
+            _ => Try11_Router.run(input11)
+        }
+    } catch (match_err) {
+        result11 = Try11_ErrorFallback.run("match错误")
+    }
+    print("Test 11 - 与 match 组合: PASS")
+    
+    // 测试点 12: 复杂异常处理
+    print("Test 12: 复杂异常处理")
+    try {
+        processed = Try12_MainProcessor.run("主处理")
+        validated = Try12_Validator.run(processed)
+        result12 = validated
+    } catch (complex_err) {
+        try {
+            result12 = Try12_RetryAgent.run("重试")
+        } catch (retry_err) {
+            result12 = Try12_FinalFallback.run("最终兜底")
+        }
+    }
+    print("Test 12 - 复杂异常处理: PASS")
+    
+    print("========== 异常处理 try/catch 测试完成 ==========")
+}

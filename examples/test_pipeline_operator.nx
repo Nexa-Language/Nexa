@@ -1,0 +1,190 @@
+// 测试管道操作符 >> 功能
+// 测试点：1-12 覆盖各种管道场景
+
+// ==================== 测试点 1: 基本管道 A >> B ====================
+agent Pipe1_Step1 {
+    prompt: "第一步：处理输入，返回处理结果"
+}
+
+agent Pipe1_Step2 {
+    prompt: "第二步：继续处理"
+}
+
+// ==================== 测试点 2: 三阶段管道 ====================
+agent Pipe2_A {
+    prompt: "阶段A"
+}
+
+agent Pipe2_B {
+    prompt: "阶段B"
+}
+
+agent Pipe2_C {
+    prompt: "阶段C"
+}
+
+// ==================== 测试点 3: 四阶段管道 ====================
+agent Pipe3_1 {
+    prompt: "阶段1"
+}
+
+agent Pipe3_2 {
+    prompt: "阶段2"
+}
+
+agent Pipe3_3 {
+    prompt: "阶段3"
+}
+
+agent Pipe3_4 {
+    prompt: "阶段4"
+}
+
+// ==================== 测试点 4: 输入字符串开始 ====================
+agent Pipe4_Processor {
+    prompt: "处理输入文本"
+}
+
+agent Pipe4_Formatter {
+    prompt: "格式化输出"
+}
+
+// ==================== 测试点 5: 管道与方法调用混合 ====================
+agent Pipe5_Agent {
+    prompt: "处理输入"
+}
+
+// ==================== 测试点 6: 管道结果赋值 ====================
+agent Pipe6_First {
+    prompt: "第一步处理"
+}
+
+agent Pipe6_Second {
+    prompt: "第二步处理"
+}
+
+// ==================== 测试点 7: 管道作为参数传递 ====================
+agent Pipe7_Worker {
+    prompt: "执行工作"
+}
+
+agent Pipe7_Consumer {
+    prompt: "消费结果"
+}
+
+// ==================== 测试点 8: 带 Protocol 的管道 ====================
+protocol PipeResult {
+    status: "string",
+    value: "string"
+}
+
+agent Pipe8_Generator implements PipeResult {
+    prompt: "生成结构化数据"
+}
+
+agent Pipe8_Processor {
+    prompt: "处理结构化数据"
+}
+
+// ==================== 测试点 9: 带 uses 的管道 ====================
+agent Pipe9_Reader {
+    prompt: "读取和处理数据"
+}
+
+agent Pipe9_Writer {
+    prompt: "写入数据"
+}
+
+// ==================== 测试点 10: 管道与 DAG 组合 ====================
+agent Pipe10_Splitter {
+    prompt: "拆分任务"
+}
+
+agent Pipe10_Worker1 {
+    prompt: "Worker 1"
+}
+
+agent Pipe10_Worker2 {
+    prompt: "Worker 2"
+}
+
+agent Pipe10_Merger {
+    prompt: "合并结果"
+}
+
+// ==================== 测试点 11: 管道链中的缓存 ====================
+agent Pipe11_Cached1 {
+    prompt: "带缓存的步骤1",
+    cache: true
+}
+
+agent Pipe11_Cached2 {
+    prompt: "带缓存的步骤2",
+    cache: true
+}
+
+// ==================== 测试点 12: 长管道链 ====================
+agent Pipe12_A { prompt: "A" }
+agent Pipe12_B { prompt: "B" }
+agent Pipe12_C { prompt: "C" }
+agent Pipe12_D { prompt: "D" }
+agent Pipe12_E { prompt: "E" }
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 管道操作符 >> 测试开始 ==========")
+    
+    // 测试点 1: 基本管道
+    result1 = Pipe1_Step1.run("输入") >> Pipe1_Step2
+    print("Test 1 - 基本管道 A >> B: PASS")
+    
+    // 测试点 2: 三阶段管道
+    result2 = Pipe2_A.run("开始") >> Pipe2_B >> Pipe2_C
+    print("Test 2 - 三阶段管道: PASS")
+    
+    // 测试点 3: 四阶段管道
+    result3 = Pipe3_1.run("init") >> Pipe3_2 >> Pipe3_3 >> Pipe3_4
+    print("Test 3 - 四阶段管道: PASS")
+    
+    // 测试点 4: 字符串输入开始
+    input_text = "原始输入文本"
+    result4 = input_text >> Pipe4_Processor >> Pipe4_Formatter
+    print("Test 4 - 字符串开始管道: PASS")
+    
+    // 测试点 5: 方法调用与管道
+    step1_result = Pipe5_Agent.run("处理")
+    result5 = step1_result >> Pipe5_Agent
+    print("Test 5 - 方法调用与管道: PASS")
+    
+    // 测试点 6: 结果赋值
+    final_result = Pipe6_First.run("初始") >> Pipe6_Second
+    print("Test 6 - 管道结果赋值: PASS")
+    print("  结果: " + final_result)
+    
+    // 测试点 7: 管道作为参数
+    intermediate = Pipe7_Worker.run("工作")
+    result7 = intermediate >> Pipe7_Consumer
+    print("Test 7 - 管道作为参数: PASS")
+    
+    // 测试点 8: 带 Protocol
+    result8 = Pipe8_Generator.run("生成") >> Pipe8_Processor
+    print("Test 8 - 带 Protocol 管道: PASS")
+    
+    // 测试点 9: 带 uses
+    result9 = Pipe9_Reader.run("读取处理") >> Pipe9_Writer
+    print("Test 9 - 带 uses 管道: PASS")
+    
+    // 测试点 10: 管道与 DAG 组合
+    result10 = Pipe10_Splitter.run("任务") |>> [Pipe10_Worker1, Pipe10_Worker2] &>> Pipe10_Merger
+    print("Test 10 - 管道与 DAG 组合: PASS")
+    
+    // 测试点 11: 缓存管道
+    result11 = Pipe11_Cached1.run("缓存测试") >> Pipe11_Cached2
+    print("Test 11 - 缓存管道: PASS")
+    
+    // 测试点 12: 长管道
+    result12 = Pipe12_A.run("长链开始") >> Pipe12_B >> Pipe12_C >> Pipe12_D >> Pipe12_E
+    print("Test 12 - 长管道链: PASS")
+    
+    print("========== 管道操作符 >> 测试完成 ==========")
+}

@@ -1,0 +1,28 @@
+// test_semantic_types.nx - v1.0.2 语义类型测试
+// 验证 Semantic Types 语法的解析和编译
+
+// 基本语义类型定义
+type Summary = str @ "A concise summary"
+type Sentiment = str @ "positive, negative, or neutral"
+type Confidence = float @ "A value between 0.0 and 1.0"
+
+// 简单类型别名
+type PlainInt = int
+type PlainStr = str
+
+// 泛型类型
+type Tags = list[str]
+type Scores = dict[str, float]
+
+// 自定义类型引用
+type CustomRef = Summary
+
+agent Summarizer {
+    role: "Text Summarization Agent"
+    prompt: "Summarize the given text concisely"
+    model: "openai:gpt-4o"
+}
+
+flow main {
+    print("Semantic Types Test - v1.0.2");
+}

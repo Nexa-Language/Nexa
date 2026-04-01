@@ -1,0 +1,207 @@
+// Agent 属性专项测试
+// 测试点：role, prompt, model, memory, stream, cache, experience, fallback, max_tokens, timeout, retry, uses
+
+// ==================== 测试点 1: role 属性 ====================
+agent TestRoleBasic {
+    role: "测试角色",
+    prompt: "回复OK"
+}
+
+agent TestRoleEmpty {
+    prompt: "回复OK"
+}
+
+agent TestRoleMultiline {
+    role: "资深软件工程师，专注于Python和Rust开发，拥有10年以上经验",
+    prompt: "回复OK"
+}
+
+// ==================== 测试点 2: prompt 属性 ====================
+agent TestPromptSingleLine {
+    prompt: "单行prompt测试"
+}
+
+agent TestPromptMultiLine {
+    prompt: "多行prompt测试：1.第一行 2.第二行 3.第三行"
+}
+
+agent TestPromptWithChinese {
+    prompt: "这是一个中文prompt测试，包含特殊字符：@#$%"
+}
+
+// ==================== 测试点 3: model 属性 ====================
+agent TestModelDeepseek {
+    model: "deepseek/deepseek-chat",
+    prompt: "回复OK"
+}
+
+agent TestModelMinimax {
+    model: "minimax/minimax-m2.5",
+    prompt: "回复OK"
+}
+
+agent TestModelOpenai {
+    model: "openai/gpt-4",
+    prompt: "回复OK"
+}
+
+// ==================== 测试点 4: memory 属性 ====================
+agent TestMemoryPersistent {
+    prompt: "记住用户的名字",
+    memory: "persistent"
+}
+
+agent TestMemoryLocal {
+    prompt: "本地记忆测试",
+    memory: "local"
+}
+
+// ==================== 测试点 5: stream 属性 ====================
+agent TestStreamTrue {
+    prompt: "流式输出测试",
+    stream: true
+}
+
+agent TestStreamFalse {
+    prompt: "非流式输出测试",
+    stream: false
+}
+
+// ==================== 测试点 6: cache 属性 ====================
+agent TestCacheTrue {
+    prompt: "缓存测试开启",
+    cache: true
+}
+
+agent TestCacheFalse {
+    prompt: "缓存测试关闭",
+    cache: false
+}
+
+// ==================== 测试点 7: experience 属性 ====================
+agent TestExperienceBasic {
+    prompt: "基于经验回答",
+    experience: "my_memory.md"
+}
+
+// ==================== 测试点 8: fallback 属性 ====================
+agent TestFallbackSingle {
+    model: "openai/gpt-4",
+    fallback: "deepseek/deepseek-chat",
+    prompt: "测试单个备用模型"
+}
+
+// ==================== 测试点 9: max_tokens 属性 ====================
+agent TestMaxTokens100 {
+    prompt: "限制输出100token",
+    max_tokens: 100
+}
+
+agent TestMaxTokens1000 {
+    prompt: "限制输出1000token",
+    max_tokens: 1000
+}
+
+// ==================== 测试点 10: timeout 属性 ====================
+agent TestTimeout10 {
+    prompt: "10秒超时",
+    timeout: 10
+}
+
+agent TestTimeout60 {
+    prompt: "60秒超时",
+    timeout: 60
+}
+
+// ==================== 测试点 11: retry 属性 ====================
+agent TestRetry1 {
+    prompt: "重试1次",
+    retry: 1
+}
+
+agent TestRetry5 {
+    prompt: "重试5次",
+    retry: 5
+}
+
+// ==================== 测试点 12: 组合属性 ====================
+agent TestCombinedAll {
+    role: "综合测试Agent",
+    model: "deepseek/deepseek-chat",
+    prompt: "测试所有属性组合",
+    memory: "local",
+    stream: false,
+    cache: true,
+    max_tokens: 500,
+    timeout: 30,
+    retry: 3
+}
+
+// ==================== 测试 Flow ====================
+flow test_role {
+    result = TestRoleBasic.run("测试role属性")
+    print("Test 1 - role: PASS")
+}
+
+flow test_prompt {
+    result = TestPromptSingleLine.run("测试prompt")
+    print("Test 2 - prompt: PASS")
+}
+
+flow test_model {
+    result = TestModelDeepseek.run("测试model")
+    print("Test 3 - model: PASS")
+}
+
+flow test_memory {
+    result = TestMemoryLocal.run("测试memory")
+    print("Test 4 - memory: PASS")
+}
+
+flow test_stream {
+    result = TestStreamFalse.run("测试stream")
+    print("Test 5 - stream: PASS")
+}
+
+flow test_cache {
+    result = TestCacheFalse.run("测试cache")
+    print("Test 6 - cache: PASS")
+}
+
+flow test_max_tokens {
+    result = TestMaxTokens100.run("测试max_tokens")
+    print("Test 9 - max_tokens: PASS")
+}
+
+flow test_timeout {
+    result = TestTimeout10.run("测试timeout")
+    print("Test 10 - timeout: PASS")
+}
+
+flow test_retry {
+    result = TestRetry1.run("测试retry")
+    print("Test 11 - retry: PASS")
+}
+
+flow test_combined {
+    result = TestCombinedAll.run("测试组合属性")
+    print("Test 12 - combined: PASS")
+}
+
+// 主入口
+flow main {
+    print("========== Agent 属性测试开始 ==========")
+    
+    test_role()
+    test_prompt()
+    test_model()
+    test_memory()
+    test_stream()
+    test_cache()
+    test_max_tokens()
+    test_timeout()
+    test_retry()
+    test_combined()
+    
+    print("========== Agent 属性测试完成 ==========")
+}

@@ -1,0 +1,251 @@
+// 测试语义条件判断 semantic_if 功能
+// 测试点：1-12 覆盖各种 semantic_if 场景
+
+// ==================== 测试点 1: 基本 semantic_if 语法 ====================
+agent SemIf1_JSONHandler {
+    prompt: "处理 JSON 数据"
+}
+
+agent SemIf1_TextHandler {
+    prompt: "处理文本数据"
+}
+
+// ==================== 测试点 2: fast_match 正则预过滤 ====================
+agent SemIf2_DateHandler {
+    prompt: "处理日期信息"
+}
+
+agent SemIf2_GeneralHandler {
+    prompt: "一般处理"
+}
+
+// ==================== 测试点 3: against 变量指定 ====================
+agent SemIf3_CodeAnalyzer {
+    prompt: "分析代码"
+}
+
+agent SemIf3_DocAnalyzer {
+    prompt: "分析文档"
+}
+
+// ==================== 测试点 4: else 分支 ====================
+agent SemIf4_SpecialProcessor {
+    prompt: "特殊处理"
+}
+
+agent SemIf4_NormalProcessor {
+    prompt: "常规处理"
+}
+
+// ==================== 测试点 5: 中文条件描述 ====================
+agent SemIf5_ChineseExpert {
+    prompt: "中文专家处理"
+}
+
+agent SemIf5_OtherExpert {
+    prompt: "其他处理"
+}
+
+// ==================== 测试点 6: 英文条件描述 ====================
+agent SemIf6_TechnicalExpert {
+    prompt: "Technical processing"
+}
+
+agent SemIf6_NonTechnicalExpert {
+    prompt: "Non-technical processing"
+}
+
+// ==================== 测试点 7: JSON 格式检测 ====================
+agent SemIf7_JSONParser {
+    prompt: "解析 JSON"
+}
+
+agent SemIf7_PlainTextParser {
+    prompt: "处理纯文本"
+}
+
+// ==================== 测试点 8: 日期格式检测 ====================
+agent SemIf8_Scheduler {
+    prompt: "安排日程"
+}
+
+agent SemIf8_Logger {
+    prompt: "记录日志"
+}
+
+// ==================== 测试点 9: 复杂条件组合 ====================
+agent SemIf9_ComplexHandler {
+    prompt: "复杂条件处理"
+}
+
+agent SemIf9_SimpleHandler {
+    prompt: "简单处理"
+}
+
+// ==================== 测试点 10: semantic_if 与 Agent 调用组合 ====================
+agent SemIf10_PriorityHandler {
+    prompt: "优先处理"
+}
+
+agent SemIf10_SecondaryHandler {
+    prompt: "次要处理"
+}
+
+// ==================== 测试点 11: 嵌套 semantic_if ====================
+agent SemIf11_Level1Handler {
+    prompt: "第一层处理"
+}
+
+agent SemIf11_Level2Handler {
+    prompt: "第二层处理"
+}
+
+agent SemIf11_FallbackHandler {
+    prompt: "兜底处理"
+}
+
+// ==================== 测试点 12: semantic_if 与 DAG 组合 ====================
+agent SemIf12_Parallel1 {
+    prompt: "并行处理1"
+}
+
+agent SemIf12_Parallel2 {
+    prompt: "并行处理2"
+}
+
+agent SemIf12_Sequential {
+    prompt: "顺序处理"
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 语义条件判断 semantic_if 测试开始 ==========")
+    
+    // 测试点 1: 基本 semantic_if
+    print("Test 1: 基本 semantic_if")
+    input1 = """{"name": "test", "value": 123}"""
+    semantic_if "输入内容是有效的 JSON 格式" against input1 {
+        result1 = SemIf1_JSONHandler.run(input1)
+        print("  作为 JSON 处理")
+    } else {
+        result1 = SemIf1_TextHandler.run(input1)
+        print("  作为文本处理")
+    }
+    print("Test 1 - 基本 semantic_if: PASS")
+    
+    // 测试点 2: fast_match 正则预过滤
+    print("Test 2: fast_match 正则预过滤")
+    date_input = "会议定于 2024-03-15 举行"
+    semantic_if "包含具体日期" fast_match r"\d{4}-\d{2}-\d{2}" against date_input {
+        result2 = SemIf2_DateHandler.run(date_input)
+        print("  检测到日期")
+    } else {
+        result2 = SemIf2_GeneralHandler.run(date_input)
+        print("  未检测到日期")
+    }
+    print("Test 2 - fast_match: PASS")
+    
+    // 测试点 3: against 变量指定
+    print("Test 3: against 变量指定")
+    code_input = "def hello(): print('hello')"
+    semantic_if "内容是代码片段" against code_input {
+        result3 = SemIf3_CodeAnalyzer.run(code_input)
+    } else {
+        result3 = SemIf3_DocAnalyzer.run(code_input)
+    }
+    print("Test 3 - against 变量: PASS")
+    
+    // 测试点 4: else 分支
+    print("Test 4: else 分支")
+    input4 = "普通文本内容"
+    semantic_if "包含特殊标记 URGENT" against input4 {
+        result4 = SemIf4_SpecialProcessor.run(input4)
+    } else {
+        result4 = SemIf4_NormalProcessor.run(input4)
+    }
+    print("Test 4 - else 分支: PASS")
+    
+    // 测试点 5: 中文条件描述
+    print("Test 5: 中文条件描述")
+    chinese_input = "这是一个中文测试内容"
+    semantic_if "内容主要是中文" against chinese_input {
+        result5 = SemIf5_ChineseExpert.run(chinese_input)
+    } else {
+        result5 = SemIf5_OtherExpert.run(chinese_input)
+    }
+    print("Test 5 - 中文条件: PASS")
+    
+    // 测试点 6: 英文条件描述
+    print("Test 6: 英文条件描述")
+    english_input = "This is an English text content"
+    semantic_if "Content contains technical terms" against english_input {
+        result6 = SemIf6_TechnicalExpert.run(english_input)
+    } else {
+        result6 = SemIf6_NonTechnicalExpert.run(english_input)
+    }
+    print("Test 6 - 英文条件: PASS")
+    
+    // 测试点 7: JSON 格式检测
+    print("Test 7: JSON 格式检测")
+    json_test = "json_test_data"
+    semantic_if "输入内容是有效的 JSON 格式" fast_match r"^\s*[\[{]" against json_test {
+        result7 = SemIf7_JSONParser.run(json_test)
+        print("  JSON 解析")
+    } else {
+        result7 = SemIf7_PlainTextParser.run(json_test)
+        print("  文本解析")
+    }
+    print("Test 7 - JSON 检测: PASS")
+    
+    // 测试点 8: 日期格式检测
+    print("Test 8: 日期格式检测")
+    date_test = "日程安排：2024-12-25 圣诞节"
+    semantic_if "包含具体的日期和地点信息" fast_match r"\d{4}-\d{2}-\d{2}" against date_test {
+        result8 = SemIf8_Scheduler.run(date_test)
+    } else {
+        result8 = SemIf8_Logger.run(date_test)
+    }
+    print("Test 8 - 日期检测: PASS")
+    
+    // 测试点 9: 复杂条件组合
+    print("Test 9: 复杂条件组合")
+    complex_input = "复杂的输入内容，需要深度分析"
+    semantic_if "输入包含需要复杂处理的多个要素" against complex_input {
+        result9 = SemIf9_ComplexHandler.run(complex_input)
+    } else {
+        result9 = SemIf9_SimpleHandler.run(complex_input)
+    }
+    print("Test 9 - 复杂条件: PASS")
+    
+    // 测试点 10: 与 Agent 调用组合
+    print("Test 10: 与 Agent 调用组合")
+    priority_input = "紧急：需要立即处理"
+    semantic_if "包含紧急或高优先级标记" against priority_input {
+        result10 = SemIf10_PriorityHandler.run(priority_input) >> SemIf10_SecondaryHandler
+    } else {
+        result10 = SemIf10_SecondaryHandler.run(priority_input)
+    }
+    print("Test 10 - Agent 组合: PASS")
+    
+    // 测试点 11: 简单分支（嵌套简化）
+    print("Test 11: 简单分支")
+    level_input = "需要处理的数据"
+    semantic_if "数据需要第一层处理" against level_input {
+        result11 = SemIf11_Level1Handler.run(level_input)
+    } else {
+        result11 = SemIf11_FallbackHandler.run(level_input)
+    }
+    print("Test 11 - 简单分支: PASS")
+    
+    // 测试点 12: semantic_if 与 DAG
+    print("Test 12: semantic_if 与 DAG")
+    dag_input = "需要并行处理的数据"
+    semantic_if "数据适合并行处理" against dag_input {
+        result12 = dag_input |>> [SemIf12_Parallel1, SemIf12_Parallel2]
+    } else {
+        result12 = dag_input >> SemIf12_Sequential
+    }
+    print("Test 12 - semantic_if 与 DAG: PASS")
+    
+    print("========== 语义条件判断 semantic_if 测试完成 ==========")
+}

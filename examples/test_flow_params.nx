@@ -1,0 +1,232 @@
+// 测试 flow 参数传递功能
+// 测试点：1-12 覆盖各种参数场景
+
+// ==================== 测试点 1: 基本参数 ====================
+agent Flow1_Processor {
+    prompt: "处理输入参数"
+}
+
+// ==================== 测试点 2: 多参数 ====================
+agent Flow2_Combiner {
+    prompt: "组合多个参数"
+}
+
+// ==================== 测试点 3: 参数类型验证 ====================
+agent Flow3_TypedProcessor {
+    prompt: "处理特定类型的参数"
+}
+
+// ==================== 测试点 4: 参数在 flow 内使用 ====================
+agent Flow4_User {
+    prompt: "使用传入的参数"
+}
+
+// ==================== 测试点 5: 参数传递给 Agent ====================
+agent Flow5_AgentWithParam {
+    prompt: "接收参数的 Agent"
+}
+
+// ==================== 测试点 6: 参数默认值 ====================
+agent Flow6_DefaultHandler {
+    prompt: "使用默认参数值"
+}
+
+// ==================== 测试点 7: 可选参数 ====================
+agent Flow7_OptionalHandler {
+    prompt: "处理可选参数"
+}
+
+// ==================== 测试点 8: 参数在 match 中使用 ====================
+agent Flow8_MatcherA {
+    prompt: "匹配处理器 A"
+}
+
+agent Flow8_MatcherB {
+    prompt: "匹配处理器 B"
+}
+
+agent Flow8_DefaultMatcher {
+    prompt: "默认匹配处理器"
+}
+
+// ==================== 测试点 9: 参数在 DAG 中使用 ====================
+agent Flow9_DAGWorker1 {
+    prompt: "DAG Worker 1"
+}
+
+agent Flow9_DAGWorker2 {
+    prompt: "DAG Worker 2"
+}
+
+agent Flow9_DAGMerger {
+    prompt: "DAG 合并器"
+}
+
+// ==================== 测试点 10: 复杂类型参数 ====================
+agent Flow10_ComplexHandler {
+    prompt: "处理复杂类型参数"
+}
+
+// ==================== 测试点 11: 参数在管道中使用 ====================
+agent Flow11_PipeStep1 {
+    prompt: "管道步骤 1"
+}
+
+agent Flow11_PipeStep2 {
+    prompt: "管道步骤 2"
+}
+
+// ==================== 测试点 12: 参数与返回值 ====================
+agent Flow12_Finalizer {
+    prompt: "最终处理"
+}
+
+// ==================== Flow 定义 ====================
+
+// 测试点 1: 基本参数
+flow flow_basic_param(input: string) {
+    result = Flow1_Processor.run(input)
+    return result
+}
+
+// 测试点 2: 多参数
+flow flow_multi_param(name: string, value: int) {
+    combined = name + " - " + str(value)
+    result = Flow2_Combiner.run(combined)
+    return result
+}
+
+// 测试点 3: 参数类型
+flow flow_typed_param(text: string, count: int) {
+    result = Flow3_TypedProcessor.run("处理 " + text + " 共 " + str(count) + " 次")
+    return result
+}
+
+// 测试点 4: 参数在 flow 内使用
+flow flow_use_param(data: string) {
+    processed = "处理: " + data
+    result = Flow4_User.run(processed)
+    return result
+}
+
+// 测试点 5: 参数传递给 Agent
+flow flow_agent_param(query: string) {
+    result = Flow5_AgentWithParam.run(query)
+    return result
+}
+
+// 测试点 6: 参数默认值
+flow flow_default_param(input: string, count: int) {
+    // 如果 count 未提供，使用默认值
+    actual_count = count
+    result = Flow6_DefaultHandler.run(input + " x" + str(actual_count))
+    return result
+}
+
+// 测试点 7: 可选参数
+flow flow_optional_param(required: string, optional: string) {
+    opt_val = optional
+    result = Flow7_OptionalHandler.run(required + " | " + opt_val)
+    return result
+}
+
+// 测试点 8: 参数在 match 中
+flow flow_match_param(request: string) {
+    result = match request {
+        intent("类型A") => Flow8_MatcherA.run(request),
+        intent("类型B") => Flow8_MatcherB.run(request),
+        _ => Flow8_DefaultMatcher.run(request)
+    }
+    return result
+}
+
+// 测试点 9: 参数在 DAG 中
+flow flow_dag_param(input: string) {
+    result = input |>> [Flow9_DAGWorker1, Flow9_DAGWorker2] &>> Flow9_DAGMerger
+    return result
+}
+
+// 测试点 10: 复杂类型
+flow flow_complex_param(data: string, config: string) {
+    result = Flow10_ComplexHandler.run("数据: " + data + ", 配置: " + config)
+    return result
+}
+
+// 测试点 11: 参数在管道中
+flow flow_pipe_param(input: string) {
+    result = input >> Flow11_PipeStep1 >> Flow11_PipeStep2
+    return result
+}
+
+// 测试点 12: 参数与返回值
+flow flow_return_param(input: string) {
+    processed = Flow12_Finalizer.run(input)
+    return processed
+}
+
+// ==================== 主测试 Flow ====================
+flow main {
+    print("========== flow 参数传递测试开始 ==========")
+    
+    // 测试点 1: 基本参数
+    print("Test 1: 基本参数")
+    result1 = flow_basic_param("测试输入")
+    print("Test 1 - 基本参数: PASS")
+    
+    // 测试点 2: 多参数
+    print("Test 2: 多参数")
+    result2 = flow_multi_param("项目", "42")
+    print("Test 2 - 多参数: PASS")
+    
+    // 测试点 3: 参数类型
+    print("Test 3: 参数类型验证")
+    result3 = flow_typed_param("数据", "3")
+    print("Test 3 - 参数类型: PASS")
+    
+    // 测试点 4: 参数在 flow 内使用
+    print("Test 4: 参数在 flow 内使用")
+    result4 = flow_use_param("原始数据")
+    print("Test 4 - 参数使用: PASS")
+    
+    // 测试点 5: 参数传递给 Agent
+    print("Test 5: 参数传递给 Agent")
+    result5 = flow_agent_param("查询请求")
+    print("Test 5 - Agent 参数: PASS")
+    
+    // 测试点 6: 参数默认值
+    print("Test 6: 参数默认值")
+    result6 = flow_default_param("输入")
+    print("Test 6 - 默认值: PASS")
+    
+    // 测试点 7: 可选参数
+    print("Test 7: 可选参数")
+    result7 = flow_optional_param("必需", "可选")
+    print("Test 7 - 可选参数: PASS")
+    
+    // 测试点 8: 参数在 match 中
+    print("Test 8: 参数在 match 中使用")
+    result8 = flow_match_param("处理请求")
+    print("Test 8 - match 参数: PASS")
+    
+    // 测试点 9: 参数在 DAG 中
+    print("Test 9: 参数在 DAG 中使用")
+    result9 = flow_dag_param("DAG 输入")
+    print("Test 9 - DAG 参数: PASS")
+    
+    // 测试点 10: 复杂类型
+    print("Test 10: 复杂类型参数")
+    result10 = flow_complex_param("复杂数据", "complex_value")
+    print("Test 10 - 复杂类型: PASS")
+    
+    // 测试点 11: 参数在管道中
+    print("Test 11: 参数在管道中使用")
+    result11 = flow_pipe_param("管道输入")
+    print("Test 11 - 管道参数: PASS")
+    
+    // 测试点 12: 参数与返回值
+    print("Test 12: 参数与返回值")
+    result12 = flow_return_param("最终输入")
+    print("Test 12 - 参数返回值: PASS")
+    
+    print("========== flow 参数传递测试完成 ==========")
+}

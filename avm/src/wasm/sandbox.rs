@@ -134,9 +134,10 @@ pub struct ResourceLimits {
 
 impl Default for ResourceLimits {
     fn default() -> Self {
+        // 论文声称：默认16MB内存，30s超时
         Self {
-            max_cpu_time_ms: 5000,
-            max_memory_bytes: 16 * 1024 * 1024, // 16MB
+            max_cpu_time_ms: 30_000, // 30s - 匹配论文声明
+            max_memory_bytes: 16 * 1024 * 1024, // 16MB - 匹配论文声明
             max_fds: 64,
             max_file_size: 1 * 1024 * 1024, // 1MB
             max_connections: 10,

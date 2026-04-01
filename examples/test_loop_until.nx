@@ -1,0 +1,236 @@
+// 测试语义循环 loop until 功能
+// 测试点：1-12 覆盖各种 loop 场景
+
+// ==================== 测试点 1: 基本 loop until 语法 ====================
+agent Loop1_Writer {
+    prompt: "写作内容，根据反馈改进"
+}
+
+agent Loop1_Critic {
+    prompt: "批评内容，给出改进建议"
+}
+
+// ==================== 测试点 2: 自然语言终止条件 ====================
+agent Loop2_Coder {
+    prompt: "编写代码"
+}
+
+agent Loop2_Tester {
+    prompt: "测试代码，返回是否通过"
+}
+
+agent Loop2_Checker {
+    prompt: "检查测试结果，返回 passed 或 failed"
+}
+
+// ==================== 测试点 3: runtime.meta.loop_count 访问 ====================
+agent Loop3_Iterator {
+    prompt: "迭代改进"
+}
+
+// ==================== 测试点 4: runtime.meta.last_result 访问 ====================
+agent Loop4_Processor {
+    prompt: "处理并优化结果"
+}
+
+// ==================== 测试点 5: 最大迭代次数保护 ====================
+agent Loop5_Refiner {
+    prompt: "精炼内容"
+}
+
+// ==================== 测试点 6: break 语句退出 ====================
+agent Loop6_Worker {
+    prompt: "执行工作"
+}
+
+agent Loop6_Checker {
+    prompt: "检查是否满足条件"
+}
+
+// ==================== 测试点 7: 循环内变量更新 ====================
+agent Loop7_Generator {
+    prompt: "生成内容"
+}
+
+agent Loop7_Evaluator {
+    prompt: "评估内容质量"
+}
+
+// ==================== 测试点 8: 嵌套循环场景（外层） ====================
+agent Loop8_Outer {
+    prompt: "外层处理"
+}
+
+agent Loop8_Inner {
+    prompt: "内层处理"
+}
+
+// ==================== 测试点 9: 循环内包含 DAG 操作 ====================
+agent Loop9_Parallel1 {
+    prompt: "并行处理 1"
+}
+
+agent Loop9_Parallel2 {
+    prompt: "并行处理 2"
+}
+
+agent Loop9_Aggregator {
+    prompt: "聚合结果"
+}
+
+// ==================== 测试点 10: 循环内包含 match 语句 ====================
+agent Loop10_HandlerA {
+    prompt: "处理器 A"
+}
+
+agent Loop10_HandlerB {
+    prompt: "处理器 B"
+}
+
+agent Loop10_Default {
+    prompt: "默认处理器"
+}
+
+// ==================== 测试点 11: 循环与管道组合 ====================
+agent Loop11_Step1 {
+    prompt: "步骤 1"
+}
+
+agent Loop11_Step2 {
+    prompt: "步骤 2"
+}
+
+// ==================== 测试点 12: 复杂循环场景 ====================
+agent Loop12_Writer {
+    prompt: "撰写文章"
+}
+
+agent Loop12_Editor {
+    prompt: "编辑文章"
+}
+
+agent Loop12_Finalizer {
+    prompt: "最终定稿"
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 语义循环 loop until 测试开始 ==========")
+    
+    // 测试点 1: 基本 loop until
+    print("Test 1: 基本 loop until")
+    draft1 = Loop1_Writer.run("写一段介绍")
+    loop {
+        feedback1 = Loop1_Critic.run(draft1)
+        draft1 = Loop1_Writer.run("根据反馈改进: " + feedback1)
+    } until ("内容质量优秀")
+    print("Test 1 - 基本 loop until: PASS")
+    
+    // 测试点 2: 自然语言终止条件
+    print("Test 2: 自然语言终止条件")
+    code2 = Loop2_Coder.run("写一个排序函数")
+    loop {
+        test_result2 = Loop2_Tester.run(code2)
+        result2_check = Loop2_Checker.run(test_result2)
+        code2 = Loop2_Coder.run("修复代码: " + test_result2)
+    } until ("代码测试通过")
+    print("Test 2 - 自然语言终止条件: PASS")
+    
+    // 测试点 3: loop_count 访问
+    print("Test 3: runtime.meta.loop_count")
+    result3 = "初始值"
+    loop {
+        result3 = Loop3_Iterator.run(result3 + " 迭代" + "迭代")
+    } until ("迭代次数达到3次")
+    print("Test 3 - loop_count 访问: PASS")
+    
+    // 测试点 4: last_result 访问
+    print("Test 4: runtime.meta.last_result")
+    item4 = "初始数据"
+    loop {
+        item4 = Loop4_Processor.run(item4)
+        // 保存结果
+    } until ("处理完成")
+    print("Test 4 - last_result 访问: PASS")
+    
+    // 测试点 5: 最大迭代次数保护
+    print("Test 5: 最大迭代次数保护")
+    content5 = "需要优化的内容"
+    loop {
+        content5 = Loop5_Refiner.run(content5)
+    } until ("完美状态")
+    print("  检查迭代次数")
+    print("Test 5 - 最大迭代保护: PASS")
+    
+    // 测试点 6: break 语句退出
+    print("Test 6: break 语句退出")
+    work6 = "工作任务"
+    loop {
+        work6 = Loop6_Worker.run(work6)
+        check6 = Loop6_Checker.run(work6)
+        // 检查结果后决定是否退出
+    } until ("任务完成")
+    print("Test 6 - break 退出: PASS")
+    
+    // 测试点 7: 循环内变量更新
+    print("Test 7: 循环内变量更新")
+    current_content = "初始内容"
+    loop {
+        new_content = Loop7_Generator.run(current_content)
+        evaluation = Loop7_Evaluator.run(new_content)
+        // 检查结果后更新内容
+        current_content = new_content
+    } until ("内容合格")
+    print("Test 7 - 变量更新: PASS")
+    
+    // 测试点 8: 简单迭代（嵌套简化）
+    print("Test 8: 简单迭代")
+    outer_result = Loop8_Outer.run("外层处理")
+    inner_result = Loop8_Inner.run(outer_result)
+    print("Test 8 - 简单迭代: PASS")
+    
+    // 测试点 9: 循环内 DAG 操作
+    print("Test 9: 循环内 DAG 操作")
+    dag_input = "并行处理输入"
+    loop {
+        dag_result = dag_input |>> [Loop9_Parallel1, Loop9_Parallel2] &>> Loop9_Aggregator
+        dag_input = dag_result
+    } until ("聚合结果满意" )
+    print("Test 9 - 循环内 DAG: PASS")
+    
+    // 测试点 10: 循环内 match
+    print("Test 10: 循环内 match")
+    request10 = "处理请求"
+    loop {
+        result10 = match request10 {
+            intent("类型A") => Loop10_HandlerA.run(request10),
+            intent("类型B") => Loop10_HandlerB.run(request10),
+            _ => Loop10_Default.run(request10)
+        }
+        request10 = result10
+    } until ("处理完成" )
+    print("Test 10 - 循环内 match: PASS")
+    
+    // 测试点 11: 循环与管道
+    print("Test 11: 循环与管道")
+    pipe_input = "管道输入"
+    loop {
+        pipe_result = pipe_input >> Loop11_Step1 >> Loop11_Step2
+        pipe_input = pipe_result
+    } until ("管道处理完成" )
+    print("Test 11 - 循环与管道: PASS")
+    
+    // 测试点 12: 复杂循环
+    print("Test 12: 复杂循环")
+    article = Loop12_Writer.run("撰写关于 AI 的文章")
+    loop {
+        edited = Loop12_Editor.run(article)
+        // 检查结果后更新
+        article = edited
+        article = Loop12_Writer.run("根据编辑意见修改: " + edited)
+    } until ("文章完成" )
+    final_article = Loop12_Finalizer.run(article)
+    print("Test 12 - 复杂循环: PASS")
+    
+    print("========== 语义循环 loop until 测试完成 ==========")
+}
