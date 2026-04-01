@@ -375,11 +375,11 @@ class NexaTransformer(Transformer):
         return int(i)
 
     @v_args(inline=True)
-    def true_val(self, _):
+    def true_val(self):
         return True
 
     @v_args(inline=True)
-    def false_val(self, _):
+    def false_val(self):
         return False
 
     @v_args(inline=False)
@@ -1120,11 +1120,11 @@ class NexaTransformer(Transformer):
         return int(i)
 
     @v_args(inline=True)
-    def true_val(self, _):
+    def true_val(self):
         return True
 
     @v_args(inline=True)
-    def false_val(self, _):
+    def false_val(self):
         return False
 
     @v_args(inline=False)
@@ -1192,6 +1192,9 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def comparison_expr(self, args):
         """比较表达式"""
+        if len(args) == 1:
+            # 简单表达式（无比较运算符）
+            return args[0]
         return {
             "type": "ComparisonExpression",
             "left": args[0],
