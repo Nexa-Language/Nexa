@@ -130,6 +130,51 @@
 ---
 
 ## 1.4 v1.0.x 已完成特性
+
+### v1.0.4-beta: Python SDK COW Agent 状态 - 新增 ✅
+- [x] **COW Agent State (Python SDK)：** `src/runtime/cow_state.py` - Python SDK 的 COW 实现
+  - `CowAgentState` 类：O(1) clone() 实现
+  - 支持 Tree-of-Thoughts 模式的多分支独立上下文
+  - 性能测试：700x 加速比 (10K 数据)
+- [x] **NexaAgent.clone() 重构：** 使用 COW 状态管理
+  - `clone()`: O(1) COW 克隆
+  - `clone_deep()`: O(n) 深拷贝（用于对比测试）
+  - `get_cow_stats()`: 获取 COW 性能统计
+- [x] **真实性能测试：** 删除模拟测试，使用真实运行时组件
+  - `tests/test_real_cow_performance.py`: COW 性能测试
+  - `tests/test_real_cache_hit_rate.py`: 缓存命中率测试
+  - `avm/benches/paper_performance_bench.rs`: Rust AVM 基准测试
+- [x] **WASM 默认配置：**
+  - 内存限制：16MB（匹配论文声称）
+  - 超时时间：30s
+
+### v1.0.3-beta: Key Findings 实现 - 新增 ✅
+- [x] **COW Memory (Copy-on-Write)：** `avm/src/vm/cow_memory.rs` - O(1) 状态分支快照
+  - 论文声称：0.1ms vs 20,178ms (deep copy)，200,000x 性能提升
+  - 支持 Tree-of-Thoughts 模式的多分支独立上下文
+- [x] **Work-Stealing Scheduler：** `avm/src/vm/scheduler.rs` - Actor-based 并发调度
+  - 支持工作窃取负载均衡
+  - 多 Worker 并行任务执行
+  - 负载均衡效率统计
+- [x] **综合测试：** `test_tree_of_thoughts_with_cow_and_workstealing` - COW + Work-Stealing 联合测试
+
+### v1.0.2-beta: Semantic Types (语义类型) - 新增 ✅
+- [x] **语义类型语法：** `type Name = base_type @ "constraint"` - 支持带语义约束的类型定义
+- [x] **Parser 层支持：** 新增 `type_decl`, `semantic_type`, `base_type`, `inner_type` EBNF 规则
+- [x] **Transformer 层支持：** 处理 `TypeDeclaration`, `SemanticType`, `BaseType`, `GenericType`, `CustomType` AST 节点
+- [x] **Code Generator 层支持：** 生成 Pydantic BaseModel 类，包含语义约束验证器
+- [x] **歧义树处理：** 实现 `_ambig` 方法优先选择内置类型分支
+- [x] **测试覆盖：** 创建 `tests/test_paper_features.py` 验证所有论文特性
+
+### v1.0.1-beta: 传统控制流 & Python 逃生舱
+- [x] **传统 if/else if/else 语句** - 确定性条件分支
+- [x] **for each 循环** - 数组/集合遍历
+- [x] **while 循环** - 确定性条件循环
+- [x] **break/continue 语句** - 循环控制
+- [x] **二元运算符扩展** - 支持加减乘除取模 (+, -, *, /, %)
+- [x] **Python 逃生舱** - `python! """..."""` 内嵌 Python 代码
+
+### v1.0.0
 - [x] **Agent 友好文档：** `docs/NEXA_AGENT_GUIDE.md` - 语法速查表、代码模板、Agent写Agent指南。（v1.0 实现）
 - [x] **Python SDK：** `src/nexa_sdk.py` - `nexa.run()`, `nexa.Agent()`, `nexa.compile()` 等 API。（v1.0 实现）
 - [x] **调试器：** `src/runtime/debugger.py` - 断点、变量监视、单步执行、事件日志。（v1.0 实现）

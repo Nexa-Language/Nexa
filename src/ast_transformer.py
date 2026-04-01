@@ -4,9 +4,24 @@ import json
 
 class NexaTransformer(Transformer):
     """
-    负责将 Lark 解析后生成的树结构（Tree）转化为 
+    负责将 Lark 解析后生成的树结构（Tree）转化为
     Nexa 原生的轻量级 JSON / Dict 抽象语法树（AST）
     """
+    
+    def _ambig(self, args):
+        """处理歧义树 - 优先选择内置类型分支"""
+        # 对于类型歧义，优先选择内置类型 (str_type, int_type, float_type, bool_type)
+        builtin_types = ['str_type', 'int_type', 'float_type', 'bool_type', 'list_type', 'dict_type']
+        for child in args:
+            if hasattr(child, 'data') and child.data in builtin_types:
+                # 递归转换选择的子树
+                return getattr(self, child.data)(child.children)
+        # 默认选择第一个分支
+        first = args[0]
+        if hasattr(first, 'data'):
+            return getattr(self, first.data)(first.children)
+        return first
+    
     @v_args(inline=False)
     def import_stmt(self, args):
         return {"type": "IncludeStatement", "path": str(args[0]).strip('"')}
@@ -106,6 +121,77 @@ class NexaTransformer(Transformer):
         }
 
     
+    # ===== v1.0.2: Semantic Types =====
+    
+    @v_args(inline=False)
+    def type_decl(self, args):
+        """语义类型声明 - v1.0.2"""
+        name = str(args[0])
+        type_def = args[1] if len(args) > 1 else None
+        return {
+            "type": "TypeDeclaration",
+            "name": name,
+            "definition": type_def
+        }
+    
+    @v_args(inline=False)
+    def constrained_type(self, args):
+        """带约束的语义类型: base_type @ "constraint" """
+        base_type = args[0]
+        constraint = str(args[1]).strip('"') if len(args) > 1 else ""
+        return {
+            "type": "SemanticType",
+            "base_type": base_type,
+            "constraint": constraint
+        }
+    
+    @v_args(inline=False)
+    def simple_type(self, args):
+        """简单类型（无约束）"""
+        return args[0] if args else None
+    
+    @v_args(inline=False)
+    def str_type(self, args):
+        return {"type": "BaseType", "name": "str"}
+    
+    @v_args(inline=False)
+    def int_type(self, args):
+        return {"type": "BaseType", "name": "int"}
+    
+    @v_args(inline=False)
+    def float_type(self, args):
+        return {"type": "BaseType", "name": "float"}
+    
+    @v_args(inline=False)
+    def bool_type(self, args):
+        return {"type": "BaseType", "name": "bool"}
+    
+    @v_args(inline=False)
+    def list_type(self, args):
+        """列表类型: list[Type]"""
+        element_type = args[0] if args else {"type": "BaseType", "name": "str"}
+        return {
+            "type": "GenericType",
+            "name": "list",
+            "type_params": [element_type]
+        }
+    
+    @v_args(inline=False)
+    def dict_type(self, args):
+        """字典类型: dict[KeyType, ValueType]"""
+        key_type = args[0] if len(args) > 0 else {"type": "BaseType", "name": "str"}
+        value_type = args[1] if len(args) > 1 else {"type": "BaseType", "name": "str"}
+        return {
+            "type": "GenericType",
+            "name": "dict",
+            "type_params": [key_type, value_type]
+        }
+    
+    @v_args(inline=True)
+    def custom_type(self, name):
+        """自定义类型引用 - 从 IDENTIFIER 解析"""
+        return {"type": "CustomType", "name": str(name)}
+
     @v_args(inline=False)
     def protocol_decl(self, args):
         name = str(args[0])
@@ -706,34 +792,39 @@ class NexaTransformer(Transformer):
         return args[0]  # 返回具体的dag_fork_expr, dag_merge_expr或dag_branch_expr
     
     @v_args(inline=False)
-    def dag_fork_expr(self, args):
+    def dag_fork_wait(self, args):
         """
-        分叉表达式: expr |>> [Agent1, Agent2] 或 expr || [Agent1, Agent2]
-        |>> 表示分叉后等待所有结果
-        || 表示分叉后不等待（fire-and-forget）
-        
-        Lark 传递: args[0] = input_expr (expression)
-                   args[1] = agent list (from identifier_list_as_expr)
-        注意: 操作符 |>> 或 || 是 literal，不会作为单独节点传递
-        默认使用 |>> (wait_all=True)
+        分叉表达式 (等待所有结果): expr |>> [Agent1, Agent2]
         """
         input_expr = args[0]
-        
-        # agents 来自 identifier_list_as_expr
-        # 由于操作符是 literal token，args[1] 就是 agents 列表
         agents = args[1] if len(args) > 1 else []
         if not isinstance(agents, list):
             agents = [str(agents)]
-        
-        # 默认操作符为 |>> (wait_all=True)
-        operator = "|>>"
         
         return {
             "type": "DAGForkExpression",
             "input": input_expr,
             "agents": agents,
-            "operator": operator,
+            "operator": "|>>",
             "wait_all": True
+        }
+    
+    @v_args(inline=False)
+    def dag_fork_fire_forget(self, args):
+        """
+        分叉表达式 (fire-and-forget): expr || [Agent1, Agent2]
+        """
+        input_expr = args[0]
+        agents = args[1] if len(args) > 1 else []
+        if not isinstance(agents, list):
+            agents = [str(agents)]
+        
+        return {
+            "type": "DAGForkExpression",
+            "input": input_expr,
+            "agents": agents,
+            "operator": "||",
+            "wait_all": False
         }
     
     @v_args(inline=False)

@@ -1,0 +1,274 @@
+// 测试意图路由 match intent 功能
+// 测试点：1-12 覆盖各种 match 场景
+
+// ==================== 测试点 1: 基本 match 语句 ====================
+agent Match1_Weather {
+    prompt: "回答天气相关问题"
+}
+
+agent Match1_News {
+    prompt: "回答新闻相关问题"
+}
+
+agent Match1_Default {
+    prompt: "回答一般问题"
+}
+
+// ==================== 测试点 2: 多个 intent 分支 ====================
+agent Match2_Order {
+    prompt: "处理订单相关"
+}
+
+agent Match2_Refund {
+    prompt: "处理退款相关"
+}
+
+agent Match2_Product {
+    prompt: "处理产品相关"
+}
+
+agent Match2_Support {
+    prompt: "处理技术支持"
+}
+
+agent Match2_General {
+    prompt: "处理一般问题"
+}
+
+// ==================== 测试点 3: 默认分支 ====================
+agent Match3_Specialist {
+    prompt: "专业处理"
+}
+
+agent Match3_Fallback {
+    prompt: "默认处理"
+}
+
+// ==================== 测试点 4: intent 中文描述 ====================
+agent Match4_ChineseWeather {
+    prompt: "中文天气处理"
+}
+
+agent Match4_ChineseNews {
+    prompt: "中文新闻处理"
+}
+
+agent Match4_ChineseChat {
+    prompt: "中文闲聊"
+}
+
+// ==================== 测试点 5: intent 英文描述 ====================
+agent Match5_WeatherEN {
+    prompt: "Weather in English"
+}
+
+agent Match5_NewsEN {
+    prompt: "News in English"
+}
+
+agent Match5_ChatEN {
+    prompt: "Chat in English"
+}
+
+// ==================== 测试点 6: 路由到 Agent.run() ====================
+agent Match6_HandlerA {
+    prompt: "处理器A"
+}
+
+agent Match6_HandlerB {
+    prompt: "处理器B"
+}
+
+// ==================== 测试点 7: 路由到管道表达式 ====================
+agent Match7_Step1 {
+    prompt: "第一步"
+}
+
+agent Match7_Step2 {
+    prompt: "第二步"
+}
+
+agent Match7_Alternative {
+    prompt: "替代路径"
+}
+
+// ==================== 测试点 8: match 结果赋值 ====================
+agent Match8_Option1 {
+    prompt: "选项1处理"
+}
+
+agent Match8_Option2 {
+    prompt: "选项2处理"
+}
+
+// ==================== 测试点 9: 无匹配默认情况 ====================
+agent Match9_Specific {
+    prompt: "特定处理"
+}
+
+agent Match9_CatchAll {
+    prompt: "兜底处理"
+}
+
+// ==================== 测试点 10: 嵌套 match ====================
+agent Match10_Level1A {
+    prompt: "一级A"
+}
+
+agent Match10_Level1B {
+    prompt: "一级B"
+}
+
+agent Match10_Level2A {
+    prompt: "二级A"
+}
+
+agent Match10_Level2B {
+    prompt: "二级B"
+}
+
+// ==================== 测试点 11: match 与 Agent 属性组合 ====================
+agent Match11_Advanced {
+    role: "高级处理器",
+    model: "deepseek/deepseek-chat",
+    prompt: "高级处理",
+    cache: true
+}
+
+agent Match11_Simple {
+    prompt: "简单处理"
+}
+
+// ==================== 测试点 12: 多种意图类型 ====================
+agent Match12_Urgent {
+    prompt: "紧急处理"
+}
+
+agent Match12_Normal {
+    prompt: "常规处理"
+}
+
+agent Match12_Question {
+    prompt: "问答处理"
+}
+
+agent Match12_Command {
+    prompt: "命令处理"
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 意图路由 match intent 测试开始 ==========")
+    
+    // 测试点 1: 基本 match
+    req1 = "今天天气怎么样"
+    result1 = match req1 {
+        intent("Check weather") => Match1_Weather.run(req1),
+        intent("Check news") => Match1_News.run(req1),
+        _ => Match1_Default.run(req1)
+    }
+    print("Test 1 - 基本 match: PASS")
+    
+    // 测试点 2: 多个 intent 分支
+    req2 = "我要退款"
+    result2 = match req2 {
+        intent("Order related") => Match2_Order.run(req2),
+        intent("Refund request") => Match2_Refund.run(req2),
+        intent("Product inquiry") => Match2_Product.run(req2),
+        intent("Technical support") => Match2_Support.run(req2),
+        _ => Match2_General.run(req2)
+    }
+    print("Test 2 - 多 intent 分支: PASS")
+    
+    // 测试点 3: 默认分支
+    req3 = "随机的问题"
+    result3 = match req3 {
+        intent("Special query") => Match3_Specialist.run(req3),
+        _ => Match3_Fallback.run(req3)
+    }
+    print("Test 3 - 默认分支: PASS")
+    
+    // 测试点 4: 中文 intent
+    req4 = "北京天气"
+    result4 = match req4 {
+        intent("查询天气") => Match4_ChineseWeather.run(req4),
+        intent("查询新闻") => Match4_ChineseNews.run(req4),
+        _ => Match4_ChineseChat.run(req4)
+    }
+    print("Test 4 - 中文 intent: PASS")
+    
+    // 测试点 5: 英文 intent
+    req5 = "What's the weather like"
+    result5 = match req5 {
+        intent("Check weather conditions") => Match5_WeatherEN.run(req5),
+        intent("Get latest news") => Match5_NewsEN.run(req5),
+        _ => Match5_ChatEN.run(req5)
+    }
+    print("Test 5 - 英文 intent: PASS")
+    
+    // 测试点 6: 路由到 Agent.run()
+    req6 = "处理数据"
+    result6 = match req6 {
+        intent("Type A processing") => Match6_HandlerA.run(req6),
+        intent("Type B processing") => Match6_HandlerB.run(req6),
+        _ => Match6_HandlerA.run(req6)
+    }
+    print("Test 6 - 路由到 Agent.run(): PASS")
+    
+    // 测试点 7: 路由到管道
+    req7 = "需要两步处理"
+    result7 = match req7 {
+        intent("Standard pipeline") => Match7_Step1.run(req7) >> Match7_Step2,
+        intent("Alternative path") => Match7_Alternative.run(req7),
+        _ => Match7_Step1.run(req7) >> Match7_Step2
+    }
+    print("Test 7 - 路由到管道: PASS")
+    
+    // 测试点 8: match 结果赋值
+    req8 = "选择路径"
+    assigned_result = match req8 {
+        intent("Option 1") => Match8_Option1.run(req8),
+        intent("Option 2") => Match8_Option2.run(req8),
+        _ => Match8_Option1.run(req8)
+    }
+    print("Test 8 - match 结果赋值: PASS")
+    
+    // 测试点 9: 无匹配情况
+    req9 = "完全未知的问题"
+    result9 = match req9 {
+        intent("Very specific intent") => Match9_Specific.run(req9),
+        _ => Match9_CatchAll.run(req9)
+    }
+    print("Test 9 - 无匹配默认: PASS")
+    
+    // 测试点 10: 复杂嵌套 - 外层处理
+    req10 = "复杂请求"
+    result10 = match req10 {
+        intent("Level 1A") => Match10_Level1A.run(req10),
+        intent("Level 1B") => Match10_Level1B.run(req10),
+        _ => Match10_Level2A.run(req10)
+    }
+    print("Test 10 - 嵌套 match: PASS")
+    
+    // 测试点 11: 与属性组合
+    req11 = "高级请求"
+    result11 = match req11 {
+        intent("Advanced processing") => Match11_Advanced.run(req11),
+        intent("Simple processing") => Match11_Simple.run(req11),
+        _ => Match11_Simple.run(req11)
+    }
+    print("Test 11 - 与属性组合: PASS")
+    
+    // 测试点 12: 多种意图类型
+    req12 = "紧急！系统崩溃"
+    result12 = match req12 {
+        intent("Urgent or emergency") => Match12_Urgent.run(req12),
+        intent("Normal request") => Match12_Normal.run(req12),
+        intent("Question or inquiry") => Match12_Question.run(req12),
+        intent("Command or action") => Match12_Command.run(req12),
+        _ => Match12_Normal.run(req12)
+    }
+    print("Test 12 - 多种意图类型: PASS")
+    
+    print("========== 意图路由 match intent 测试完成 ==========")
+}

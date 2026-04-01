@@ -1,0 +1,166 @@
+// 测试多行 prompt """ 功能
+// 测试点：1-12 覆盖各种多行字符串场景
+
+// ==================== 测试点 1: 基本三引号字符串 ====================
+agent Test1_Basic {
+    prompt: """
+    This is a multi-line prompt.
+    It spans multiple lines.
+    """
+}
+
+// ==================== 测试点 2: 包含换行的多行 prompt ====================
+agent Test2_Newlines {
+    prompt: """
+    Line 1
+    Line 2
+    Line 3
+    """
+}
+
+// ==================== 测试点 3: 包含特殊字符的多行 prompt ====================
+agent Test3_SpecialChars {
+    prompt: """
+    Special characters: @#$%^&*()
+    More special: <>&"'
+    """
+}
+
+// ==================== 测试点 4: 包含引号的多行 prompt ====================
+agent Test4_Quotes {
+    prompt: """
+    This contains "quotes" inside.
+    Also 'single quotes' here.
+    """
+}
+
+// ==================== 测试点 5: 空多行 prompt ====================
+agent Test5_Empty {
+    prompt: """"""
+}
+
+// ==================== 测试点 6: 多行 prompt 与其他属性组合 ====================
+agent Test6_Combined {
+    role: "测试角色",
+    model: "deepseek/deepseek-chat",
+    prompt: """
+    这是一个多行 prompt 测试。
+    包含多行内容。
+    与其他属性组合使用。
+    """,
+    cache: true
+}
+
+// ==================== 测试点 7: 多行 prompt 中包含代码块 ====================
+agent Test7_CodeBlock {
+    prompt: """
+    请分析以下代码：
+    ```python
+    def hello():
+        print("Hello, World!")
+    ```
+    注意缩进和格式。
+    """
+}
+
+// ==================== 测试点 8: 多行 prompt 中包含 JSON ====================
+agent Test8_JSON {
+    prompt: """
+    解析以下 JSON 格式：
+    {
+        "name": "Nexa",
+        "version": "1.0",
+        "features": ["agent", "flow", "protocol"]
+    }
+    """
+}
+
+// ==================== 测试点 9: 多行 prompt 中包含中文 ====================
+agent Test9_Chinese {
+    prompt: """
+    这是一个中文多行 prompt 测试。
+    包含以下内容：
+    1. 第一行说明
+    2. 第二行说明
+    3. 第三行说明
+    """
+}
+
+// ==================== 测试点 10: 多行 role 属性 ====================
+agent Test10_MultilineRole {
+    role: """
+    资深软件工程师
+    专注于 Python 和 Rust 开发
+    拥有 10 年以上经验
+    """,
+    prompt: "回复 OK"
+}
+
+// ==================== 测试点 11: 多行 prompt 单行测试 ====================
+agent Test11_SingleLineInMultiline {
+    prompt: """单行内容但在三引号中"""
+}
+
+// ==================== 测试点 12: 多行 prompt 带缩进 ====================
+agent Test12_Indented {
+    prompt: """
+        带缩进的多行 prompt
+        每行都有缩进
+        测试缩进处理
+    """
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 多行 Prompt 测试开始 ==========")
+    
+    // 测试点 1
+    result1 = Test1_Basic.run("测试基本三引号")
+    print("Test 1 - 基本三引号: PASS")
+    
+    // 测试点 2
+    result2 = Test2_Newlines.run("测试换行")
+    print("Test 2 - 包含换行: PASS")
+    
+    // 测试点 3
+    result3 = Test3_SpecialChars.run("测试特殊字符")
+    print("Test 3 - 特殊字符: PASS")
+    
+    // 测试点 4
+    result4 = Test4_Quotes.run("测试引号")
+    print("Test 4 - 包含引号: PASS")
+    
+    // 测试点 5
+    result5 = Test5_Empty.run("测试空 prompt")
+    print("Test 5 - 空 prompt: PASS")
+    
+    // 测试点 6
+    result6 = Test6_Combined.run("测试组合属性")
+    print("Test 6 - 组合属性: PASS")
+    
+    // 测试点 7
+    result7 = Test7_CodeBlock.run("测试代码块")
+    print("Test 7 - 代码块: PASS")
+    
+    // 测试点 8
+    result8 = Test8_JSON.run("测试 JSON")
+    print("Test 8 - JSON 内容: PASS")
+    
+    // 测试点 9
+    result9 = Test9_Chinese.run("测试中文")
+    print("Test 9 - 中文内容: PASS")
+    
+    // 测试点 10
+    result10 = Test10_MultilineRole.run("测试多行 role")
+    print("Test 10 - 多行 role: PASS")
+    
+    // 测试点 11
+    result11 = Test11_SingleLineInMultiline.run("测试单行三引号")
+    print("Test 11 - 单行三引号: PASS")
+    
+    // 测试点 12
+    result12 = Test12_Indented.run("测试缩进")
+    print("Test 12 - 带缩进: PASS")
+    
+    print("========== 多行 Prompt 测试完成 ==========")
+}

@@ -5,7 +5,31 @@ program: import_stmt* script_stmt*
 
 import_stmt: "include" STRING_LITERAL ";"
 
-?script_stmt: tool_decl | agent_decl | flow_decl | protocol_decl | test_decl
+// v1.0.2: 添加语义类型声明支持
+?script_stmt: tool_decl | agent_decl | flow_decl | protocol_decl | test_decl | type_decl
+
+// 语义类型定义: type Name = base_type @ "constraint"
+type_decl: "type" IDENTIFIER "=" semantic_type
+
+semantic_type: base_type "@" STRING_LITERAL  -> constrained_type
+             | base_type                       -> simple_type
+
+// 内置类型关键字优先匹配（优先级高于 IDENTIFIER）
+// Lark 会按顺序匹配，关键字优先于 IDENTIFIER
+base_type: "str"   -> str_type
+         | "int"   -> int_type
+         | "float" -> float_type
+         | "bool"  -> bool_type
+         | "list" "[" inner_type "]"   -> list_type
+         | "dict" "[" inner_type "," inner_type "]"  -> dict_type
+         | IDENTIFIER                   -> custom_type
+
+// 内部类型用于泛型参数（递归支持嵌套类型）
+?inner_type: "str"   -> str_type
+           | "int"   -> int_type
+           | "float" -> float_type
+           | "bool"  -> bool_type
+           | IDENTIFIER -> custom_type
 
 test_decl: "test" STRING_LITERAL block
 
@@ -148,7 +172,9 @@ dag_chain_tail: ("&>>" | "&&") base_expr
 // 分叉表达式:
 // - expr |>> [Agent1, Agent2, ...] - 并行执行，等待所有结果
 // - expr || [Agent1, Agent2, ...] - 并行执行，不等待结果 (fire-and-forget)
-dag_fork_expr: base_expr ("|>>" | "||") identifier_list_as_expr
+// 使用 -> 显式命名规则来区分操作符
+dag_fork_expr: base_expr "|>>" identifier_list_as_expr -> dag_fork_wait
+             | base_expr "||" identifier_list_as_expr -> dag_fork_fire_forget
 
 // 合流表达式:
 // - [Agent1, Agent2] &>> MergerAgent - 顺序合流
@@ -244,6 +270,7 @@ PYTHON_ESCAPE_CLOSE: /<\|end\|>/
 
 def get_parser():
     """初始化并返回 Lark 解析器实例"""
+    # 使用 Earley 解析器处理歧义语法，transformer 中会选择优先分支
     return Lark(nexa_grammar, start='program', parser='earley', ambiguity='explicit')
 
 def parse(text):

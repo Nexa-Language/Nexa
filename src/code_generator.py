@@ -42,6 +42,7 @@ class CodeGenerator:
         self.agents = []
         self.flows = []
         self.tests = []
+        self.types = []  # v1.0.2: Semantic Types
 
     def _indent(self):
         return "    " * self.indent_level
@@ -58,7 +59,10 @@ class CodeGenerator:
                 self.flows.append(node)
             elif node["type"] == "TestDeclaration":
                 self.tests.append(node)
+            elif node["type"] == "TypeDeclaration":  # v1.0.2: Semantic Types
+                self.types.append(node)
 
+        self._generate_types()       # v1.0.2: Semantic Types
         self._generate_protocols()
         self._generate_tools()
         self._generate_agents()
@@ -80,6 +84,71 @@ class CodeGenerator:
         self.code.append("")
         
         return "\n".join(self.code)
+
+    def _generate_types(self):
+        """v1.0.2: 生成语义类型定义"""
+        for type_def in self.types:
+            name = type_def["name"]
+            definition = type_def.get("definition", {})
+            
+            # 根据类型定义生成 Pydantic 类型
+            type_type = definition.get("type", "BaseType")
+            
+            if type_type == "SemanticType":
+                # 带语义约束的类型
+                base_type = definition.get("base_type", {})
+                base_name = base_type.get("name", "str")
+                constraint = definition.get("constraint", "")
+                
+                # 生成带验证器的 Pydantic 类型
+                self.code.append(f'class {name}(pydantic.BaseModel):')
+                self.code.append(f'    value: {base_name}')
+                self.code.append('')
+                self.code.append(f'    @pydantic.field_validator("value")')
+                self.code.append(f'    def validate_semantic(cls, v):')
+                self.code.append(f'        """语义约束: {constraint}"""')
+                self.code.append(f'        # TODO: 使用 LLM 进行语义验证')
+                self.code.append(f'        return v')
+                self.code.append('')
+                
+            elif type_type == "BaseType":
+                # 简单类型别名
+                base_name = definition.get("name", "str")
+                self.code.append(f'{name} = {base_name}')
+                self.code.append('')
+                
+            elif type_type == "GenericType":
+                # 泛型类型 (list, dict)
+                gen_name = definition.get("name", "list")
+                type_params = definition.get("type_params", [])
+                
+                if gen_name == "list":
+                    elem_type = self._resolve_type_name(type_params[0] if type_params else {"name": "str"})
+                    self.code.append(f'{name} = list[{elem_type}]')
+                    self.code.append('')
+                elif gen_name == "dict":
+                    key_type = self._resolve_type_name(type_params[0] if type_params else {"name": "str"})
+                    val_type = self._resolve_type_name(type_params[1] if len(type_params) > 1 else {"name": "str"})
+                    self.code.append(f'{name} = dict[{key_type}, {val_type}]')
+                    self.code.append('')
+                    
+            elif type_type == "CustomType":
+                # 自定义类型引用
+                custom_name = definition.get("name", "str")
+                self.code.append(f'{name} = {custom_name}')
+                self.code.append('')
+    
+    def _resolve_type_name(self, type_def):
+        """将类型定义转换为 Python 类型名"""
+        if isinstance(type_def, dict):
+            t_type = type_def.get("type", "BaseType")
+            if t_type == "BaseType":
+                return type_def.get("name", "str")
+            elif t_type == "CustomType":
+                return type_def.get("name", "str")
+            elif t_type == "GenericType":
+                return "list"  # 简化处理
+        return "str"
 
     def _generate_protocols(self):
         for proto in self.protocols:

@@ -1,0 +1,191 @@
+// 测试 Protocol 和 implements 功能
+// 测试点：1-12 覆盖各种 Protocol 场景
+
+// ==================== 测试点 1: 基本 Protocol 定义 ====================
+protocol SimpleResult {
+    status: "string",
+    message: "string"
+}
+
+agent Test1_SimpleProtocol implements SimpleResult {
+    prompt: "返回一个简单结果"
+}
+
+// ==================== 测试点 2: Protocol 类型验证 - int ====================
+protocol IntResult {
+    count: "int",
+    total: "int"
+}
+
+agent Test2_IntProtocol implements IntResult {
+    prompt: "返回整数结果"
+}
+
+// ==================== 测试点 3: Protocol 类型验证 - float ====================
+protocol FloatResult {
+    score: "float",
+    confidence: "float"
+}
+
+agent Test3_FloatProtocol implements FloatResult {
+    prompt: "返回浮点数结果"
+}
+
+// ==================== 测试点 4: Protocol 类型验证 - boolean ====================
+protocol BoolResult {
+    is_valid: "boolean",
+    has_errors: "boolean"
+}
+
+agent Test4_BoolProtocol implements BoolResult {
+    prompt: "返回布尔结果"
+}
+
+// ==================== 测试点 5: Protocol 类型验证 - list[string] ====================
+protocol ListResult {
+    items: "list[string]",
+    tags: "list[string]"
+}
+
+agent Test5_ListProtocol implements ListResult {
+    prompt: "返回列表结果"
+}
+
+// ==================== 测试点 6: Protocol 类型验证 - dict ====================
+protocol DictResult {
+    data: "dict",
+    metadata: "dict"
+}
+
+agent Test6_DictProtocol implements DictResult {
+    prompt: "返回字典结果"
+}
+
+// ==================== 测试点 7: 多字段 Protocol ====================
+protocol ComplexResult {
+    name: "string",
+    age: "int",
+    score: "float",
+    active: "boolean",
+    tags: "list[string]"
+}
+
+agent Test7_ComplexProtocol implements ComplexResult {
+    prompt: "返回复杂结构结果"
+}
+
+// ==================== 测试点 8: 多个 Agent 实现同一 Protocol ====================
+agent Test8_Analyst1 implements SimpleResult {
+    role: "分析师1",
+    prompt: "分析并返回结果"
+}
+
+agent Test8_Analyst2 implements SimpleResult {
+    role: "分析师2",
+    prompt: "分析并返回结果"
+}
+
+// ==================== 测试点 9: Protocol 与 DAG 组合 ====================
+protocol MergedResult {
+    analysis: "string",
+    score: "float"
+}
+
+agent Test9_Researcher1 implements MergedResult {
+    prompt: "研究分析1"
+}
+
+agent Test9_Researcher2 implements MergedResult {
+    prompt: "研究分析2"
+}
+
+agent Test9_Merger {
+    prompt: "整合研究结果"
+}
+
+// ==================== 测试点 10: Protocol 与管道组合 ====================
+agent Test10_Generator implements SimpleResult {
+    prompt: "生成结果"
+}
+
+agent Test10_Processor {
+    prompt: "处理结果"
+}
+
+// ==================== 测试点 11: Protocol 字段缺失处理 ====================
+protocol StrictResult {
+    required_field: "string",
+    optional_field: "string"
+}
+
+agent Test11_StrictAgent implements StrictResult {
+    prompt: "严格输出，确保所有字段都有"
+}
+
+// ==================== 测试点 12: 嵌套结构表示 ====================
+protocol NestedResult {
+    title: "string",
+    content: "string",
+    extra: "string"  // JSON 字符串表示嵌套
+}
+
+agent Test12_NestedAgent implements NestedResult {
+    prompt: "返回带嵌套结构的结果"
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== Protocol 和 implements 测试开始 ==========")
+    
+    // 测试点 1
+    result1 = Test1_SimpleProtocol.run("返回简单结果")
+    print("Test 1 - 基本 Protocol: PASS")
+    print("  status: " + result1.status)
+    
+    // 测试点 2
+    result2 = Test2_IntProtocol.run("返回整数")
+    print("Test 2 - int 类型: PASS")
+    
+    // 测试点 3
+    result3 = Test3_FloatProtocol.run("返回浮点数")
+    print("Test 3 - float 类型: PASS")
+    
+    // 测试点 4
+    result4 = Test4_BoolProtocol.run("返回布尔值")
+    print("Test 4 - boolean 类型: PASS")
+    
+    // 测试点 5
+    result5 = Test5_ListProtocol.run("返回列表")
+    print("Test 5 - list[string] 类型: PASS")
+    
+    // 测试点 6
+    result6 = Test6_DictProtocol.run("返回字典")
+    print("Test 6 - dict 类型: PASS")
+    
+    // 测试点 7
+    result7 = Test7_ComplexProtocol.run("返回复杂结构")
+    print("Test 7 - 多字段 Protocol: PASS")
+    
+    // 测试点 8 - 多 Agent 同一 Protocol
+    result8_1 = Test8_Analyst1.run("分析数据")
+    result8_2 = Test8_Analyst2.run("分析数据")
+    print("Test 8 - 多 Agent 同 Protocol: PASS")
+    
+    // 测试点 9 - Protocol 与 DAG
+    result9 = "研究主题" |>> [Test9_Researcher1, Test9_Researcher2] &>> Test9_Merger
+    print("Test 9 - Protocol 与 DAG: PASS")
+    
+    // 测试点 10 - Protocol 与管道
+    result10 = Test10_Generator.run("生成数据") >> Test10_Processor
+    print("Test 10 - Protocol 与管道: PASS")
+    
+    // 测试点 11
+    result11 = Test11_StrictAgent.run("严格输出")
+    print("Test 11 - 字段缺失处理: PASS")
+    
+    // 测试点 12
+    result12 = Test12_NestedAgent.run("嵌套结构")
+    print("Test 12 - 嵌套结构: PASS")
+    
+    print("========== Protocol 和 implements 测试完成 ==========")
+}

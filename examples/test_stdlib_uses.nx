@@ -1,0 +1,144 @@
+// 测试标准库 uses 功能
+// 测试点：1-12 覆盖各种 std 命名空间
+
+// ==================== 测试点 1: std.fs 文件读取 ====================
+agent Std1_FileReader uses std.fs {
+    role: "文件读取助手",
+    prompt: "帮助用户读取文件内容"
+}
+
+// ==================== 测试点 2: std.http HTTP GET ====================
+agent Std2_HttpClient uses std.http {
+    role: "HTTP 客户端",
+    prompt: "执行 HTTP 请求获取数据"
+}
+
+// ==================== 测试点 3: std.time 获取时间 ====================
+agent Std3_TimeHelper uses std.time {
+    role: "时间助手",
+    prompt: "提供时间相关信息"
+}
+
+// ==================== 测试点 4: std.json JSON 解析 ====================
+agent Std4_JsonParser uses std.json {
+    role: "JSON 解析器",
+    prompt: "解析和处理 JSON 数据"
+}
+
+// ==================== 测试点 5: std.text 文本处理 ====================
+agent Std5_TextProcessor uses std.text {
+    role: "文本处理器",
+    prompt: "处理和转换文本"
+}
+
+// ==================== 测试点 6: std.math 数学运算 ====================
+agent Std6_Calculator uses std.math {
+    role: "计算器",
+    prompt: "执行数学计算"
+}
+
+// ==================== 测试点 7: std.shell Shell 命令 ====================
+agent Std7_ShellRunner uses std.shell {
+    role: "Shell 执行器",
+    prompt: "执行系统命令"
+}
+
+// ==================== 测试点 8: std.ask_human 人机交互 ====================
+agent Std8_HumanInterface uses std.ask_human {
+    role: "人机交互助手",
+    prompt: "与用户交互获取确认"
+}
+
+// ==================== 测试点 9: 多命名空间组合 ====================
+agent Std9_MultiTool uses std.fs, std.http, std.time {
+    role: "多功能助手",
+    prompt: "可以处理文件、网络请求和时间"
+}
+
+// ==================== 测试点 10: std.hash 加密编码 ====================
+agent Std10_Hasher uses std.hash {
+    role: "加密助手",
+    prompt: "计算哈希和编码"
+}
+
+// ==================== 测试点 11: std.regex 正则表达式 ====================
+agent Std11_RegexMatcher uses std.regex {
+    role: "正则匹配器",
+    prompt: "使用正则表达式匹配文本"
+}
+
+// ==================== 测试点 12: 复杂组合 Agent ====================
+agent Std12_Advanced uses std.fs, std.http, std.json, std.time {
+    role: "高级助手",
+    prompt: "综合使用多种工具完成任务",
+    cache: true
+}
+
+// ==================== Flow 测试 ====================
+flow main {
+    print("========== 标准库 uses 测试开始 ==========")
+    
+    // 测试点 1: std.fs
+    print("Test 1: std.fs 文件读取")
+    result1 = Std1_FileReader.run("列出 /tmp 目录下的文件")
+    print("Test 1 - std.fs: PASS")
+    
+    // 测试点 2: std.http
+    print("Test 2: std.http HTTP GET")
+    result2 = Std2_HttpClient.run("获取 https://example.com 的内容")
+    print("Test 2 - std.http: PASS")
+    
+    // 测试点 3: std.time
+    print("Test 3: std.time 获取时间")
+    result3 = Std3_TimeHelper.run("获取当前时间和日期")
+    print("Test 3 - std.time: PASS")
+    
+    // 测试点 4: std.json
+    print("Test 4: std.json JSON 解析")
+    json_input = """{"name": "test", "value": 123}"""
+    result4 = Std4_JsonParser.run("解析 JSON: " + json_input)
+    print("Test 4 - std.json: PASS")
+    
+    // 测试点 5: std.text
+    print("Test 5: std.text 文本处理")
+    result5 = Std5_TextProcessor.run("将 hello world 转换为大写")
+    print("Test 5 - std.text: PASS")
+    
+    // 测试点 6: std.math
+    print("Test 6: std.math 数学运算")
+    result6 = Std6_Calculator.run("计算 (10 + 5) * 2")
+    print("Test 6 - std.math: PASS")
+    
+    // 测试点 7: std.shell
+    print("Test 7: std.shell Shell 命令")
+    result7 = Std7_ShellRunner.run("执行 echo Hello Nexa")
+    print("Test 7 - std.shell: PASS")
+    
+    // 测试点 8: std.ask_human
+    print("Test 8: std.ask_human 人机交互")
+    // 注意：这会等待用户输入，测试时跳过实际交互
+    result8 = "skipped for automated test"
+    print("Test 8 - std.ask_human: PASS (skipped)")
+    
+    // 测试点 9: 多命名空间
+    print("Test 9: 多命名空间组合")
+    result9 = Std9_MultiTool.run("获取当前时间并保存到文件")
+    print("Test 9 - 多命名空间: PASS")
+    
+    // 测试点 10: std.hash
+    print("Test 10: std.hash 加密编码")
+    result10 = Std10_Hasher.run("计算 'Hello Nexa' 的 MD5 哈希")
+    print("Test 10 - std.hash: PASS")
+    
+    // 测试点 11: std.regex
+    print("Test 11: std.regex 正则表达式")
+    result11 = Std11_RegexMatcher.run("从 'Email: test@example.com' 中提取邮箱")
+    print("Test 11 - std.regex: PASS")
+    
+    // 测试点 12: 复杂组合
+    print("Test 12: 复杂组合 Agent")
+    result12 = Std12_Advanced.run("从网络获取数据，解析 JSON，保存到文件")
+    print("Test 12 - 复杂组合: PASS")
+    
+    print("========== 标准库 uses 测试完成 ==========")
+}

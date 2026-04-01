@@ -47,6 +47,10 @@ default = []
 wasm = ["wasmtime"]
 python-ffi = ["pyo3"]
 
+[[bench]]
+name = "paper_performance_bench"
+harness = false
+
 [[bin]]
 name = "avm"
 path = "src/main.rs"
