@@ -576,6 +576,36 @@ from src.runtime.hitl import wait_for_human, ApprovalStatus, HITLManager
 
 ---
 
+## 阶段 9: v1.1.0 — Intent-Driven Development (IDD) (2026-04-23 完成 ✅)
+
+Nexa v1.1.0 引入了核心差异化特性——Intent-Driven Development 系统，让需求文档变成可执行测试。
+
+### 9.1 IDD 核心组件
+
+- [x] **IAL (Intent Assertion Language)** — 术语重写引擎，将自然语言断言递归解析为可执行测试
+- [x] **`.nxintent` 文件格式** — YAML 格式需求文档，定义 Feature/Scenario/Glossary
+- [x] **`@implements` 注解** — 将代码链接到需求，形成需求→代码→验证闭环
+- [x] **模糊 Intent 匹配** — 部分 intent 规范的近似匹配解析
+
+### 9.2 CLI 命令
+
+- [x] `nexa intent-check` — 验证代码是否符合 intent
+- [x] `nexa intent-coverage` — 显示特性覆盖率百分比
+- [x] `nexa inspect` — 结构化分析 agents/tools/flows
+
+### 9.3 新增文件
+
+| 文件 | 说明 |
+|------|------|
+| `src/ial/primitives.py` | Intent 原语定义 (action, goal, constraint, preference) |
+| `src/ial/vocabulary.py` | Intent 术语词汇管理 |
+| `src/ial/standard.py` | 标准术语词汇 (40+ 内置 intents) |
+| `src/ial/resolve.py` | Intent 解析引擎 (模糊匹配、语义分组) |
+| `src/ial/execute.py` | Intent 执行和验证引擎 |
+| `tests/test_ial.py` | IAL 测试套件 (104 tests) |
+
+---
+
 ### 社区生态与学术
 1. **开源贡献**：建立开放的贡献流程和代码审查机制。
 2. **理论基础论文**：分享非确定性计算的确定性控制流、基于模型的 `loop ... until` 与原生 `semantic_if` 等。
