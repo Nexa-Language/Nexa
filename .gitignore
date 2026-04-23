@@ -1,10 +1,14 @@
 .venv/
 __pycache__/
 *.pyc
+*.pyo
 docs/secert.md
 *.egg-info/
 build/
 dist/
+.pytest_cache/
+qdrant_storage/
+*/__pycache__/
 
 # Rust 编译产物
 avm/target/
@@ -15,11 +19,25 @@ avm/Cargo.lock
 .nexa_knowledge/
 .nexa_security/
 
+# 数据库文件（运行时生成）
+*.db
+*.sqlite
+
+# 备份文件
+*.orig
+
 # 临时测试文件
 test_secrets.py
 test_secrets2.py
 update_agent.patch
 validate_doc_examples.py
+fix_tests.py
+test_09_runner.py
+test_doc_examples.py
+test_fastmatch.py
+test_mcp.py
+format_memory_bank.py
+err.txt
 
 # 实验课
 /Labs
@@ -29,6 +47,23 @@ secrets.nxs
 
 # 杂项
 head
+
+# Windows Zone Identifier 文件
+*:Zone.Identifier
+
+# IDE 文件
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# ai相关
+plans/
+MEMORY_BANK.md
 
 # 生成的 Python 文件 (由 .nx 编译生成)
 examples/*.py
