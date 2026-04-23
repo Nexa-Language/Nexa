@@ -627,3 +627,580 @@ Lint 规则：
 ### 10.4 intent-check 和 intent-coverage
 
 参见 §8 IDD 系统中的 CLI 命令描述。
+
+## 11. Gradual Type System (v1.3.1)
+
+Nexa 的渐进类型系统允许可选的类型注解，根据 `NTNT_TYPE_MODE` 环境变量决定强制程度。
+
+### 11.1 类型注解
+
+```nexa
+let name: String = "hello"
+let count: Int = 42
+let active: Bool = true
+let score: Float = 3.14
+let scores: List[Int] = [1, 2, 3]
+let config: Map[String, Int] = {"key": 1}
+let maybe: Option[T] = Some(42)
+let result: Result[T, E] = Ok(value)
+```
+
+### 11.2 类型模式
+
+| 模式 | 环境变量值 | 行为 |
+|------|-----------|------|
+| strict | `NTNT_TYPE_MODE=strict` | 类型违反 → TypeViolation 异常 |
+| warn | `NTNT_TYPE_MODE=warn` | 类型违反 → TypeWarning 日志 |
+| forgiving | `NTNT_TYPE_MODE=forgiving` | 类型违反 → 忽略 |
+
+### 11.3 类型检查
+
+运行时类型检查通过 `TypeChecker` 和 `TypeInferrer` 实现：
+
+- `TypeChecker.check(expression, expected_type)` — 验证表达式类型
+- `TypeInferrer.infer_from_expression(expr)` — 推断表达式类型
+- `TypeCheckResult` — 检查结果（pass/fail/warning）
+
+## 12. Error Propagation (v1.3.2)
+
+Nexa 的错误传播操作符提供 Rust 风格的简洁错误处理。
+
+### 12.1 ? 操作符
+
+将错误向上传播（类似 Rust 的 `?`）：
+
+```nexa
+let value = parse(input) ?
+// 如果 parse 返回错误，立即向上传播
+// 如果 parse 返回成功值，解包并继续
+```
+
+### 12.2 otherwise 操作符
+
+提供错误回退值：
+
+```nexa
+let result = risky_operation() otherwise "fallback"
+// 如果 risky_operation 失败，返回 "fallback"
+```
+
+### 12.3 try 块
+
+尝试操作并捕获错误：
+
+```nexa
+try {
+    data = fetch(url)
+    result = process(data) ?
+} catch (e) {
+    result = handle_error(e)
+}
+```
+
+### 12.4 NexaResult 和 NexaOption
+
+```nexa
+// NexaResult — 成功或错误
+Ok(value)   // 成功结果
+Err(error)  // 错误结果
+
+// NexaOption — 有值或无值
+Some(value)  // 有值
+None         // 无值
+```
+
+**Agent-Native**: `wrap_agent_result()` 将 Agent 返回值自动包装为 NexaResult。
+
+## 13. Background Job System (v1.3.3)
+
+Nexa 的 Job 系统提供后台任务处理 DSL。
+
+### 13.1 Job DSL 语法
+
+```nexa
+job SendEmail on "emails" (retry: 2, timeout: 120) {
+    perform(user_id) {
+        // 执行任务逻辑
+    }
+    on_failure(error, attempt) {
+        // 失败回调
+    }
+}
+```
+
+### 13.2 优先级队列
+
+| 优先级 | 值 |
+|--------|-----|
+| Low | 0 |
+| Normal | 1 |
+| High | 2 |
+| Critical | 3 |
+
+### 13.3 退避策略
+
+| 策略 | 说明 |
+|------|------|
+| Fixed | 固定间隔重试 |
+| Exponential | 指数退避重试 |
+| Linear | 线性递增重试 |
+
+### 13.4 Cron 调度
+
+```nexa
+schedule every 30s { health_check() }
+schedule every 1h { cleanup() }
+```
+
+## 14. Built-In HTTP Server (v1.3.4)
+
+Nexa 的 HTTP Server 提供声明式 Web 服务 DSL。
+
+### 14.1 Server DSL 语法
+
+```nexa
+server 8080 {
+    static "/assets" from "./public"
+    cors { origins: ["*"], methods: ["GET", "POST"] }
+    route GET "/chat" => ChatBot
+    route POST "/analyze" => DataExtractor |>> Analyzer
+}
+```
+
+### 14.2 CORS 配置
+
+```nexa
+cors {
+    origins: ["https://example.com"]
+    methods: ["GET", "POST", "PUT"]
+    headers: ["Content-Type", "Authorization"]
+    credentials: true
+    max_age: 3600
+}
+```
+
+### 14.3 路由守卫
+
+ContractViolation 与路由集成：
+- `requires` violation → HTTP 401 (前置条件不满足)
+- `ensures` violation → HTTP 403 (后置条件不满足)
+
+### 14.4 静态文件
+
+```nexa
+static "/assets" from "./public"
+static "/docs" from "./documentation" (index: true)
+```
+
+## 15. Database Integration (v1.3.5)
+
+Nexa 的 Database 模块提供 SQLite 和 PostgreSQL 集成。
+
+### 15.1 Database DSL 语法
+
+```nexa
+db connect "sqlite://data.db" {
+    query "SELECT * FROM users WHERE id = ?" [user_id]
+    execute "INSERT INTO logs (msg) VALUES (?)" [message]
+}
+```
+
+### 15.2 事务管理
+
+```nexa
+db transaction {
+    execute "INSERT INTO orders (...) VALUES (...)" [order_data]
+    execute "UPDATE inventory SET count = count - 1 WHERE id = ?" [item_id]
+}
+```
+
+### 15.3 Agent-Native 记忆 API
+
+```nexa
+// 存储 agent 记忆
+agent_memory_store(agent, "user_preference", data)
+
+// 查询 agent 记忆
+agent_memory_query(agent, "recent conversations")
+
+// 列出 agent 记忆
+agent_memory_list(agent)
+
+// 删除 agent 记忆
+agent_memory_delete(agent, "old_session")
+```
+
+## 16. Auth & OAuth (v1.3.6)
+
+Nexa 的 3 层认证系统。
+
+### 16.1 Auth DSL 语法
+
+```nexa
+auth_decl {
+    providers: [google(client_id, client_secret), github(client_id, client_secret)]
+    session_store: memory
+    require_auth: ["/admin", "/api"]
+}
+```
+
+### 16.2 三层认证
+
+| 层级 | 方式 | 说明 |
+|------|------|------|
+| Layer 1 | API Key | `nexa-ak-{random32hex}` 格式 |
+| Layer 2 | JWT (HS256) | JWT 签名验证 |
+| Layer 3 | OAuth 2.0 (PKCE) | Google/Github OAuth flow |
+
+### 16.3 Agent-Native
+
+```nexa
+// 生成 agent API Key
+agent_api_key_generate(agent)
+
+// 获取认证上下文
+agent_auth_context(agent)
+```
+
+## 17. Structured Concurrency (v1.3.6)
+
+Nexa 的结构化并发模块。
+
+### 17.1 Concurrency DSL 语法
+
+```nexa
+concurrent_decl {
+    spawn my_task { ... }
+    parallel [task_a, task_b, task_c]
+    race [fast_task, slow_task]
+    channel ch = channel()
+    after 500ms { cleanup() }
+    schedule every 30s { health_check() }
+}
+```
+
+### 17.2 18 API 函数
+
+| 类别 | API |
+|------|-----|
+| Channel | channel, send, recv, recv_timeout, try_recv, close, select |
+| Task | spawn, await_task, try_await, cancel_task |
+| Parallel | parallel, race |
+| Timing | after, schedule, cancel_schedule, sleep_ms |
+| Utility | thread_count, parse_interval |
+
+### 17.3 Agent-Native
+
+`spawn` 接受 NexaAgent → `agent.run(context)`，自动将 Agent 作为并发任务执行。
+
+## 18. KV Store (v1.3.6)
+
+Nexa 的内置 Key-Value 存储系统。
+
+### 18.1 KV DSL 语法
+
+```nexa
+kv_decl {
+    open "sqlite://cache.db"
+}
+```
+
+### 18.2 15 通用 API
+
+open/get/set/del/has/list/expire/ttl/flush/set_nx/incr + get_int/get_str/get_json
+
+### 18.3 3 Agent-Native API
+
+```nexa
+// 语义查询
+agent_kv_query(agent, "recent results")
+
+// 存储 agent 数据
+agent_kv_store(agent, "session_data", value)
+
+// 上下文感知检索
+agent_kv_context(agent, "preferences")
+```
+
+## 19. Template System (v1.3.6)
+
+Nexa 的模板引擎系统。
+
+### 19.1 Template 语法
+
+```nexa
+// 变量插值 + 滤镜
+template"""Hello {{name | upper}}!"""
+
+// for 循环 + 元数据
+template"""{{#for item in items}}{{@index}}:{{item}}{{/for}}"""
+
+// if/elif/else 条件
+template"""{{#if is_admin}}Admin{{#elif is_mod}}Mod{{#else}}User{{/if}}"""
+
+// partial 引用
+template"""{{> card user_data}}"""
+```
+
+### 19.2 ForLoop 元数据
+
+| 变量 | 说明 |
+|------|------|
+| `@index` | 0-based 索引 |
+| `@index1` | 1-based 索引 |
+| `@first` | 是否第一个 |
+| `@last` | 是否最后一个 |
+| `@length` | 总长度 |
+| `@even` | 偶数索引 |
+| `@odd` | 奇数索引 |
+
+### 19.3 30+ 滤镜
+
+upper/lower/capitalize/trim/truncate(n)/replace(from,to)/escape/raw/safe/default(val)/length/first/last/reverse/join(sep)/slice(start,end)/json/number(n)/url_encode/strip_tags/word_count/line_count/indent/date/sort/unique/abs/ceil/floor
+
+### 19.4 Agent-Native 模板
+
+```nexa
+// 自动注入 agent 上下文
+agent_template_prompt(agent, template_str, context)
+
+// 多源 slot 填充（优先级：explicit_data > auth_context > kv_data > memory > agent_attrs）
+agent_template_slot_fill(agent, template_str, slot_sources)
+
+// 注册 agent 专用模板
+agent_template_register(agent, name, template_str)
+```
+
+## 20. Pipe Operator |> (v1.3.7)
+
+管道操作符实现左到右数据流。
+
+### 20.1 基本语法
+
+```nexa
+// x |> f  →  f(x)
+result |> format_output
+
+// x |> f(a,b)  →  f(x, a, b)
+data |> std.text.upper |> process(delimiter=",")
+
+// 链式管道
+prompt |> agent.run |> extract_answer |> format_output
+```
+
+### 20.2 脱糖规则
+
+| 输入 | 脱糖结果 |
+|------|---------|
+| `x |> f` | `f(x)` |
+| `x |> f(a)` | `f(x, a)` |
+| `x |> f(a,b)` | `f(x, a, b)` |
+| `x |> obj.method` | `obj.method(x)` |
+
+## 21. defer Statement (v1.3.7)
+
+defer 语句确保清理操作在作用域退出时执行，LIFO 顺序。
+
+### 21.1 语法
+
+```nexa
+defer cleanup(db)
+defer log("operation complete")
+defer agent_cleanup(agent)
+```
+
+### 21.2 LIFO 执行顺序
+
+```nexa
+defer first()   // 第二个执行
+defer second()  // 第一个执行
+// 作用域结束时：先执行 second()，再执行 first()
+```
+
+## 22. Null Coalescing ?? (v1.3.7)
+
+安全回退值操作符。
+
+### 22.1 语法
+
+```nexa
+result ?? "fallback"
+config.timeout ?? 30
+agent.run(prompt) ?? "I couldn't process that"
+```
+
+### 22.2 触发条件
+
+`??` 右侧回退值在以下条件下触发：
+- expr 为 `None`
+- expr 为 `Option::None`
+- expr 为空 dict `{}`
+
+### 22.3 链式使用
+
+```nexa
+a ?? b ?? c
+// 逐级回退：a 为 None → 尝试 b → b 为 None → 尝试 c
+```
+
+## 23. String Interpolation #{expr} (v1.3.7)
+
+Ruby 风格字符串插值。
+
+### 23.1 语法
+
+```nexa
+"Hello #{name}, you are #{age} years old!"
+"Status: #{result ?? 'pending'}"
+"Agent #{agent.name} responding"
+```
+
+### 23.2 表达式支持
+
+| 表达式类型 | 示例 | Python 生成 |
+|-----------|------|------------|
+| 标识符 | `#{name}` | `name` |
+| 点访问 | `#{user.name}` | `user["name"]` |
+| 括号访问 | `#{arr[0]}` | `arr[0]` |
+| 组合 | `#{data.items[0].name}` | `data["items"][0]["name"]` |
+
+### 23.3 类型转换
+
+| 类型 | 转换规则 |
+|------|---------|
+| `None` | → `""` |
+| `bool` | → `"true"/"false"` |
+| `int/float` | → `str(value)` |
+| `dict/list` | → `json.dumps(value)` |
+| `Option::Some` | → unwrap inner |
+| `Option::None` | → `""` |
+
+### 23.4 转义
+
+`\#{` → literal `#{`（不插值）
+
+## 24. Pattern Matching + Destructuring (v1.3.7)
+
+7 种模式类型。
+
+### 24.1 match 表达式
+
+```nexa
+match result {
+    Option::Some(answer) => answer
+    Option::None => "no response"
+}
+
+match status {
+    200 => "success"
+    404 => "not found"
+    _ => "unknown"
+}
+```
+
+### 24.2 7 种模式类型
+
+| 模式 | 语法 | 说明 |
+|------|------|------|
+| Wildcard | `_` | 匹配任何值，不绑定 |
+| Variable | `name` | 匹配任何值，绑定变量 |
+| Literal | `42`, `"hello"`, `true` | 匹配精确值 |
+| Tuple | `(a, b)` | 匹配元组/数组 |
+| Array | `[a, b, ..rest]` | 匹配数组 + rest |
+| Map | `{ name, age: a, ..other }` | 匹配 dict + rest |
+| Variant | `Option::Some(v)` | 匹配枚举变体 |
+
+### 24.3 let 解构
+
+```nexa
+let (key, value) = entry
+let [first, ..rest] = items
+let { name, age: a } = user_data
+```
+
+### 24.4 for 解构
+
+```nexa
+for (name, score) in rankings { ... }
+for [head, ..tail] in sequences { ... }
+```
+
+## 25. ADT — Struct/Trait/Enum (v1.3.7)
+
+代数数据类型系统。
+
+### 25.1 struct 声明
+
+```nexa
+struct Point { x: Int, y: Int }
+struct AgentResult { answer: String, confidence: Float, tokens: Int }
+
+let p = Point(x: 1, y: 2)
+```
+
+### 25.2 enum 声明
+
+```nexa
+enum Option { Some(value), None }
+enum Result { Ok(value), Err(error) }
+enum AgentState { Idle, Running, Error(message) }
+
+let opt = Option::Some(42)
+let state = AgentState::Idle
+```
+
+### 25.3 trait 声明
+
+```nexa
+trait Printable {
+    fn format() -> String
+}
+
+trait Serializable {
+    fn to_json() -> String
+    fn from_json(data: String) -> Self
+}
+```
+
+### 25.4 impl 声明
+
+```nexa
+impl Printable for Point {
+    fn format() -> String {
+        "Point(x=#{self.x}, y=#{self.y})"
+    }
+}
+```
+
+### 25.5 Handle-as-dict 表示
+
+所有 ADT 实例使用带 `_nexa_*` 前缀键的 Python dict：
+
+**Struct**:
+```python
+{"_nexa_struct": "Point", "_nexa_struct_id": 1, "x": 1, "y": 2}
+```
+
+**Enum variant**:
+```python
+{"_nexa_variant": "Some", "_nexa_enum": "Option", "_nexa_variant_id": 1, "value": 42}
+```
+
+**Unit variant**:
+```python
+{"_nexa_variant": "None", "_nexa_enum": "Option"}
+```
+
+### 25.6 match 与 ADT 配合
+
+```nexa
+match opt {
+    Option::Some(v) => v
+    Option::None => 0
+}
+
+match state {
+    AgentState::Idle => "waiting"
+    AgentState::Running => "processing"
+    AgentState::Error(msg) => "error: #{msg}"
+}
