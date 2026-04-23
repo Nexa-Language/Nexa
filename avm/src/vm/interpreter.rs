@@ -1,7 +1,17 @@
 //! AVM 解释器
+//!
+//! Design by Contract (契约式编程) 集成说明:
+//! - 契约检查在 AST 级别执行（而非字节码级别）
+//! - 当 AVM 运行时处理 Agent 调用时，先检查 requires，后检查 ensures
+//! - ContractViolation 错误通过 AvmError::RuntimeError 传播
+//! - requires 失败 → 跳过执行或抛 ContractViolation
+//! - ensures 失败 → 触发 retry/fallback 或抛 ContractViolation
 
 use crate::bytecode::{BytecodeModule, Instruction, OpCode, Operand, Constant};
 use crate::utils::error::{AvmError, AvmResult};
+use crate::runtime::contracts::{check_requires, check_ensures, capture_old_values};
+use crate::runtime::result_types::{NexaResult, NexaOption, ErrorPropagation, OtherwiseHandlerCtx, PropagationResult, propagate_or_else};
+use crate::compiler::ast::{ContractSpec, Statement, OtherwiseHandler};
 use super::stack::{Stack, Value, CallFrame};
 use std::collections::HashMap;
 
@@ -207,9 +217,255 @@ impl Interpreter {
     pub fn state(&self) -> InterpreterState {
         self.state
     }
-
+    
     pub fn stack_depth(&self) -> usize {
         self.stack.depth()
+    }
+    
+    // ==================== Design by Contract (契约式编程) ====================
+    
+    /// 检查 Agent 的前置契约 (requires)
+    ///
+    /// 在 Agent 执行前调用。如果 requires 失败，返回 AvmError。
+    /// 语义契约在 AVM 端暂时默认通过（需要 LLM 客户端异步评估）。
+    pub fn check_agent_requires(
+        &mut self,
+        contracts: &ContractSpec,
+        context: &HashMap<String, Value>,
+    ) -> AvmResult<()> {
+        check_requires(contracts, context)
+    }
+    
+    /// 检查 Agent 的后置契约 (ensures)
+    ///
+    /// 在 Agent 执行后调用。如果 ensures 失败，返回 AvmError。
+    /// 语义契约在 AVM 端暂时默认通过。
+    pub fn check_agent_ensures(
+        &mut self,
+        contracts: &ContractSpec,
+        context: &HashMap<String, Value>,
+        result: &Value,
+        old_values: &HashMap<String, Value>,
+    ) -> AvmResult<()> {
+        check_ensures(contracts, context, result, old_values)
+    }
+    
+    /// 捕获 old() 值（用于后置条件比较）
+    ///
+    /// 在 Agent 执行前调用，记录入口时的变量值。
+    pub fn capture_contract_old_values(
+        &self,
+        contracts: &ContractSpec,
+        context: &HashMap<String, Value>,
+    ) -> HashMap<String, Value> {
+        capture_old_values(contracts, context)
+    }
+
+    // ==================== v1.2: Error Propagation (? 操作符 + otherwise) ====================
+    
+    /// 执行 ? 操作符赋值语句 — TryAssignment
+    ///
+    /// x = expr? → 对 expr 结果执行 unwrap
+    /// - NexaResult::Ok → 返回值赋给 target
+    /// - NexaResult::Err → 触发 ErrorPropagation (early-return)
+    /// - NexaOption::Some → 返回值赋给 target
+    /// - NexaOption::None → 触发 ErrorPropagation (early-return)
+    pub fn exec_try_assignment(
+        &mut self,
+        target: &str,
+        expression_value: &Value,
+    ) -> AvmResult<PropagationResult> {
+        // 将值包装为 NexaResult 并执行 propagate_or_else
+        let result = if self.is_nexa_result(expression_value) {
+            // 已经是 NexaResult，直接使用
+            self.value_to_nexa_result(expression_value)
+        } else {
+            // 普通值 → 包装为 NexaResult::Ok
+            NexaResult::Ok(expression_value.clone())
+        };
+        
+        let propagation = propagate_or_else(&result, None);
+        
+        match propagation {
+            PropagationResult::Ok(value) => {
+                // 成功 → 赋值给 target
+                self.globals.insert(target.to_string(), value.clone());
+                Ok(PropagationResult::Ok(value))
+            }
+            PropagationResult::Propagate(error) => {
+                // 失败 → ErrorPropagation
+                Err(AvmError::RuntimeError(format!("Error propagation: {}", error.error)))
+            }
+            PropagationResult::Fallback(value) => {
+                // 不应到达这里（? 操作符没有 otherwise handler）
+                self.globals.insert(target.to_string(), value.clone());
+                Ok(PropagationResult::Fallback(value))
+            }
+        }
+    }
+    
+    /// 执行 otherwise 内联错误处理赋值语句 — OtherwiseAssignment
+    ///
+    /// x = expr otherwise handler → 对 expr 结果执行 unwrap_or_else
+    /// - NexaResult::Ok → 返回值赋给 target
+    /// - NexaResult::Err → 执行 handler 作为 fallback
+    pub fn exec_otherwise_assignment(
+        &mut self,
+        target: &str,
+        expression_value: &Value,
+        handler: &OtherwiseHandler,
+    ) -> AvmResult<Value> {
+        // 将值包装为 NexaResult
+        let result = if self.is_nexa_result(expression_value) {
+            self.value_to_nexa_result(expression_value)
+        } else {
+            NexaResult::Ok(expression_value.clone())
+        };
+        
+        if result.is_ok() {
+            // 成功 → 返回值
+            let value = match result {
+                NexaResult::Ok(v) => v,
+                NexaResult::Err(_) => Value::Null,
+            };
+            self.globals.insert(target.to_string(), value.clone());
+            return Ok(value);
+        }
+        
+        // 失败 → 执行 handler
+        let fallback_value = self.exec_otherwise_handler(handler, &result)?;
+        self.globals.insert(target.to_string(), fallback_value.clone());
+        Ok(fallback_value)
+    }
+    
+    /// 执行 otherwise handler
+    ///
+    /// handler 可以是:
+    /// - OtherwiseHandler::AgentCall → Agent.run_result() 作为 fallback
+    /// - OtherwiseHandler::Value → 直接返回值
+    /// - OtherwiseHandler::Variable → 返回变量值
+    /// - OtherwiseHandler::Block → 执行代码块
+    fn exec_otherwise_handler(
+        &mut self,
+        handler: &OtherwiseHandler,
+        result: &NexaResult,
+    ) -> AvmResult<Value> {
+        match handler {
+            OtherwiseHandler::AgentCall { agent_name, args } => {
+                // Agent fallback: 在 AVM 中简化为字符串标记
+                // 实际 Agent 调用需要异步运行时支持
+                Ok(Value::String(format!("fallback:{}", agent_name)))
+            }
+            OtherwiseHandler::Value(value_str) => {
+                Ok(Value::String(value_str.clone()))
+            }
+            OtherwiseHandler::Variable(var_name) => {
+                // 从全局变量中获取值
+                self.globals.get(var_name)
+                    .cloned()
+                    .ok_or_else(|| AvmError::RuntimeError(format!("Variable '{}' not found for otherwise handler", var_name)))
+            }
+            OtherwiseHandler::Block(statements) => {
+                // 执行代码块中的语句
+                // 简化处理：返回最后一个语句的结果
+                let mut last_value = Value::Null;
+                for stmt in statements {
+                    // 这里需要 AST 级别的语句执行
+                    // 当前简化为返回 Null
+                    // 完整实现需要递归执行每条语句
+                }
+                Ok(last_value)
+            }
+        }
+    }
+    
+    /// 检查值是否是 NexaResult
+    ///
+    /// 在 AVM 中，NexaResult 以特殊的字典形式存储：
+    /// {"_nexa_result": true, "is_ok": true/false, "value": ..., "error": ...}
+    fn is_nexa_result(&self, value: &Value) -> bool {
+        // 简化判断：当前 AVM Value 不直接支持 NexaResult 类型标记
+        // 后续可以通过 Value 扩展或特殊标记来区分
+        false
+    }
+    
+    /// 将 Value 转换为 NexaResult
+    ///
+    /// 如果值已经是 NexaResult 标记形式，则解析
+    /// 否则包装为 NexaResult::Ok
+    fn value_to_nexa_result(&self, value: &Value) -> NexaResult {
+        NexaResult::Ok(value.clone())
+    }
+    
+    /// 执行 AST 级别的语句（支持 ? 和 otherwise）
+    ///
+    /// 当 AVM 需要直接执行 AST 而非字节码时使用此方法。
+    /// 主要用于 TryAssignment、OtherwiseAssignment、TryExpression
+    pub fn exec_ast_statement(&mut self, stmt: &Statement) -> AvmResult<Option<Value>> {
+        match stmt {
+            Statement::TryAssignment { target, expression } => {
+                // 评估表达式
+                let value = self.eval_ast_expression(expression)?;
+                let result = self.exec_try_assignment(target, &value)?;
+                match result {
+                    PropagationResult::Ok(v) => Ok(Some(v)),
+                    PropagationResult::Propagate(e) => {
+                        Err(AvmError::RuntimeError(format!("Error propagation: {}", e.error)))
+                    }
+                    PropagationResult::Fallback(v) => Ok(Some(v)),
+                }
+            }
+            Statement::OtherwiseAssignment { target, expression, handler } => {
+                // 评估表达式
+                let value = self.eval_ast_expression(expression)?;
+                let result = self.exec_otherwise_assignment(target, &value, handler)?;
+                Ok(Some(result))
+            }
+            Statement::TryExpression(expression) => {
+                // 评估表达式
+                let value = self.eval_ast_expression(expression)?;
+                let nexa_result = NexaResult::Ok(value);
+                let propagation = propagate_or_else(&nexa_result, None);
+                match propagation {
+                    PropagationResult::Ok(v) => Ok(Some(v)),
+                    PropagationResult::Propagate(e) => {
+                        Err(AvmError::RuntimeError(format!("Error propagation: {}", e.error)))
+                    }
+                    PropagationResult::Fallback(v) => Ok(Some(v)),
+                }
+            }
+            _ => Err(AvmError::RuntimeError(format!("Unsupported AST statement type for direct execution")))
+        }
+    }
+    
+    /// 评估 AST 表达式（简化版）
+    ///
+    /// 在完整实现中，这应该递归评估 AST Expression。
+    /// 当前简化版只处理基本表达式类型。
+    fn eval_ast_expression(&self, expr: &crate::compiler::ast::Expression) -> AvmResult<Value> {
+        use crate::compiler::ast::Expression;
+        match expr {
+            Expression::String(s) => Ok(Value::String(s.clone())),
+            Expression::Integer(n) => Ok(Value::Int(*n)),
+            Expression::Float(f) => Ok(Value::Float(*f)),
+            Expression::Bool(b) => Ok(Value::Bool(*b)),
+            Expression::Null => Ok(Value::Null),
+            Expression::Identifier(name) => {
+                self.globals.get(name)
+                    .cloned()
+                    .ok_or_else(|| AvmError::RuntimeError(format!("Variable '{}' not found", name)))
+            }
+            Expression::TryOp { expression } => {
+                // ? 操作符：评估内部表达式，然后 unwrap
+                let value = self.eval_ast_expression(expression)?;
+                let result = NexaResult::Ok(value);
+                match result.unwrap() {
+                    Ok(v) => Ok(v),
+                    Err(e) => Err(AvmError::RuntimeError(format!("Error propagation: {}", e.error))),
+                }
+            }
+            _ => Ok(Value::Null), // 其他表达式类型暂不支持
+        }
     }
 }
 

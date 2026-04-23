@@ -1,0 +1,63 @@
+// P2-2: Structured Concurrency — Nexa 并发示例
+
+// ==================== Channel 通信 ====================
+// 创建通道对用于任务间通信
+let [tx, rx] = channel()
+
+// 在后台任务中发送消息
+let task = spawn(fn() { send(tx, 'hello from task') })
+
+// 在主线程接收消息
+let msg = recv(rx)
+
+// ==================== Parallel 并行执行 ====================
+// 并行运行多个 handler, 返回所有结果
+let results = parallel([fn() { 'result_a' }, fn() { 'result_b' }])
+
+// ==================== Race 竞速执行 ====================
+// 第一个成功结果, 取消其余
+let best = race([fn() { 'fast_result' }, fn() { 'fallback_result' }])
+
+// ==================== After 延迟执行 ====================
+// 5秒后执行
+after(5000, fn() { print('5 seconds later') })
+
+// 带字符串格式的延迟
+after('2s', fn() { print('2 seconds later') })
+
+// ==================== Schedule 周期调度 ====================
+// 每30秒执行健康检查
+let sched = schedule(30000, fn() { print('health check tick') })
+
+// 带字符串格式的间隔
+let sched2 = schedule('1m', fn() { print('minute tick') })
+
+// 取消周期调度
+cancel_schedule(sched)
+
+// ==================== Select 多路复用 ====================
+// 等待多个通道中的第一个消息
+let [tx1, rx1] = channel()
+let [tx2, rx2] = channel()
+send(tx1, 'from channel 1')
+let selected = select([rx1, rx2], 5000)
+
+// ==================== 超时接收 ====================
+let [tx3, rx3] = channel()
+let timeout_result = recv_timeout(rx3, 100)
+
+// ==================== 非阻塞 peek ====================
+let [tx4, rx4] = channel()
+let peek_result = try_recv(rx4)
+
+// ==================== 任务取消 ====================
+let long_task = spawn(fn() { sleep_ms(5000) })
+cancel_task(long_task)
+
+// ==================== 关闭通道 ====================
+let [tx5, rx5] = channel()
+send(tx5, 'final message')
+close(rx5)
+
+// ==================== CPU 线程数 ====================
+let threads = thread_count()

@@ -1,0 +1,85 @@
+// Nexa Design by Contract (契约式编程) 示例
+// 展示 requires/ensures 语法和确定性/语义契约
+
+// ============================================
+// 1. Agent 契约示例
+// ============================================
+
+// 确定性契约：amount 必须大于 0
+agent PaymentValidator
+    requires "input contains payment data"
+    ensures "output confirms payment validity" {
+    role: "Payment Validator",
+    prompt: "Validate payment data and confirm whether it is valid."
+}
+
+// 语义契约：自然语言条件，LLM 在运行时判断
+agent ContentReviewer
+    requires "input is a written article"
+    ensures "output identifies at least 3 improvement areas" {
+    role: "Content Quality Reviewer",
+    prompt: "Review articles and suggest improvements."
+}
+
+// 混合契约：确定性 + 语义
+agent FinancialAnalyst
+    requires "input contains financial data"
+    ensures "output contains specific analysis conclusions" {
+    role: "Senior Financial Advisor",
+    prompt: "Analyze financial data and output standard reports."
+    model: "minimax-m2.5"
+}
+
+// ============================================
+// 2. Flow 契约示例
+// ============================================
+
+// 确定性 flow 契约
+flow process_payment(amount: float)
+    requires amount > 0
+    requires amount <= 10000
+    ensures result >= 0 {
+    result = PaymentValidator(amount)
+}
+
+// 语义 flow 契约
+flow review_content(text: str)
+    requires "text is a written document"
+    ensures "review provides actionable feedback" {
+    review = ContentReviewer(text)
+    result = review
+}
+
+// 混合 flow 契约
+flow analyze_finances(data: str)
+    requires "data contains financial information"
+    ensures result >= 0 {
+    analysis = FinancialAnalyst(data)
+    result = analysis
+}
+
+// ============================================
+// 3. flow main 入口
+// ============================================
+
+flow main() {
+    print("=== Nexa Design by Contract Demo ===")
+    
+    // 测试确定性契约
+    try {
+        valid_result = process_payment(500)
+        print("Valid payment processed successfully")
+    } catch(e) {
+        print("Payment contract violated: " + e)
+    }
+    
+    // 测试契约失败
+    try {
+        invalid_result = process_payment(-100)
+        print("Invalid payment should not pass")
+    } catch(e) {
+        print("Expected contract violation caught: " + e)
+    }
+    
+    print("=== Contract Demo Complete ===")
+}

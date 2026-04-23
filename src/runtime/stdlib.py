@@ -25,6 +25,11 @@ import base64
 import urllib.parse
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass
+# P2-4: Template System imports
+from .template import (
+    NexaTemplateRenderer, FILTER_REGISTRY, render_string, template, compile_template, render,
+    agent_template_prompt, agent_template_slot_fill, agent_template_register, agent_template_list,
+)
 
 
 # ==================== 工具定义 ====================
@@ -495,11 +500,241 @@ def _ask_human(prompt: str, default: str = "") -> str:
         return default or ""
 
 
+# ==================== P1-5: Database Integration (内置数据库集成) ====================
+
+from .database import (
+    NexaDatabase, NexaSQLite, NexaPostgres, DatabaseError,
+    query as db_query, query_one as db_query_one, execute as db_execute,
+    close as db_close, begin as db_begin, commit as db_commit, rollback as db_rollback,
+    python_to_sql, sql_to_python, adapt_sql_params,
+    agent_memory_query, agent_memory_store, agent_memory_delete, agent_memory_list,
+    contract_violation_to_http_status,
+)
+
+
+def _std_db_sqlite_connect(path: str = ":memory:") -> str:
+    """SQLite 连接 — std.db.sqlite.connect"""
+    try:
+        handle = NexaSQLite.connect(path)
+        return json.dumps(handle)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_query(handle_json: str, sql: str, params_json: str = "[]") -> str:
+    """SQLite 查询所有行 — std.db.sqlite.query"""
+    try:
+        handle = json.loads(handle_json)
+        params = json.loads(params_json) if params_json else []
+        results = NexaSQLite.query(handle, sql, params)
+        return json.dumps(results, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_query_one(handle_json: str, sql: str, params_json: str = "[]") -> str:
+    """SQLite 查询单行 — std.db.sqlite.query_one"""
+    try:
+        handle = json.loads(handle_json)
+        params = json.loads(params_json) if params_json else []
+        result = NexaSQLite.query_one(handle, sql, params)
+        return json.dumps(result, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_execute(handle_json: str, sql: str, params_json: str = "[]") -> str:
+    """SQLite 执行写操作 — std.db.sqlite.execute"""
+    try:
+        handle = json.loads(handle_json)
+        params = json.loads(params_json) if params_json else []
+        count = NexaSQLite.execute(handle, sql, params)
+        return json.dumps({"affected_rows": count})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_close(handle_json: str) -> str:
+    """SQLite 关闭连接 — std.db.sqlite.close"""
+    try:
+        handle = json.loads(handle_json)
+        NexaSQLite.close(handle)
+        return json.dumps({"closed": True})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_begin(handle_json: str) -> str:
+    """SQLite 开始事务 — std.db.sqlite.begin"""
+    try:
+        handle = json.loads(handle_json)
+        NexaSQLite.begin(handle)
+        return json.dumps({"transaction": "started"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_commit(handle_json: str) -> str:
+    """SQLite 提交事务 — std.db.sqlite.commit"""
+    try:
+        handle = json.loads(handle_json)
+        NexaSQLite.commit(handle)
+        return json.dumps({"transaction": "committed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_sqlite_rollback(handle_json: str) -> str:
+    """SQLite 回滚事务 — std.db.sqlite.rollback"""
+    try:
+        handle = json.loads(handle_json)
+        NexaSQLite.rollback(handle)
+        return json.dumps({"transaction": "rolled_back"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_connect(url: str) -> str:
+    """PostgreSQL 连接 — std.db.postgres.connect"""
+    try:
+        handle = NexaPostgres.connect(url)
+        return json.dumps(handle)
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_query(handle_json: str, sql: str, params_json: str = "[]") -> str:
+    """PostgreSQL 查询所有行 — std.db.postgres.query"""
+    try:
+        handle = json.loads(handle_json)
+        params = json.loads(params_json) if params_json else []
+        results = NexaPostgres.query(handle, sql, params)
+        return json.dumps(results, ensure_ascii=False)
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_query_one(handle_json: str, sql: str, params_json: str = "[]") -> str:
+    """PostgreSQL 查询单行 — std.db.postgres.query_one"""
+    try:
+        handle = json.loads(handle_json)
+        params = json.loads(params_json) if params_json else []
+        result = NexaPostgres.query_one(handle, sql, params)
+        return json.dumps(result, ensure_ascii=False)
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_execute(handle_json: str, sql: str, params_json: str = "[]") -> str:
+    """PostgreSQL 执行写操作 — std.db.postgres.execute"""
+    try:
+        handle = json.loads(handle_json)
+        params = json.loads(params_json) if params_json else []
+        count = NexaPostgres.execute(handle, sql, params)
+        return json.dumps({"affected_rows": count})
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_close(handle_json: str) -> str:
+    """PostgreSQL 关闭连接 — std.db.postgres.close"""
+    try:
+        handle = json.loads(handle_json)
+        NexaPostgres.close(handle)
+        return json.dumps({"closed": True})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_begin(handle_json: str) -> str:
+    """PostgreSQL 开始事务 — std.db.postgres.begin"""
+    try:
+        handle = json.loads(handle_json)
+        NexaPostgres.begin(handle)
+        return json.dumps({"transaction": "started"})
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_commit(handle_json: str) -> str:
+    """PostgreSQL 提交事务 — std.db.postgres.commit"""
+    try:
+        handle = json.loads(handle_json)
+        NexaPostgres.commit(handle)
+        return json.dumps({"transaction": "committed"})
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_postgres_rollback(handle_json: str) -> str:
+    """PostgreSQL 回滚事务 — std.db.postgres.rollback"""
+    try:
+        handle = json.loads(handle_json)
+        NexaPostgres.rollback(handle)
+        return json.dumps({"transaction": "rolled_back"})
+    except ImportError:
+        return json.dumps({"error": "psycopg2 not installed"})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_memory_query(handle_json: str, agent_name: str, key: str) -> str:
+    """Agent 记忆查询 — std.db.memory.query"""
+    try:
+        handle = json.loads(handle_json)
+        result = agent_memory_query(handle, agent_name, key)
+        return json.dumps({"value": result})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_memory_store(handle_json: str, agent_name: str, key: str, value: str) -> str:
+    """Agent 记忆存储 — std.db.memory.store"""
+    try:
+        handle = json.loads(handle_json)
+        success = agent_memory_store(handle, agent_name, key, value)
+        return json.dumps({"stored": success})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_memory_delete(handle_json: str, agent_name: str, key: str) -> str:
+    """Agent 记忆删除 — std.db.memory.delete"""
+    try:
+        handle = json.loads(handle_json)
+        success = agent_memory_delete(handle, agent_name, key)
+        return json.dumps({"deleted": success})
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
+def _std_db_memory_list(handle_json: str, agent_name: str) -> str:
+    """Agent 记忆列表 — std.db.memory.list"""
+    try:
+        handle = json.loads(handle_json)
+        result = agent_memory_list(handle, agent_name)
+        return json.dumps(result, ensure_ascii=False)
+    except Exception as e:
+        return json.dumps({"error": str(e)})
+
+
 # ==================== 标准库注册 ====================
 
 def get_stdlib_tools() -> Dict[str, StdTool]:
     """获取所有标准库工具"""
-    return {
+    _all_tools = {
         # HTTP
         "http_get": StdTool(
             name="http_get",
@@ -916,7 +1151,2412 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             },
             handler=_ask_human
         ),
+        
+        # P1-5: Database Integration (内置数据库集成)
+        "std_db_sqlite_connect": StdTool(
+            name="std_db_sqlite_connect",
+            description="连接 SQLite 数据库",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "数据库路径 (:memory: 或文件路径)"}
+                },
+                "required": ["path"]
+            },
+            handler=_std_db_sqlite_connect
+        ),
+        "std_db_sqlite_query": StdTool(
+            name="std_db_sqlite_query",
+            description="SQLite 查询所有行",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"},
+                    "sql": {"type": "string", "description": "SQL 查询语句"},
+                    "params_json": {"type": "string", "description": "参数 JSON 数组"}
+                },
+                "required": ["handle_json", "sql"]
+            },
+            handler=_std_db_sqlite_query
+        ),
+        "std_db_sqlite_query_one": StdTool(
+            name="std_db_sqlite_query_one",
+            description="SQLite 查询单行",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"},
+                    "sql": {"type": "string", "description": "SQL 查询语句"},
+                    "params_json": {"type": "string", "description": "参数 JSON 数组"}
+                },
+                "required": ["handle_json", "sql"]
+            },
+            handler=_std_db_sqlite_query_one
+        ),
+        "std_db_sqlite_execute": StdTool(
+            name="std_db_sqlite_execute",
+            description="SQLite 执行写操作",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"},
+                    "sql": {"type": "string", "description": "SQL 语句"},
+                    "params_json": {"type": "string", "description": "参数 JSON 数组"}
+                },
+                "required": ["handle_json", "sql"]
+            },
+            handler=_std_db_sqlite_execute
+        ),
+        "std_db_sqlite_close": StdTool(
+            name="std_db_sqlite_close",
+            description="SQLite 关闭连接",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_sqlite_close
+        ),
+        "std_db_sqlite_begin": StdTool(
+            name="std_db_sqlite_begin",
+            description="SQLite 开始事务",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_sqlite_begin
+        ),
+        "std_db_sqlite_commit": StdTool(
+            name="std_db_sqlite_commit",
+            description="SQLite 提交事务",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_sqlite_commit
+        ),
+        "std_db_sqlite_rollback": StdTool(
+            name="std_db_sqlite_rollback",
+            description="SQLite 回滚事务",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_sqlite_rollback
+        ),
+        "std_db_postgres_connect": StdTool(
+            name="std_db_postgres_connect",
+            description="连接 PostgreSQL 数据库",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "PostgreSQL 连接串"}
+                },
+                "required": ["url"]
+            },
+            handler=_std_db_postgres_connect
+        ),
+        "std_db_postgres_query": StdTool(
+            name="std_db_postgres_query",
+            description="PostgreSQL 查询所有行",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"},
+                    "sql": {"type": "string", "description": "SQL 查询语句"},
+                    "params_json": {"type": "string", "description": "参数 JSON 数组"}
+                },
+                "required": ["handle_json", "sql"]
+            },
+            handler=_std_db_postgres_query
+        ),
+        "std_db_postgres_query_one": StdTool(
+            name="std_db_postgres_query_one",
+            description="PostgreSQL 查询单行",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"},
+                    "sql": {"type": "string", "description": "SQL 查询语句"},
+                    "params_json": {"type": "string", "description": "参数 JSON 数组"}
+                },
+                "required": ["handle_json", "sql"]
+            },
+            handler=_std_db_postgres_query_one
+        ),
+        "std_db_postgres_execute": StdTool(
+            name="std_db_postgres_execute",
+            description="PostgreSQL 执行写操作",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"},
+                    "sql": {"type": "string", "description": "SQL 语句"},
+                    "params_json": {"type": "string", "description": "参数 JSON 数组"}
+                },
+                "required": ["handle_json", "sql"]
+            },
+            handler=_std_db_postgres_execute
+        ),
+        "std_db_postgres_close": StdTool(
+            name="std_db_postgres_close",
+            description="PostgreSQL 关闭连接",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_postgres_close
+        ),
+        "std_db_postgres_begin": StdTool(
+            name="std_db_postgres_begin",
+            description="PostgreSQL 开始事务",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_postgres_begin
+        ),
+        "std_db_postgres_commit": StdTool(
+            name="std_db_postgres_commit",
+            description="PostgreSQL 提交事务",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_postgres_commit
+        ),
+        "std_db_postgres_rollback": StdTool(
+            name="std_db_postgres_rollback",
+            description="PostgreSQL 回滚事务",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "连接句柄 JSON"}
+                },
+                "required": ["handle_json"]
+            },
+            handler=_std_db_postgres_rollback
+        ),
+        "std_db_memory_query": StdTool(
+            name="std_db_memory_query",
+            description="Agent 记忆查询",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "数据库连接句柄 JSON"},
+                    "agent_name": {"type": "string", "description": "Agent 名称"},
+                    "key": {"type": "string", "description": "记忆键名"}
+                },
+                "required": ["handle_json", "agent_name", "key"]
+            },
+            handler=_std_db_memory_query
+        ),
+        "std_db_memory_store": StdTool(
+            name="std_db_memory_store",
+            description="Agent 记忆存储",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "数据库连接句柄 JSON"},
+                    "agent_name": {"type": "string", "description": "Agent 名称"},
+                    "key": {"type": "string", "description": "记忆键名"},
+                    "value": {"type": "string", "description": "记忆值"}
+                },
+                "required": ["handle_json", "agent_name", "key", "value"]
+            },
+            handler=_std_db_memory_store
+        ),
+        "std_db_memory_delete": StdTool(
+            name="std_db_memory_delete",
+            description="Agent 记忆删除",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "数据库连接句柄 JSON"},
+                    "agent_name": {"type": "string", "description": "Agent 名称"},
+                    "key": {"type": "string", "description": "记忆键名"}
+                },
+                "required": ["handle_json", "agent_name", "key"]
+            },
+            handler=_std_db_memory_delete
+        ),
+        "std_db_memory_list": StdTool(
+            name="std_db_memory_list",
+            description="Agent 记忆列表",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handle_json": {"type": "string", "description": "数据库连接句柄 JSON"},
+                    "agent_name": {"type": "string", "description": "Agent 名称"}
+                },
+                "required": ["handle_json", "agent_name"]
+            },
+            handler=_std_db_memory_list
+        ),
     }
+
+
+    # ==================== P2-1: Auth & OAuth (std.auth namespace) ====================
+
+    from .auth import (
+        oauth as _auth_oauth_fn,
+        enable_auth as _auth_enable_auth_fn,
+        get_user as _auth_get_user_fn,
+        get_session as _auth_get_session_fn,
+        session_data as _auth_session_data_fn,
+        set_session as _auth_set_session_fn,
+        logout_user as _auth_logout_user_fn,
+        require_auth as _auth_require_auth_fn,
+        jwt_sign as _auth_jwt_sign_fn,
+        jwt_verify as _auth_jwt_verify_fn,
+        jwt_decode as _auth_jwt_decode_fn,
+        csrf_token as _auth_csrf_token_fn,
+        csrf_field as _auth_csrf_field_fn,
+        verify_csrf as _auth_verify_csrf_fn,
+        agent_api_key_generate as _auth_api_key_generate_fn,
+        agent_api_key_verify as _auth_api_key_verify_fn,
+        agent_auth_context as _auth_auth_context_fn,
+    )
+
+    def _std_auth_oauth(**kwargs):
+        name = kwargs.get('name', 'google')
+        client_id = kwargs.get('client_id', '')
+        client_secret = kwargs.get('client_secret', '')
+        opts = kwargs.get('opts', None)
+        try:
+            result = _auth_oauth_fn(name, client_id, client_secret, opts)
+            return json.dumps(result.to_dict(), ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_enable_auth(**kwargs):
+        providers_json = kwargs.get('providers', '[]')
+        options = kwargs.get('options', None)
+        try:
+            if isinstance(providers_json, str):
+                providers_list = json.loads(providers_json)
+            else:
+                providers_list = providers_json
+            provider_configs = []
+            for p in providers_list:
+                provider_configs.append(_auth_oauth_fn(
+                    p.get('name', ''),
+                    p.get('client_id', ''),
+                    p.get('client_secret', ''),
+                    p.get('opts', None)
+                ))
+            result = _auth_enable_auth_fn(provider_configs, options)
+            return json.dumps(result.to_dict(), ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_get_user(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_get_user_fn(req)
+            return json.dumps(result, ensure_ascii=False) if result else 'null'
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_get_session(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_get_session_fn(req)
+            return json.dumps(result.to_dict(), ensure_ascii=False) if result else 'null'
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_session_data(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_session_data_fn(req)
+            return json.dumps(result, ensure_ascii=False) if result else 'null'
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_set_session(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        data = kwargs.get('data', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            if isinstance(data, str):
+                data = json.loads(data)
+            result = _auth_set_session_fn(req, data)
+            return json.dumps({'success': result})
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_logout_user(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_logout_user_fn(req)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_require_auth(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_require_auth_fn(req)
+            if result is None:
+                return json.dumps({'authenticated': True})
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_jwt_sign(**kwargs):
+        claims_json = kwargs.get('claims', '{}')
+        secret = kwargs.get('secret', '')
+        options = kwargs.get('options', None)
+        try:
+            if isinstance(claims_json, str):
+                claims = json.loads(claims_json)
+            else:
+                claims = claims_json
+            if isinstance(options, str):
+                options = json.loads(options)
+            result = _auth_jwt_sign_fn(claims, secret, options)
+            return result
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_jwt_verify(**kwargs):
+        token = kwargs.get('token', '')
+        secret = kwargs.get('secret', '')
+        try:
+            result = _auth_jwt_verify_fn(token, secret)
+            return json.dumps(result, ensure_ascii=False) if result else 'null'
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_jwt_decode(**kwargs):
+        token = kwargs.get('token', '')
+        try:
+            result = _auth_jwt_decode_fn(token)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_csrf_token(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_csrf_token_fn(req)
+            return result
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_csrf_field(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_csrf_field_fn(req)
+            return result
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_verify_csrf(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        token = kwargs.get('token', '')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            result = _auth_verify_csrf_fn(req, token)
+            return json.dumps({'valid': result})
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_api_key_generate(**kwargs):
+        agent_name = kwargs.get('agent_name', '')
+        ttl = kwargs.get('ttl', None)
+        try:
+            if isinstance(ttl, str):
+                ttl = int(ttl) if ttl else None
+            result = _auth_api_key_generate_fn(agent_name, ttl)
+            return result
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_api_key_verify(**kwargs):
+        api_key = kwargs.get('api_key', '')
+        try:
+            result = _auth_api_key_verify_fn(api_key)
+            return json.dumps(result, ensure_ascii=False) if result else 'null'
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_auth_auth_context(**kwargs):
+        request_json = kwargs.get('request', '{}')
+        agent_json = kwargs.get('agent', '{}')
+        try:
+            from .http_server import NexaRequest
+            if isinstance(request_json, str):
+                req = NexaRequest.from_raw(method='GET', path='/', headers=json.loads(request_json), body='')
+            else:
+                req = request_json
+            agent = agent_json  # Pass as-is (could be dict or None)
+            result = _auth_auth_context_fn(req, agent)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    # P2-1: std.auth namespace — 17 StdTool registrations
+    auth_tools = {
+        "std_auth_oauth": StdTool(
+            name="std_auth_oauth",
+            description="创建 OAuth Provider 配置",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Provider 名称 (google/github/custom)"},
+                    "client_id": {"type": "string", "description": "OAuth Client ID"},
+                    "client_secret": {"type": "string", "description": "OAuth Client Secret"},
+                    "opts": {"type": "string", "description": "可选配置 JSON"}
+                },
+                "required": ["name", "client_id", "client_secret"]
+            },
+            handler=_std_auth_oauth
+        ),
+        "std_auth_enable_auth": StdTool(
+            name="std_auth_enable_auth",
+            description="初始化 Auth 系统",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "providers": {"type": "string", "description": "Provider 列表 JSON"},
+                    "options": {"type": "string", "description": "可选配置 JSON"}
+                },
+                "required": ["providers"]
+            },
+            handler=_std_auth_enable_auth
+        ),
+        "std_auth_get_user": StdTool(
+            name="std_auth_get_user",
+            description="获取当前用户信息",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_get_user
+        ),
+        "std_auth_get_session": StdTool(
+            name="std_auth_get_session",
+            description="获取用户会话",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_get_session
+        ),
+        "std_auth_session_data": StdTool(
+            name="std_auth_session_data",
+            description="获取自定义会话数据",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_session_data
+        ),
+        "std_auth_set_session": StdTool(
+            name="std_auth_set_session",
+            description="设置自定义会话数据",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"},
+                    "data": {"type": "string", "description": "数据 JSON"}
+                },
+                "required": ["request", "data"]
+            },
+            handler=_std_auth_set_session
+        ),
+        "std_auth_logout_user": StdTool(
+            name="std_auth_logout_user",
+            description="注销用户",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_logout_user
+        ),
+        "std_auth_require_auth": StdTool(
+            name="std_auth_require_auth",
+            description="Auth 中间件路径保护",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_require_auth
+        ),
+        "std_auth_jwt_sign": StdTool(
+            name="std_auth_jwt_sign",
+            description="JWT 签名 (HS256)",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "claims": {"type": "string", "description": "JWT claims JSON"},
+                    "secret": {"type": "string", "description": "签名密钥"},
+                    "options": {"type": "string", "description": "可选参数 JSON"}
+                },
+                "required": ["claims", "secret"]
+            },
+            handler=_std_auth_jwt_sign
+        ),
+        "std_auth_jwt_verify": StdTool(
+            name="std_auth_jwt_verify",
+            description="JWT 验证 (HS256)",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "token": {"type": "string", "description": "JWT token"},
+                    "secret": {"type": "string", "description": "签名密钥"}
+                },
+                "required": ["token", "secret"]
+            },
+            handler=_std_auth_jwt_verify
+        ),
+        "std_auth_jwt_decode": StdTool(
+            name="std_auth_jwt_decode",
+            description="JWT 解码 (不验签)",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "token": {"type": "string", "description": "JWT token"}
+                },
+                "required": ["token"]
+            },
+            handler=_std_auth_jwt_decode
+        ),
+        "std_auth_csrf_token": StdTool(
+            name="std_auth_csrf_token",
+            description="生成 CSRF token",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_csrf_token
+        ),
+        "std_auth_csrf_field": StdTool(
+            name="std_auth_csrf_field",
+            description="生成 CSRF HTML hidden input",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_csrf_field
+        ),
+        "std_auth_verify_csrf": StdTool(
+            name="std_auth_verify_csrf",
+            description="验证 CSRF token",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"},
+                    "token": {"type": "string", "description": "待验证 token"}
+                },
+                "required": ["request", "token"]
+            },
+            handler=_std_auth_verify_csrf
+        ),
+        "std_auth_api_key_generate": StdTool(
+            name="std_auth_api_key_generate",
+            description="生成 Agent API Key",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent_name": {"type": "string", "description": "Agent 名称"},
+                    "ttl": {"type": "string", "description": "过期时间(秒), 空为永不过期"}
+                },
+                "required": ["agent_name"]
+            },
+            handler=_std_auth_api_key_generate
+        ),
+        "std_auth_api_key_verify": StdTool(
+            name="std_auth_api_key_verify",
+            description="验证 Agent API Key",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "api_key": {"type": "string", "description": "API Key 字符串"}
+                },
+                "required": ["api_key"]
+            },
+            handler=_std_auth_api_key_verify
+        ),
+        "std_auth_auth_context": StdTool(
+            name="std_auth_auth_context",
+            description="Agent 认证上下文注入",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "请求对象 JSON"},
+                    "agent": {"type": "string", "description": "Agent 对象 JSON"}
+                },
+                "required": ["request"]
+            },
+            handler=_std_auth_auth_context
+        ),
+    }
+
+    # Merge auth tools into main tools dict
+    _all_tools.update(auth_tools)
+
+    # ==================== P2-3: std.kv namespace ====================
+
+    from .kv_store import (
+        kv_open, kv_get, kv_get_int, kv_get_str, kv_get_json,
+        kv_set, kv_set_nx, kv_del, kv_has, kv_list,
+        kv_expire, kv_ttl, kv_flush, kv_incr,
+        agent_kv_query, agent_kv_store, agent_kv_context,
+    )
+
+    # ==================== P2-2: std.concurrent namespace ====================
+
+    from .concurrent import (
+        channel, send, recv, recv_timeout, try_recv, close,
+        select, spawn, await_task, try_await, cancel_task,
+        parallel, race, after, schedule, cancel_schedule,
+        sleep_ms, thread_count, parse_interval,
+    )
+
+    def _std_concurrent_channel(**kwargs):
+        try:
+            handles = channel()
+            return json.dumps(handles, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_send(**kwargs):
+        tx_json = kwargs.get('tx', '{}')
+        value = kwargs.get('value', '')
+        try:
+            tx = json.loads(tx_json) if isinstance(tx_json, str) else tx_json
+            result = send(tx, value)
+            return json.dumps({'success': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_recv(**kwargs):
+        rx_json = kwargs.get('rx', '{}')
+        try:
+            rx = json.loads(rx_json) if isinstance(rx_json, str) else rx_json
+            result = recv(rx)
+            return json.dumps({'value': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_recv_timeout(**kwargs):
+        rx_json = kwargs.get('rx', '{}')
+        ms = int(kwargs.get('ms', '1000'))
+        try:
+            rx = json.loads(rx_json) if isinstance(rx_json, str) else rx_json
+            result = recv_timeout(rx, ms)
+            return json.dumps({'value': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_try_recv(**kwargs):
+        rx_json = kwargs.get('rx', '{}')
+        try:
+            rx = json.loads(rx_json) if isinstance(rx_json, str) else rx_json
+            result = try_recv(rx)
+            return json.dumps({'value': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_close(**kwargs):
+        rx_json = kwargs.get('rx', '{}')
+        try:
+            rx = json.loads(rx_json) if isinstance(rx_json, str) else rx_json
+            result = close(rx)
+            return json.dumps({'success': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_select(**kwargs):
+        channels_json = kwargs.get('channels', '[]')
+        timeout_ms = kwargs.get('timeout_ms', None)
+        try:
+            channels_list = json.loads(channels_json) if isinstance(channels_json, str) else channels_json
+            tm = int(timeout_ms) if timeout_ms is not None else None
+            result = select(channels_list, tm)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_spawn(**kwargs):
+        handler_json = kwargs.get('handler', '')
+        try:
+            # For stdlib tool calls, handler is serialized as string
+            # In actual runtime, spawn receives callable or NexaAgent
+            handler = json.loads(handler_json) if isinstance(handler_json, str) and handler_json.startswith('{') else handler_json
+            task = spawn(handler)
+            return json.dumps(task, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_await_task(**kwargs):
+        task_json = kwargs.get('task', '{}')
+        try:
+            task = json.loads(task_json) if isinstance(task_json, str) else task_json
+            result = await_task(task)
+            return json.dumps({'result': str(result)}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_try_await(**kwargs):
+        task_json = kwargs.get('task', '{}')
+        try:
+            task = json.loads(task_json) if isinstance(task_json, str) else task_json
+            result = try_await(task)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_cancel_task(**kwargs):
+        task_json = kwargs.get('task', '{}')
+        try:
+            task = json.loads(task_json) if isinstance(task_json, str) else task_json
+            result = cancel_task(task)
+            return json.dumps({'success': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_parallel(**kwargs):
+        handlers_json = kwargs.get('handlers', '[]')
+        try:
+            handlers_list = json.loads(handlers_json) if isinstance(handlers_json, str) else handlers_json
+            results = parallel(handlers_list)
+            return json.dumps({'results': [str(r) for r in results]}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_race(**kwargs):
+        handlers_json = kwargs.get('handlers', '[]')
+        try:
+            handlers_list = json.loads(handlers_json) if isinstance(handlers_json, str) else handlers_json
+            result = race(handlers_list)
+            return json.dumps({'result': str(result)}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_after(**kwargs):
+        delay = kwargs.get('delay', '0')
+        handler_json = kwargs.get('handler', '')
+        try:
+            ms = parse_interval(delay) if isinstance(delay, str) else int(delay)
+            handler = json.loads(handler_json) if isinstance(handler_json, str) and handler_json.startswith('{') else handler_json
+            task = after(ms, handler)
+            return json.dumps(task, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_schedule(**kwargs):
+        interval = kwargs.get('interval', '1000')
+        handler_json = kwargs.get('handler', '')
+        try:
+            ms = parse_interval(interval) if isinstance(interval, str) else int(interval)
+            handler = json.loads(handler_json) if isinstance(handler_json, str) and handler_json.startswith('{') else handler_json
+            sched = schedule(ms, handler)
+            return json.dumps(sched, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_cancel_schedule(**kwargs):
+        schedule_json = kwargs.get('schedule', '{}')
+        try:
+            sched = json.loads(schedule_json) if isinstance(schedule_json, str) else schedule_json
+            result = cancel_schedule(sched)
+            return json.dumps({'success': result}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_sleep_ms(**kwargs):
+        ms = int(kwargs.get('ms', '100'))
+        try:
+            sleep_ms(ms)
+            return json.dumps({'ok': True}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_concurrent_thread_count(**kwargs):
+        try:
+            count = thread_count()
+            return json.dumps({'count': count}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_open(**kwargs):
+        path = kwargs.get('path', ':memory:')
+        try:
+            handle = kv_open(path)
+            return json.dumps(handle.to_dict(), ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_get(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        default = kwargs.get('default', None)
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_get(kv, key, default)
+            if result is None:
+                return 'null'
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_get_int(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        default = kwargs.get('default', 0)
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_get_int(kv, key, default)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_get_str(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        default = kwargs.get('default', '')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_get_str(kv, key, default)
+            return result
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_get_json(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_get_json(kv, key)
+            if result is None:
+                return 'null'
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_set(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        value = kwargs.get('value', '')
+        opts_json = kwargs.get('opts', None)
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            opts = json.loads(opts_json) if isinstance(opts_json, str) else opts_json
+            result = kv_set(kv, key, value, opts)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_set_nx(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        value = kwargs.get('value', '')
+        opts_json = kwargs.get('opts', None)
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            opts = json.loads(opts_json) if isinstance(opts_json, str) else opts_json
+            result = kv_set_nx(kv, key, value, opts)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_del(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_del(kv, key)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_has(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_has(kv, key)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_list(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        prefix = kwargs.get('prefix', None)
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_list(kv, prefix)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_expire(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        ttl_seconds = kwargs.get('ttl_seconds', '0')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_expire(kv, key, int(ttl_seconds))
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_ttl(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_ttl(kv, key)
+            return str(result) if result is not None else 'null'
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_flush(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_flush(kv)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_incr(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        amount = kwargs.get('amount', '1')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = kv_incr(kv, key, int(amount))
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_agent_kv_query(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        semantic_query = kwargs.get('semantic_query', '')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            result = agent_kv_query(kv, semantic_query)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_agent_kv_store(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        key = kwargs.get('key', '')
+        value = kwargs.get('value', '')
+        context_json = kwargs.get('context', None)
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            context = json.loads(context_json) if isinstance(context_json, str) else context_json
+            result = agent_kv_store(kv, key, value, context)
+            return str(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_kv_agent_kv_context(**kwargs):
+        kv_json = kwargs.get('kv', '{}')
+        agent_json = kwargs.get('agent', '{}')
+        try:
+            kv = json.loads(kv_json) if isinstance(kv_json, str) else kv_json
+            agent = json.loads(agent_json) if isinstance(agent_json, str) else agent_json
+            result = agent_kv_context(kv, agent)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    kv_tools = {
+        "std_kv_open": StdTool(
+            name="std_kv_open",
+            description="打开/创建 KV 存储",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "数据库路径, ':memory:' 创建内存存储"}
+                },
+                "required": ["path"]
+            },
+            handler=_std_kv_open
+        ),
+        "std_kv_get": StdTool(
+            name="std_kv_get",
+            description="获取 KV 值",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "default": {"type": "string", "description": "默认值"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_get
+        ),
+        "std_kv_get_int": StdTool(
+            name="std_kv_get_int",
+            description="类型化获取整数",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "default": {"type": "string", "description": "默认值(0)"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_get_int
+        ),
+        "std_kv_get_str": StdTool(
+            name="std_kv_get_str",
+            description="类型化获取字符串",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "default": {"type": "string", "description": "默认值('')"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_get_str
+        ),
+        "std_kv_get_json": StdTool(
+            name="std_kv_get_json",
+            description="JSON 解析获取",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_get_json
+        ),
+        "std_kv_set": StdTool(
+            name="std_kv_set",
+            description="设置 KV 值",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "value": {"type": "string", "description": "值"},
+                    "opts": {"type": "string", "description": "可选参数 JSON (含 ttl)"}
+                },
+                "required": ["kv", "key", "value"]
+            },
+            handler=_std_kv_set
+        ),
+        "std_kv_set_nx": StdTool(
+            name="std_kv_set_nx",
+            description="仅当不存在时设置 (原子 NX)",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "value": {"type": "string", "description": "值"},
+                    "opts": {"type": "string", "description": "可选参数 JSON (含 ttl)"}
+                },
+                "required": ["kv", "key", "value"]
+            },
+            handler=_std_kv_set_nx
+        ),
+        "std_kv_del": StdTool(
+            name="std_kv_del",
+            description="删除 KV 键",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_del
+        ),
+        "std_kv_has": StdTool(
+            name="std_kv_has",
+            description="检查 KV 键是否存在",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_has
+        ),
+        "std_kv_list": StdTool(
+            name="std_kv_list",
+            description="列出 KV 键 (前缀过滤)",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "prefix": {"type": "string", "description": "前缀过滤器"}
+                },
+                "required": ["kv"]
+            },
+            handler=_std_kv_list
+        ),
+        "std_kv_expire": StdTool(
+            name="std_kv_expire",
+            description="设置 KV 键过期时间",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "ttl_seconds": {"type": "string", "description": "TTL 秒数"}
+                },
+                "required": ["kv", "key", "ttl_seconds"]
+            },
+            handler=_std_kv_expire
+        ),
+        "std_kv_ttl": StdTool(
+            name="std_kv_ttl",
+            description="查看 KV 键剩余 TTL",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_ttl
+        ),
+        "std_kv_flush": StdTool(
+            name="std_kv_flush",
+            description="清空所有 KV 键",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"}
+                },
+                "required": ["kv"]
+            },
+            handler=_std_kv_flush
+        ),
+        "std_kv_incr": StdTool(
+            name="std_kv_incr",
+            description="原子递增 KV 键",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "amount": {"type": "string", "description": "递增量(默认1)"}
+                },
+                "required": ["kv", "key"]
+            },
+            handler=_std_kv_incr
+        ),
+        "std_kv_agent_kv_query": StdTool(
+            name="std_kv_agent_kv_query",
+            description="语义搜索 KV 数据",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "semantic_query": {"type": "string", "description": "语义查询字符串"}
+                },
+                "required": ["kv", "semantic_query"]
+            },
+            handler=_std_kv_agent_kv_query
+        ),
+        "std_kv_agent_kv_store": StdTool(
+            name="std_kv_agent_kv_store",
+            description="带上下文存储 KV 值",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "key": {"type": "string", "description": "键名"},
+                    "value": {"type": "string", "description": "值"},
+                    "context": {"type": "string", "description": "上下文信息 JSON"}
+                },
+                "required": ["kv", "key", "value"]
+            },
+            handler=_std_kv_agent_kv_store
+        ),
+        "std_kv_agent_kv_context": StdTool(
+            name="std_kv_agent_kv_context",
+            description="KV 数据注入 Agent 上下文",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kv": {"type": "string", "description": "KV Handle JSON"},
+                    "agent": {"type": "string", "description": "Agent 对象 JSON"}
+                },
+                "required": ["kv", "agent"]
+            },
+            handler=_std_kv_agent_kv_context
+        ),
+    }
+
+    # Merge KV tools into main tools dict
+    _all_tools.update(kv_tools)
+
+    # ==================== P2-2: Concurrent tools dict ====================
+
+    concurrent_tools = {
+        "std_concurrent_channel": StdTool(
+            name="std_concurrent_channel",
+            description='创建通道对 [tx, rx]',
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            handler=_std_concurrent_channel
+        ),
+        "std_concurrent_send": StdTool(
+            name="std_concurrent_send",
+            description='通过通道发送值',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "tx": {"type": "string", "description": "TX Handle JSON"},
+                    "value": {"type": "string", "description": "发送值"}
+                },
+                "required": ["tx", "value"]
+            },
+            handler=_std_concurrent_send
+        ),
+        "std_concurrent_recv": StdTool(
+            name="std_concurrent_recv",
+            description='阻塞接收通道消息',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "rx": {"type": "string", "description": "RX Handle JSON"}
+                },
+                "required": ["rx"]
+            },
+            handler=_std_concurrent_recv
+        ),
+        "std_concurrent_recv_timeout": StdTool(
+            name="std_concurrent_recv_timeout",
+            description='带超时接收通道消息',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "rx": {"type": "string", "description": "RX Handle JSON"},
+                    "ms": {"type": "string", "description": "超时毫秒数"}
+                },
+                "required": ["rx", "ms"]
+            },
+            handler=_std_concurrent_recv_timeout
+        ),
+        "std_concurrent_try_recv": StdTool(
+            name="std_concurrent_try_recv",
+            description='非阻塞 peek 接收',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "rx": {"type": "string", "description": "RX Handle JSON"}
+                },
+                "required": ["rx"]
+            },
+            handler=_std_concurrent_try_recv
+        ),
+        "std_concurrent_close": StdTool(
+            name="std_concurrent_close",
+            description='关闭通道',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "rx": {"type": "string", "description": "RX Handle JSON"}
+                },
+                "required": ["rx"]
+            },
+            handler=_std_concurrent_close
+        ),
+        "std_concurrent_select": StdTool(
+            name="std_concurrent_select",
+            description='多路复用多个通道',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "channels": {"type": "string", "description": "RX Handle 列表 JSON"},
+                    "timeout_ms": {"type": "string", "description": "超时毫秒数(可选)"}
+                },
+                "required": ["channels"]
+            },
+            handler=_std_concurrent_select
+        ),
+        "std_concurrent_spawn": StdTool(
+            name="std_concurrent_spawn",
+            description='派生后台任务',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handler": {"type": "string", "description": "Handler JSON"}
+                },
+                "required": ["handler"]
+            },
+            handler=_std_concurrent_spawn
+        ),
+        "std_concurrent_await_task": StdTool(
+            name="std_concurrent_await_task",
+            description='等待任务完成',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string", "description": "Task Handle JSON"}
+                },
+                "required": ["task"]
+            },
+            handler=_std_concurrent_await_task
+        ),
+        "std_concurrent_try_await": StdTool(
+            name="std_concurrent_try_await",
+            description='非阻塞 peek 任务状态',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string", "description": "Task Handle JSON"}
+                },
+                "required": ["task"]
+            },
+            handler=_std_concurrent_try_await
+        ),
+        "std_concurrent_cancel_task": StdTool(
+            name="std_concurrent_cancel_task",
+            description='取消后台任务',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string", "description": "Task Handle JSON"}
+                },
+                "required": ["task"]
+            },
+            handler=_std_concurrent_cancel_task
+        ),
+        "std_concurrent_parallel": StdTool(
+            name="std_concurrent_parallel",
+            description='并行执行所有 handler',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handlers": {"type": "string", "description": "Handler 列表 JSON"}
+                },
+                "required": ["handlers"]
+            },
+            handler=_std_concurrent_parallel
+        ),
+        "std_concurrent_race": StdTool(
+            name="std_concurrent_race",
+            description='第一个成功结果, 取消其余',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "handlers": {"type": "string", "description": "Handler 列表 JSON"}
+                },
+                "required": ["handlers"]
+            },
+            handler=_std_concurrent_race
+        ),
+        "std_concurrent_after": StdTool(
+            name="std_concurrent_after",
+            description='延迟执行',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "delay": {"type": "string", "description": "延迟(ms或字符串格式)"},
+                    "handler": {"type": "string", "description": "Handler JSON"}
+                },
+                "required": ["delay", "handler"]
+            },
+            handler=_std_concurrent_after
+        ),
+        "std_concurrent_schedule": StdTool(
+            name="std_concurrent_schedule",
+            description='周期执行',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "interval": {"type": "string", "description": "间隔(ms或字符串格式)"},
+                    "handler": {"type": "string", "description": "Handler JSON"}
+                },
+                "required": ["interval", "handler"]
+            },
+            handler=_std_concurrent_schedule
+        ),
+        "std_concurrent_cancel_schedule": StdTool(
+            name="std_concurrent_cancel_schedule",
+            description='取消周期调度',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "schedule": {"type": "string", "description": "Schedule Handle JSON"}
+                },
+                "required": ["schedule"]
+            },
+            handler=_std_concurrent_cancel_schedule
+        ),
+        "std_concurrent_sleep_ms": StdTool(
+            name="std_concurrent_sleep_ms",
+            description='取消感知的 sleep',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "ms": {"type": "string", "description": "毫秒数"}
+                },
+                "required": ["ms"]
+            },
+            handler=_std_concurrent_sleep_ms
+        ),
+        "std_concurrent_thread_count": StdTool(
+            name="std_concurrent_thread_count",
+            description='CPU 线程数',
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            handler=_std_concurrent_thread_count
+        ),
+    }
+
+    # Merge concurrent tools into main tools dict
+    _all_tools.update(concurrent_tools)
+
+    # ===== P2-4: Template System (模板系统) =====
+
+    def _std_template_render(**kwargs):
+        template_str = kwargs.get('template_str', kwargs.get('template', ''))
+        data_json = kwargs.get('data', '{}')
+        try:
+            data = json.loads(data_json) if isinstance(data_json, str) else data_json
+        except (json.JSONDecodeError, TypeError):
+            data = {}
+        return render_string(template_str, data)
+
+    def _std_template_template(**kwargs):
+        path = kwargs.get('path', '')
+        data_json = kwargs.get('data', '{}')
+        try:
+            data = json.loads(data_json) if isinstance(data_json, str) else data_json
+        except (json.JSONDecodeError, TypeError):
+            data = {}
+        return template(path, data)
+
+    def _std_template_compile(**kwargs):
+        path = kwargs.get('path', '')
+        try:
+            result = compile_template(path)
+            return json.dumps(result)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_template_render_compiled(**kwargs):
+        compiled_json = kwargs.get('compiled', '{}')
+        data_json = kwargs.get('data', '{}')
+        try:
+            compiled = json.loads(compiled_json) if isinstance(compiled_json, str) else compiled_json
+            data = json.loads(data_json) if isinstance(data_json, str) else data_json
+        except (json.JSONDecodeError, TypeError):
+            return f'Error: invalid JSON parameters'
+        try:
+            return render(compiled, data)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_template_filter_apply(**kwargs):
+        value = kwargs.get('value', '')
+        filter_name = kwargs.get('filter_name', kwargs.get('filter', ''))
+        filter_args_json = kwargs.get('filter_args', '[]')
+        try:
+            filter_args = json.loads(filter_args_json) if isinstance(filter_args_json, str) else filter_args_json
+        except (json.JSONDecodeError, TypeError):
+            filter_args = []
+        filter_fn = FILTER_REGISTRY.get(filter_name)
+        if filter_fn:
+            try:
+                if filter_args:
+                    return filter_fn(value, *filter_args)
+                return filter_fn(value)
+            except Exception as e:
+                return f'Error: {str(e)}'
+        return f'Error: unknown filter {filter_name}'
+
+    def _std_template_agent_prompt(**kwargs):
+        agent_json = kwargs.get('agent', '{}')
+        template_str = kwargs.get('template_str', kwargs.get('template', ''))
+        context_json = kwargs.get('context', '{}')
+        try:
+            agent_data = json.loads(agent_json) if isinstance(agent_json, str) else agent_json
+            context_data = json.loads(context_json) if isinstance(context_json, str) else context_json
+        except (json.JSONDecodeError, TypeError):
+            agent_data = {}
+            context_data = {}
+        return agent_template_prompt(agent_data, template_str, context_data)
+
+    def _std_template_agent_slot_fill(**kwargs):
+        agent_json = kwargs.get('agent', '{}')
+        template_str = kwargs.get('template_str', kwargs.get('template', ''))
+        slot_sources_json = kwargs.get('slot_sources', '{}')
+        try:
+            agent_data = json.loads(agent_json) if isinstance(agent_json, str) else agent_json
+            slot_sources = json.loads(slot_sources_json) if isinstance(slot_sources_json, str) else slot_sources_json
+        except (json.JSONDecodeError, TypeError):
+            agent_data = {}
+            slot_sources = {}
+        return agent_template_slot_fill(agent_data, template_str, slot_sources)
+
+    def _std_template_agent_register(**kwargs):
+        agent_json = kwargs.get('agent', '{}')
+        name = kwargs.get('name', '')
+        template_str = kwargs.get('template_str', kwargs.get('template', ''))
+        try:
+            agent_data = json.loads(agent_json) if isinstance(agent_json, str) else agent_json
+        except (json.JSONDecodeError, TypeError):
+            agent_data = {}
+        result = agent_template_register(agent_data, name, template_str)
+        return json.dumps(result)
+
+    def _std_template_agent_list(**kwargs):
+        result = agent_template_list()
+        return json.dumps(result)
+
+    def _std_template_filter_upper(**kwargs):
+        return FILTER_REGISTRY.get('upper', lambda x: str(x))(kwargs.get('value', ''))
+
+    def _std_template_filter_lower(**kwargs):
+        return FILTER_REGISTRY.get('lower', lambda x: str(x))(kwargs.get('value', ''))
+
+    def _std_template_filter_capitalize(**kwargs):
+        return FILTER_REGISTRY.get('capitalize', lambda x: str(x))(kwargs.get('value', ''))
+
+    def _std_template_filter_trim(**kwargs):
+        return FILTER_REGISTRY.get('trim', lambda x: str(x))(kwargs.get('value', ''))
+
+    def _std_template_filter_default(**kwargs):
+        value = kwargs.get('value', '')
+        default_val = kwargs.get('default', '')
+        return FILTER_REGISTRY.get('default', lambda x, d: str(x))(value, default_val)
+
+    def _std_template_filter_length(**kwargs):
+        return FILTER_REGISTRY.get('length', lambda x: '0')(kwargs.get('value', ''))
+
+    def _std_template_filter_json(**kwargs):
+        return FILTER_REGISTRY.get('json', lambda x: str(x))(kwargs.get('value', ''))
+
+    def _std_template_filter_escape(**kwargs):
+        return FILTER_REGISTRY.get('escape', lambda x: str(x))(kwargs.get('value', ''))
+
+    def _std_template_filter_url_encode(**kwargs):
+        return FILTER_REGISTRY.get('url_encode', lambda x: str(x))(kwargs.get('value', ''))
+
+    template_tools = {
+        "std_template_render": StdTool(
+            name="std_template_render",
+            description='P2-4: 渲染模板字符串',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "template_str": {"type": "string", "description": "模板字符串内容"},
+                    "data": {"type": "string", "description": "数据上下文 JSON"}
+                },
+                "required": ["template_str"]
+            },
+            handler=_std_template_render
+        ),
+        "std_template_template": StdTool(
+            name="std_template_template",
+            description='P2-4: 加载并渲染外部模板文件',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "模板文件路径"},
+                    "data": {"type": "string", "description": "数据上下文 JSON"}
+                },
+                "required": ["path"]
+            },
+            handler=_std_template_template
+        ),
+        "std_template_compile": StdTool(
+            name="std_template_compile",
+            description='P2-4: 预编译模板文件',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "模板文件路径"}
+                },
+                "required": ["path"]
+            },
+            handler=_std_template_compile
+        ),
+        "std_template_render_compiled": StdTool(
+            name="std_template_render_compiled",
+            description='P2-4: 渲染预编译模板',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "compiled": {"type": "string", "description": "编译模板 handle JSON"},
+                    "data": {"type": "string", "description": "数据上下文 JSON"}
+                },
+                "required": ["compiled"]
+            },
+            handler=_std_template_render_compiled
+        ),
+        "std_template_filter_apply": StdTool(
+            name="std_template_filter_apply",
+            description='P2-4: 应用模板过滤器',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "string", "description": "输入值"},
+                    "filter_name": {"type": "string", "description": "过滤器名称"},
+                    "filter_args": {"type": "string", "description": "过滤器参数 JSON"}
+                },
+                "required": ["value", "filter_name"]
+            },
+            handler=_std_template_filter_apply
+        ),
+        "std_template_agent_prompt": StdTool(
+            name="std_template_agent_prompt",
+            description='P2-4: Agent Prompt 模板渲染',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent": {"type": "string", "description": "Agent 属性 JSON"},
+                    "template_str": {"type": "string", "description": "模板字符串"},
+                    "context": {"type": "string", "description": "额外上下文 JSON"}
+                },
+                "required": ["agent", "template_str"]
+            },
+            handler=_std_template_agent_prompt
+        ),
+        "std_template_agent_slot_fill": StdTool(
+            name="std_template_agent_slot_fill",
+            description='P2-4: Agent 多源 Slot 填充',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent": {"type": "string", "description": "Agent 属性 JSON"},
+                    "template_str": {"type": "string", "description": "模板字符串"},
+                    "slot_sources": {"type": "string", "description": "Slot 来源 JSON"}
+                },
+                "required": ["agent", "template_str"]
+            },
+            handler=_std_template_agent_slot_fill
+        ),
+        "std_template_agent_register": StdTool(
+            name="std_template_agent_register",
+            description='P2-4: 注册 Agent 模板',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "agent": {"type": "string", "description": "Agent 属性 JSON"},
+                    "name": {"type": "string", "description": "模板名称"},
+                    "template_str": {"type": "string", "description": "模板字符串"}
+                },
+                "required": ["agent", "name", "template_str"]
+            },
+            handler=_std_template_agent_register
+        ),
+        "std_template_agent_list": StdTool(
+            name="std_template_agent_list",
+            description='P2-4: 列出已注册 Agent 模板',
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            handler=_std_template_agent_list
+        ),
+        "std_template_filter_upper": StdTool(
+            name="std_template_filter_upper",
+            description='P2-4: 大写过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_upper
+        ),
+        "std_template_filter_lower": StdTool(
+            name="std_template_filter_lower",
+            description='P2-4: 小写过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_lower
+        ),
+        "std_template_filter_capitalize": StdTool(
+            name="std_template_filter_capitalize",
+            description='P2-4: 首字母大写过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_capitalize
+        ),
+        "std_template_filter_trim": StdTool(
+            name="std_template_filter_trim",
+            description='P2-4: 去空白过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_trim
+        ),
+        "std_template_filter_default": StdTool(
+            name="std_template_filter_default",
+            description='P2-4: 默认值过滤器',
+            parameters={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "string", "description": "输入值"},
+                    "default": {"type": "string", "description": "默认值"}
+                },
+                "required": ["value"]
+            },
+            handler=_std_template_filter_default
+        ),
+        "std_template_filter_length": StdTool(
+            name="std_template_filter_length",
+            description='P2-4: 长度过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_length
+        ),
+        "std_template_filter_json": StdTool(
+            name="std_template_filter_json",
+            description='P2-4: JSON序列化过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_json
+        ),
+        "std_template_filter_escape": StdTool(
+            name="std_template_filter_escape",
+            description='P2-4: HTML转义过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_escape
+        ),
+        "std_template_filter_url_encode": StdTool(
+            name="std_template_filter_url_encode",
+            description='P2-4: URL编码过滤器',
+            parameters={
+                "type": "object",
+                "properties": {"value": {"type": "string", "description": "输入值"}},
+                "required": ["value"]
+            },
+            handler=_std_template_filter_url_encode
+        ),
+    }
+
+    _all_tools.update(template_tools)
+
+    # ==================== P3-2/P3-5/P3-6: Pipe, Defer, Null Coalesce ====================
+
+    def _std_pipe_apply(**kwargs):
+        'P3-2: Pipe operator — apply value as first arg of function: x |> f => f(x)'
+        value = kwargs.get('value', '')
+        func_name = kwargs.get('func', '')
+        extra_args_json = kwargs.get('extra_args', '[]')
+        try:
+            extra_args = json.loads(extra_args_json) if isinstance(extra_args_json, str) else extra_args_json
+            # In stdlib context, we can't dynamically call arbitrary functions,
+            # so this is primarily a documentation/inspection tool
+            return json.dumps({'pipe_result': f'{func_name}({value}, {extra_args})', 'desugared': True}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_defer_schedule(**kwargs):
+        'P3-5: Defer statement — schedule expression for LIFO execution on scope exit'
+        expression = kwargs.get('expression', '')
+        try:
+            return json.dumps({'deferred': expression, 'note': 'Executes on scope exit in LIFO order'}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_null_coalesce_apply(**kwargs):
+        'P3-6: Null coalescing — return fallback if value is None/Option::None/empty dict'
+        value_json = kwargs.get('value', 'null')
+        fallback = kwargs.get('fallback', '')
+        try:
+            from . import _nexa_null_coalesce
+            value = json.loads(value_json) if isinstance(value_json, str) else value_json
+            result = _nexa_null_coalesce(value, fallback)
+            if result is None:
+                return 'null'
+            return json.dumps(result, ensure_ascii=False) if isinstance(result, (dict, list)) else str(result)
+        except Exception as e:
+            return fallback if fallback else f'Error: {str(e)}'
+
+    def _std_string_interpolate(**kwargs):
+        'P3-1: String interpolation — convert #{expr} patterns in strings to interpolated values'
+        template = kwargs.get('template', '')
+        context_json = kwargs.get('context', '{}')
+        try:
+            from . import _nexa_interp_str
+            context = json.loads(context_json) if isinstance(context_json, str) else context_json
+            # Simple replacement of #{expr} patterns using context values
+            import re
+            def _replace_interp(match):
+                expr = match.group(1).strip()
+                # Look up in context
+                if '.' in expr:
+                    parts = expr.split('.')
+                    val = context
+                    for p in parts:
+                        if isinstance(val, dict):
+                            val = val.get(p)
+                        else:
+                            val = None
+                        if val is None:
+                            break
+                    return _nexa_interp_str(val)
+                elif '[' in expr:
+                    # Bracket access: arr[0] or dict["key"]
+                    base_match = re.match(r'^([a-zA-Z_]\w*)\[', expr)
+                    if base_match:
+                        base_name = base_match.group(1)
+                        val = context.get(base_name)
+                        # Handle remaining bracket/dot access
+                        rest = expr[len(base_name):]
+                        while rest:
+                            bracket_match = re.match(r'^\[([^\]]+)\]', rest)
+                            dot_match = re.match(r'^\.([a-zA-Z_]\w*)', rest)
+                            if bracket_match:
+                                key = bracket_match.group(1)
+                                if key.isdigit():
+                                    key = int(key)
+                                elif key.startswith('"') or key.startswith("'"):
+                                    key = key[1:-1]
+                                if isinstance(val, dict):
+                                    val = val.get(key)
+                                elif isinstance(val, (list, tuple)):
+                                    val = val[int(key)] if isinstance(key, int) else None
+                                rest = rest[len(bracket_match.group(0)):]
+                            elif dot_match:
+                                attr = dot_match.group(1)
+                                if isinstance(val, dict):
+                                    val = val.get(attr)
+                                else:
+                                    val = None
+                                rest = rest[len(dot_match.group(0)):]
+                            else:
+                                break
+                        return _nexa_interp_str(val)
+                elif expr in context:
+                    return _nexa_interp_str(context.get(expr))
+                return ''
+            result = re.sub(r'#\{([^}]+)\}', _replace_interp, template)
+            # Handle escaped \#{ -> #{ literal
+            result = result.replace('\\#{', '#{')
+            return result
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    # ==================== P3-3: Pattern Matching ====================
+
+    def _std_match_pattern(**kwargs):
+        'P3-3: Pattern matching -- match a value against a pattern and return bindings'
+        value_json = kwargs.get('value', 'null')
+        pattern_json = kwargs.get('pattern', '{}')
+        try:
+            from .pattern_matching import nexa_match_pattern
+            value = json.loads(value_json) if isinstance(value_json, str) else value_json
+            pattern = json.loads(pattern_json) if isinstance(pattern_json, str) else pattern_json
+            bindings = nexa_match_pattern(pattern, value)
+            if bindings is None:
+                return json.dumps({'matched': False, 'bindings': {}}, ensure_ascii=False)
+            return json.dumps({'matched': True, 'bindings': bindings}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_match_destructure(**kwargs):
+        'P3-3: Destructuring -- destructure a value according to a pattern'
+        value_json = kwargs.get('value', 'null')
+        pattern_json = kwargs.get('pattern', '{}')
+        try:
+            from .pattern_matching import nexa_destructure
+            value = json.loads(value_json) if isinstance(value_json, str) else value_json
+            pattern = json.loads(pattern_json) if isinstance(pattern_json, str) else pattern_json
+            bindings = nexa_destructure(pattern, value)
+            return json.dumps({'bindings': bindings}, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    def _std_match_variant(**kwargs):
+        'P3-3: Create enum variant value for pattern matching'
+        enum_name = kwargs.get('enum', '')
+        variant_name = kwargs.get('variant', '')
+        fields_json = kwargs.get('fields', '[]')
+        try:
+            from .pattern_matching import nexa_make_variant
+            fields = json.loads(fields_json) if isinstance(fields_json, str) else fields_json
+            result = nexa_make_variant(enum_name, variant_name, *fields)
+            return json.dumps(result, ensure_ascii=False)
+        except Exception as e:
+            return f'Error: {str(e)}'
+
+    p3_match_tools = {
+        "std_match_pattern": StdTool(
+            name="std_match_pattern",
+            description="P3-3: Match a value against a pattern and return variable bindings",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "string", "description": "JSON value to match"},
+                    "pattern": {"type": "string", "description": "JSON pattern definition"}
+                },
+                "required": ["value", "pattern"]
+            },
+            handler=_std_match_pattern
+        ),
+        "std_match_destructure": StdTool(
+            name="std_match_destructure",
+            description="P3-3: Destructure a value according to a pattern, returning bindings",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "string", "description": "JSON value to destructure"},
+                    "pattern": {"type": "string", "description": "JSON pattern definition"}
+                },
+                "required": ["value", "pattern"]
+            },
+            handler=_std_match_destructure
+        ),
+        "std_match_variant": StdTool(
+            name="std_match_variant",
+            description="P3-3: Create an enum variant value for pattern matching",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "enum": {"type": "string", "description": "Enum type name"},
+                    "variant": {"type": "string", "description": "Variant name"},
+                    "fields": {"type": "string", "description": "JSON array of field values"}
+                },
+                "required": ["enum", "variant"]
+            },
+            handler=_std_match_variant
+        ),
+    }
+
+    _all_tools.update(p3_match_tools)
+
+    p3_tools = {
+        "std_pipe_apply": StdTool(
+            name="std_pipe_apply",
+            description="P3-2: Pipe operator — apply value as first argument of function (x |> f => f(x))",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "string", "description": "Value to pipe (LHS)"},
+                    "func": {"type": "string", "description": "Function name (RHS)"},
+                    "extra_args": {"type": "string", "description": "Additional arguments JSON array"}
+                },
+                "required": ["value", "func"]
+            },
+            handler=_std_pipe_apply
+        ),
+        "std_defer_schedule": StdTool(
+            name="std_defer_schedule",
+            description="P3-5: Defer statement — schedule expression for LIFO execution on scope exit",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "expression": {"type": "string", "description": "Expression to defer"}
+                },
+                "required": ["expression"]
+            },
+            handler=_std_defer_schedule
+        ),
+        "std_null_coalesce_apply": StdTool(
+            name="std_null_coalesce_apply",
+            description="P3-6: Null coalescing — return fallback if value is None/Option::None/empty dict",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "value": {"type": "string", "description": "Value to check (may be null-like)"},
+                    "fallback": {"type": "string", "description": "Fallback value if null-like"}
+                },
+                "required": ["value", "fallback"]
+            },
+            handler=_std_null_coalesce_apply
+        ),
+        "std_string_interpolate": StdTool(
+            name="std_string_interpolate",
+            description="P3-1: String interpolation — evaluate #{expr} patterns in strings using a context dictionary",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "template": {"type": "string", "description": "String template with #{expr} patterns"},
+                    "context": {"type": "string", "description": "JSON context dictionary for variable lookup"}
+                },
+                "required": ["template"]
+            },
+            handler=_std_string_interpolate
+        ),
+    }
+
+    _all_tools.update(p3_tools)
+
+    # ===== P3-4: ADT — Struct/Enum/Trait/Impl StdTools =====
+
+    from src.runtime.adt import (
+        register_struct, make_struct_instance, struct_get_field, struct_set_field,
+        is_struct_instance, lookup_struct, get_all_structs,
+        register_enum, make_variant, make_unit_variant, is_variant_instance,
+        lookup_enum, get_all_enums,
+        register_trait, register_impl, call_trait_method,
+        lookup_trait, lookup_impl, get_all_traits, get_all_impls,
+        adt_reset_registries, adt_get_registry_summary,
+    )
+
+    def _std_adt_register_struct(**kwargs):
+        'P3-4: Register a struct definition with field names and optional types'
+        name = kwargs.get('name', '')
+        fields_json = kwargs.get('fields', '[]')
+        try:
+            fields = json.loads(fields_json) if isinstance(fields_json, str) else fields_json
+        except Exception:
+            fields = []
+        try:
+            result = register_struct(name, fields)
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_make_struct(**kwargs):
+        'P3-4: Create a struct instance with field values'
+        name = kwargs.get('name', '')
+        fields_json = kwargs.get('fields', '{}')
+        try:
+            fields = json.loads(fields_json) if isinstance(fields_json, str) else fields_json
+        except Exception:
+            fields = {}
+        try:
+            instance = make_struct_instance(name, **fields)
+            return json.dumps(instance)
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_register_enum(**kwargs):
+        'P3-4: Register an enum definition with variant names and optional field types'
+        name = kwargs.get('name', '')
+        variants_json = kwargs.get('variants', '[]')
+        try:
+            variants = json.loads(variants_json) if isinstance(variants_json, str) else variants_json
+        except Exception:
+            variants = []
+        try:
+            result = register_enum(name, variants)
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_make_variant(**kwargs):
+        'P3-4: Create an enum variant instance'
+        enum_name = kwargs.get('enum', '')
+        variant_name = kwargs.get('variant', '')
+        fields_json = kwargs.get('fields', '[]')
+        try:
+            fields = json.loads(fields_json) if isinstance(fields_json, str) else fields_json
+        except Exception:
+            fields = []
+        try:
+            result = make_variant(enum_name, variant_name, *fields)
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_register_trait(**kwargs):
+        'P3-4: Register a trait definition with method signatures'
+        name = kwargs.get('name', '')
+        methods_json = kwargs.get('methods', '[]')
+        try:
+            methods = json.loads(methods_json) if isinstance(methods_json, str) else methods_json
+        except Exception:
+            methods = []
+        try:
+            result = register_trait(name, methods)
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_register_impl(**kwargs):
+        'P3-4: Register a trait implementation for a type'
+        trait_name = kwargs.get('trait', '')
+        type_name = kwargs.get('type', '')
+        methods_json = kwargs.get('methods', '{}')
+        try:
+            methods = json.loads(methods_json) if isinstance(methods_json, str) else methods_json
+        except Exception:
+            methods = {}
+        try:
+            result = register_impl(trait_name, type_name, methods)
+            return json.dumps({'registered': True, 'trait': trait_name, 'type': type_name})
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_lookup(**kwargs):
+        'P3-4: Lookup ADT definitions (struct, enum, trait, impl)'
+        kind = kwargs.get('kind', 'struct')
+        name = kwargs.get('name', '')
+        try:
+            if kind == 'struct':
+                result = lookup_struct(name)
+            elif kind == 'enum':
+                result = lookup_enum(name)
+            elif kind == 'trait':
+                result = lookup_trait(name)
+            elif kind == 'impl':
+                trait = kwargs.get('trait', '')
+                type_n = kwargs.get('type', '')
+                result = lookup_impl(trait, type_n)
+            else:
+                result = None
+            return json.dumps(result) if result else json.dumps({'error': f'{kind} {name} not found'})
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_summary(**kwargs):
+        'P3-4: Get summary of all registered ADTs'
+        try:
+            result = adt_get_registry_summary()
+            return json.dumps(result)
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    def _std_adt_reset(**kwargs):
+        'P3-4: Reset all ADT registries (for testing)'
+        try:
+            adt_reset_registries()
+            return json.dumps({'reset': True})
+        except Exception as e:
+            return json.dumps({'error': str(e)})
+
+    p4_adt_tools = {
+        "std_adt_register_struct": StdTool(
+            name="std_adt_register_struct",
+            description="P3-4: Register a struct definition with field names and optional types",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Struct name"},
+                    "fields": {"type": "string", "description": "JSON array of field definitions"}
+                },
+                "required": ["name", "fields"]
+            },
+            handler=_std_adt_register_struct
+        ),
+        "std_adt_make_struct": StdTool(
+            name="std_adt_make_struct",
+            description="P3-4: Create a struct instance with field values",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Struct name"},
+                    "fields": {"type": "string", "description": "JSON object of field values"}
+                },
+                "required": ["name"]
+            },
+            handler=_std_adt_make_struct
+        ),
+        "std_adt_register_enum": StdTool(
+            name="std_adt_register_enum",
+            description="P3-4: Register an enum definition with variant names and optional field types",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Enum name"},
+                    "variants": {"type": "string", "description": "JSON array of variant definitions"}
+                },
+                "required": ["name", "variants"]
+            },
+            handler=_std_adt_register_enum
+        ),
+        "std_adt_make_variant": StdTool(
+            name="std_adt_make_variant",
+            description="P3-4: Create an enum variant instance",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "enum": {"type": "string", "description": "Enum type name"},
+                    "variant": {"type": "string", "description": "Variant name"},
+                    "fields": {"type": "string", "description": "JSON array of field values"}
+                },
+                "required": ["enum", "variant"]
+            },
+            handler=_std_adt_make_variant
+        ),
+        "std_adt_register_trait": StdTool(
+            name="std_adt_register_trait",
+            description="P3-4: Register a trait definition with method signatures",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string", "description": "Trait name"},
+                    "methods": {"type": "string", "description": "JSON array of method definitions"}
+                },
+                "required": ["name", "methods"]
+            },
+            handler=_std_adt_register_trait
+        ),
+        "std_adt_register_impl": StdTool(
+            name="std_adt_register_impl",
+            description="P3-4: Register a trait implementation for a type",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "trait": {"type": "string", "description": "Trait name"},
+                    "type": {"type": "string", "description": "Type name to implement trait for"},
+                    "methods": {"type": "string", "description": "JSON object of method implementations"}
+                },
+                "required": ["trait", "type"]
+            },
+            handler=_std_adt_register_impl
+        ),
+        "std_adt_lookup": StdTool(
+            name="std_adt_lookup",
+            description="P3-4: Lookup ADT definitions (struct, enum, trait, impl)",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "kind": {"type": "string", "description": "ADT kind: struct, enum, trait, impl"},
+                    "name": {"type": "string", "description": "Name to look up"}
+                },
+                "required": ["kind", "name"]
+            },
+            handler=_std_adt_lookup
+        ),
+        "std_adt_summary": StdTool(
+            name="std_adt_summary",
+            description="P3-4: Get summary of all registered ADTs",
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            handler=_std_adt_summary
+        ),
+        "std_adt_reset": StdTool(
+            name="std_adt_reset",
+            description="P3-4: Reset all ADT registries (for testing)",
+            parameters={
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            handler=_std_adt_reset
+        ),
+    }
+
+    _all_tools.update(p4_adt_tools)
+
+    return _all_tools
 
 
 def get_stdlib_tool(name: str) -> Optional[StdTool]:
@@ -951,6 +3591,29 @@ STD_NAMESPACE_MAP = {
     "std.regex": ["regex_match", "regex_replace"],
     "std.shell": ["shell_exec", "shell_which"],
     "std.ask_human": ["ask_human"],
+    # P1-5: Database Integration (内置数据库集成)
+    "std.db.sqlite": ["std_db_sqlite_connect", "std_db_sqlite_query", "std_db_sqlite_query_one", "std_db_sqlite_execute", "std_db_sqlite_close", "std_db_sqlite_begin", "std_db_sqlite_commit", "std_db_sqlite_rollback"],
+    "std.db.postgres": ["std_db_postgres_connect", "std_db_postgres_query", "std_db_postgres_query_one", "std_db_postgres_execute", "std_db_postgres_close", "std_db_postgres_begin", "std_db_postgres_commit", "std_db_postgres_rollback"],
+    "std.db.memory": ["std_db_memory_query", "std_db_memory_store", "std_db_memory_delete", "std_db_memory_list"],
+    # P2-1: Auth & OAuth (内置认证与 OAuth)
+    "std.auth": ["std_auth_oauth", "std_auth_enable_auth", "std_auth_get_user", "std_auth_get_session", "std_auth_session_data", "std_auth_set_session", "std_auth_logout_user", "std_auth_require_auth", "std_auth_jwt_sign", "std_auth_jwt_verify", "std_auth_jwt_decode", "std_auth_csrf_token", "std_auth_csrf_field", "std_auth_verify_csrf", "std_auth_api_key_generate", "std_auth_api_key_verify", "std_auth_auth_context"],
+    # P2-3: KV Store (内置键值存储)
+    "std.kv": ["std_kv_open", "std_kv_get", "std_kv_get_int", "std_kv_get_str", "std_kv_get_json", "std_kv_set", "std_kv_set_nx", "std_kv_del", "std_kv_has", "std_kv_list", "std_kv_expire", "std_kv_ttl", "std_kv_flush", "std_kv_incr", "std_kv_agent_kv_query", "std_kv_agent_kv_store", "std_kv_agent_kv_context"],
+    # P2-2: Structured Concurrency (结构化并发)
+    "std.concurrent": ["std_concurrent_channel", "std_concurrent_send", "std_concurrent_recv", "std_concurrent_recv_timeout", "std_concurrent_try_recv", "std_concurrent_close", "std_concurrent_select", "std_concurrent_spawn", "std_concurrent_await_task", "std_concurrent_try_await", "std_concurrent_cancel_task", "std_concurrent_parallel", "std_concurrent_race", "std_concurrent_after", "std_concurrent_schedule", "std_concurrent_cancel_schedule", "std_concurrent_sleep_ms", "std_concurrent_thread_count"],
+    # P2-4: Template System (模板系统)
+    "std.template": ["std_template_render", "std_template_template", "std_template_compile", "std_template_render_compiled", "std_template_filter_apply", "std_template_agent_prompt", "std_template_agent_slot_fill", "std_template_agent_register", "std_template_agent_list", "std_template_filter_upper", "std_template_filter_lower", "std_template_filter_capitalize", "std_template_filter_trim", "std_template_filter_default", "std_template_filter_length", "std_template_filter_json", "std_template_filter_escape", "std_template_filter_url_encode"],
+    # P3-2/P3-5/P3-6/P3-1: Pipe, Defer, Null Coalesce, String Interpolation
+    "std.pipe": ["std_pipe_apply"],
+    "std.defer": ["std_defer_schedule"],
+    "std.null_coalesce": ["std_null_coalesce_apply"],
+    "std.string": ["std_string_interpolate"],
+    # P3-3: Pattern Matching (模式匹配)
+    "std.match": ["std_match_pattern", "std_match_destructure", "std_match_variant"],
+    # P3-4: ADT — Struct/Enum/Trait/Impl (代数数据类型)
+    "std.struct": ["std_adt_register_struct", "std_adt_make_struct", "std_adt_lookup"],
+    "std.enum": ["std_adt_register_enum", "std_adt_make_variant", "std_adt_lookup"],
+    "std.trait": ["std_adt_register_trait", "std_adt_register_impl", "std_adt_lookup", "std_adt_summary", "std_adt_reset"],
 }
 
 STD_TOOLS_SCHEMA = {}
@@ -973,4 +3636,50 @@ __all__ = [
     "StdTool",
     "STD_NAMESPACE_MAP",
     "STD_TOOLS_SCHEMA",
+    # P1-5: Database stdlib functions
+    "_std_db_sqlite_connect", "_std_db_sqlite_query", "_std_db_sqlite_query_one",
+    "_std_db_sqlite_execute", "_std_db_sqlite_close", "_std_db_sqlite_begin",
+    "_std_db_sqlite_commit", "_std_db_sqlite_rollback",
+    "_std_db_postgres_connect", "_std_db_postgres_query", "_std_db_postgres_query_one",
+    "_std_db_postgres_execute", "_std_db_postgres_close", "_std_db_postgres_begin",
+    "_std_db_postgres_commit", "_std_db_postgres_rollback",
+    "_std_db_memory_query", "_std_db_memory_store", "_std_db_memory_delete",
+    "_std_db_memory_list",
+    # P2-1: Auth stdlib functions
+    "_std_auth_oauth", "_std_auth_enable_auth", "_std_auth_get_user",
+    "_std_auth_get_session", "_std_auth_session_data", "_std_auth_set_session",
+    "_std_auth_logout_user", "_std_auth_require_auth",
+    "_std_auth_jwt_sign", "_std_auth_jwt_verify", "_std_auth_jwt_decode",
+    "_std_auth_csrf_token", "_std_auth_csrf_field", "_std_auth_verify_csrf",
+    "_std_auth_api_key_generate", "_std_auth_api_key_verify", "_std_auth_auth_context",
+    # P2-3: KV stdlib functions
+    "_std_kv_open", "_std_kv_get", "_std_kv_get_int", "_std_kv_get_str",
+    "_std_kv_get_json", "_std_kv_set", "_std_kv_set_nx", "_std_kv_del",
+    "_std_kv_has", "_std_kv_list", "_std_kv_expire", "_std_kv_ttl",
+    "_std_kv_flush", "_std_kv_incr",
+    "_std_kv_agent_kv_query", "_std_kv_agent_kv_store", "_std_kv_agent_kv_context",
+    # P2-2: Concurrent stdlib functions
+    "_std_concurrent_channel", "_std_concurrent_send", "_std_concurrent_recv",
+    "_std_concurrent_recv_timeout", "_std_concurrent_try_recv", "_std_concurrent_close",
+    "_std_concurrent_select", "_std_concurrent_spawn", "_std_concurrent_await_task",
+    "_std_concurrent_try_await", "_std_concurrent_cancel_task", "_std_concurrent_parallel",
+    "_std_concurrent_race", "_std_concurrent_after", "_std_concurrent_schedule",
+    "_std_concurrent_cancel_schedule", "_std_concurrent_sleep_ms", "_std_concurrent_thread_count",
+    # P2-4: Template stdlib functions
+    "_std_template_render", "_std_template_template", "_std_template_compile",
+    "_std_template_render_compiled", "_std_template_filter_apply",
+    "_std_template_agent_prompt", "_std_template_agent_slot_fill",
+    "_std_template_agent_register", "_std_template_agent_list",
+    "_std_template_filter_upper", "_std_template_filter_lower",
+    "_std_template_filter_capitalize", "_std_template_filter_trim",
+    "_std_template_filter_default", "_std_template_filter_length",
+    "_std_template_filter_json", "_std_template_filter_escape",
+    "_std_template_filter_url_encode",
+    # P3-2/P3-5/P3-6/P3-1: Pipe, Defer, Null Coalesce, String Interpolation
+    "_std_pipe_apply", "_std_defer_schedule", "_std_null_coalesce_apply", "_std_string_interpolate", "_std_match_pattern", "_std_match_destructure", "_std_match_variant",
+    # P3-4: ADT stdlib functions
+    "_std_adt_register_struct", "_std_adt_make_struct",
+    "_std_adt_register_enum", "_std_adt_make_variant",
+    "_std_adt_register_trait", "_std_adt_register_impl",
+    "_std_adt_lookup", "_std_adt_summary", "_std_adt_reset",
 ]

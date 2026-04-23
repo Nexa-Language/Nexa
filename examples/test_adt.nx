@@ -1,0 +1,65 @@
+// P3-4: ADT (Algebraic Data Types) Demo
+// Demonstrates struct, enum, trait, impl, variant access, and pattern matching with variants
+
+// ===== Struct Declaration =====
+// Define a Point struct with x and y coordinates
+struct Point { x: Int, y: Int }
+
+// Define a Color struct with RGB values
+struct Color { r: Int, g: Int, b: Int }
+
+// ===== Enum Declaration =====
+// Option enum - represents optional values
+enum Option { Some(value), None }
+
+// Result enum - represents success or error
+enum Result { Ok(value), Err(error) }
+
+// Direction enum - unit variants only
+enum Direction { North, South, East, West }
+
+// ===== Trait Declaration =====
+// Printable trait - anything that can be formatted as a string
+trait Printable { fn format() : String }
+
+// Describable trait - anything that can be described
+trait Describable { fn describe() : String }
+
+// ===== Impl Declaration =====
+// Implement Printable for Point
+impl Printable for Point { fn format() { "Point" } }
+
+// Implement Describable for Color
+impl Describable for Color { fn describe() { "RGB Color" } }
+
+// ===== Flow: Using ADTs =====
+
+// Create struct instances (function-call syntax)
+flow main() {
+    // Struct instance creation: Point(x: 1, y: 2)
+    p = Point(x: 1, y: 2)
+
+    // Access struct fields
+    print(p.x)
+    print(p.y)
+
+    // Enum variant creation: Option::Some(42)
+    some_val = Option::Some(42)
+
+    // Unit variant: Result::Ok with no data
+    none_val = Option::None
+
+    // Result variant: Result::Ok("success")
+    ok_result = Result::Ok("success")
+
+    // Direction unit variant
+    dir = Direction::North
+
+    // Match on enum variants
+    match some_val {
+        Option::Some(v) => print(v),
+        Option::None => print("no value")
+    }
+
+    print("ADT demo complete!")
+}

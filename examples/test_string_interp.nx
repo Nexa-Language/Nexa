@@ -1,0 +1,52 @@
+// P3-1: String Interpolation Demo
+// Demonstrates #{expr} interpolation syntax in Nexa strings
+
+flow greet {
+    // Basic interpolation: "Hello #{name}!"
+    name = "World"
+    print("Hello #{name}!")
+}
+
+flow multi_var {
+    // Multiple variables in one string
+    greeting = "Hi"
+    target = "Nexa"
+    print("#{greeting}, #{target}!")
+}
+
+flow dot_access {
+    // Dot access interpolation: #{user.name}
+    user.name = "Alice"
+    print("User: #{user.name}")
+}
+
+flow bracket_access {
+    // Bracket access interpolation: #{arr[0]}
+    // arr[0] would access the first element of arr
+    print("First item: #{arr[0]}")
+}
+
+flow type_conversion {
+    // Type conversion: int/float automatically converted via str()
+    count = 42
+    price = 9.99
+    print("Count: #{count}")
+    print("Price: #{price}")
+}
+
+flow escape_demo {
+    // Escape: \#{not_interp} renders as literal #{not_interp}
+    print("\\#{not_interp}")
+}
+
+flow combined_features {
+    // Combined with null coalescing: #{result ?? "default"}
+    // result would be None, so ?? provides fallback
+    result = "default"
+    print("Result: #{result}")
+}
+
+flow agent_variable {
+    // Agent variable interpolation
+    print("Agent #{agent.name} responding")
+}

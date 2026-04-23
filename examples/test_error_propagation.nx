@@ -1,0 +1,129 @@
+// Nexa Error Propagation — ? 操作符和 otherwise 内联错误处理
+// v1.2: 消除"匹配金字塔"的关键语法
+
+// ========================================
+// 1. ? 操作符 — 错误传播
+// ========================================
+
+// Agent 定义
+agent SearchBot {
+    prompt: "You are a search assistant. Find information about the given query."
+    role: "Searcher"
+}
+
+agent Analyst {
+    prompt: "You are an analyst. Analyze the given data and provide insights."
+    role: "Analyst"
+}
+
+agent Critic {
+    prompt: "You are a critic. Review the data and provide feedback."
+    role: "Critic"
+}
+
+agent WeatherBot {
+    prompt: "You are a weather bot. Provide weather information for the given location."
+    role: "Weather"
+}
+
+agent DebugBot {
+    prompt: "You are a debug assistant. Help diagnose and fix issues."
+    role: "Debugger"
+}
+
+// ? 操作符示例: Agent 结果传播
+flow main {
+    // 如果 Agent 失败，自动 fallback 到下一个处理器
+    result = SearchBot.run("latest AI news")?
+    summary = result >> Analyst?
+    print(summary)
+}
+
+// ========================================
+// 2. otherwise — 内联错误处理
+// ========================================
+
+// Agent 失败时走 fallback
+flow with_otherwise_value {
+    // Agent 失败时返回默认值
+    result = WeatherBot.run("Beijing weather") otherwise "No weather data available"
+    print(result)
+}
+
+// Agent 失败时走另一个 Agent (Nexa 独有特性)
+flow with_otherwise_agent {
+    // Analyst 失败时走 Critic 作为 fallback
+    result = Analyst.run("analyze this data") otherwise Critic.run("review the raw data")
+    print(result)
+}
+
+// ========================================
+// 3. ? 和 otherwise 对比 try/catch
+// ========================================
+
+// 传统 try/catch — 冗长的错误处理
+flow traditional_error_handling {
+    try {
+        result = SearchBot.run("query")
+        print(result)
+    } catch (err) {
+        print("Search failed: " + err)
+    }
+}
+
+// ? 操作符 — 简洁传播
+flow modern_error_propagation {
+    // ? 传播给调用者，otherwise 在本地处理
+    result = SearchBot.run("query")?
+    print(result)
+}
+
+// otherwise — 本地恢复
+flow modern_error_recovery {
+    // 失败时用 fallback 值
+    result = SearchBot.run("query") otherwise "No results found"
+    print(result)
+}
+
+// ========================================
+// 4. 链式 ? 操作符 — 消除匹配金字塔
+// ========================================
+
+// 没有 ? 操作符时，每个 fallible 操作都需要 try/catch 嵌套：
+// flow pyramid_example {
+//     try {
+//         r1 = SearchBot.run("query")
+//         try {
+//             r2 = Analyst.run(r1)
+//             try {
+//                 r3 = Critic.run(r2)
+//                 print(r3)
+//             } catch (e3) { print("Critic failed") }
+//         } catch (e2) { print("Analyst failed") }
+//     } catch (e1) { print("Search failed") }
+// }
+
+// 有 ? 操作符后，线性代码：
+flow flat_propagation {
+    r1 = SearchBot.run("query")?
+    r2 = Analyst.run(r1)?
+    r3 = Critic.run(r2)?
+    print(r3)
+}
+
+// ========================================
+// 5. otherwise 与 DAG ?? 条件分支共存
+// ========================================
+
+// ? 是单字符后缀操作符（错误传播）
+// ?? 是双字符中缀操作符（DAG 条件分支）
+// 两者不冲突
+
+flow mixed_operators {
+    // ? 错误传播
+    result = SearchBot.run("query")?
+    
+    // ?? DAG 条件分支
+    final = result ?? Analyst : Critic
+    print(final)
+}

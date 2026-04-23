@@ -1,0 +1,109 @@
+// P3 Batch A: Pipe Operator |> + Defer Statement + Null Coalescing ??
+// Demo file showcasing all three P3 features
+
+// ===== P3-2: Pipe Operator |> =====
+
+// Basic pipe: x |> f => f(x)
+flow pipe_basic {
+    result = "hello world" |> format_output;
+    print(result);
+}
+
+// Pipe with arguments: x |> f(a, b) => f(x, a, b)
+flow pipe_with_args {
+    result = 42 |> add(10, 5);
+    print(result);
+}
+
+// Multi-level chain: x |> f |> g => g(f(x))
+flow pipe_chain {
+    result = "input" |> preprocess |> format_output;
+    print(result);
+}
+
+// Pipe with method call
+flow pipe_method {
+    result = "raw data" |> DataProcessor.run;
+    print(result);
+}
+
+// ===== P3-5: Defer Statement =====
+
+// Basic defer - executes at scope exit
+flow defer_basic {
+    defer print("cleanup done");
+    print("main work");
+}
+
+// Multiple defers in LIFO order
+flow defer_lifo {
+    defer print("first defer");
+    defer print("second defer");
+    defer print("third defer");
+    print("main work");
+    // Execution order: third, second, first
+}
+
+// Defer executes even on error
+flow defer_on_error {
+    defer print("cleanup even on error");
+    print("before error");
+}
+
+// Defer in function scope
+flow defer_in_function {
+    db = "connection";
+    defer cleanup(db);
+    result = query_data(db);
+    print(result);
+}
+
+// ===== P3-6: Null Coalescing ?? =====
+
+// Basic null coalescing - None returns fallback
+flow null_coalesce_basic {
+    result = none_value ?? "fallback";
+    print(result);
+}
+
+// Non-None value returns itself
+flow null_coalesce_value {
+    result = "actual value" ?? "fallback";
+    print(result);
+}
+
+// Chained null coalescing: a ?? b ?? c
+flow null_coalesce_chain {
+    result = none_value ?? another_none ?? "final fallback";
+    print(result);
+}
+
+// Null coalesce with agent result
+flow null_coalesce_agent {
+    agent_result = ChatBot.run("hello");
+    answer = agent_result ?? "No response available";
+    print(answer);
+}
+
+// ===== Integration: All Three Features =====
+
+// Pipe + Null Coalesce
+flow pipe_null_coalesce {
+    result = "input" |> process |> format ?? "processing failed";
+    print(result);
+}
+
+// Defer + Null Coalesce
+flow defer_null_coalesce {
+    defer print("scope exit cleanup");
+    result = risky_value ?? "safe default";
+    print(result);
+}
+
+// All three together
+flow all_features {
+    defer cleanup(resources);
+    raw = get_data() ?? "empty";
+    processed = raw |> transform_data;
+    print(processed);
+}

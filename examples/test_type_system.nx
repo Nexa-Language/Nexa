@@ -1,0 +1,62 @@
+// Nexa 渐进式类型系统 (Gradual Type System) 示例
+// 展示 v1.1 类型标注功能
+
+// === 1. 语义类型声明（已有功能，保持兼容）===
+type Email = str @ "must be a valid email address"
+type Age = int @ "must be between 0 and 150"
+
+// === 2. Protocol 扩展为完整类型约束 ===
+protocol AnalysisReport {
+    title: str,
+    sentiment: str,
+    confidence: float,
+    recommendations: list[str],    // 泛型列表类型
+    metadata: dict[str, str],      // 泛型字典类型
+}
+
+// Protocol 使用联合类型
+protocol FlexibleInput {
+    value: str | int | float,      // 联合类型
+    source: str?,
+}
+
+// Protocol 使用 Option 和 Result
+protocol PaymentResult {
+    status: str,
+    amount: float,
+    error: Option[str],            // Option 类型 — 可能是 None
+    details: Result[str, str],     // Result 类型 — 成功或失败
+}
+
+// === 3. Flow 函数类型标注 ===
+flow process_payment(amount: float) -> PaymentResult
+    requires amount > 0
+    ensures "result confirms payment" {
+    // 局部变量自动推断: let x = 5 → int, let name = "Alice" → str
+    result = "Processing payment of " + amount
+}
+
+// Flow 带完整类型标注的参数
+flow calculate_score(input: str, weight: float) -> float
+    requires "input is not empty" {
+    score = input >> FinancialAnalyst
+}
+
+// Flow 使用联合类型参数
+flow handle_flexible(value: str | int) -> str {
+    result = "Handled: " + value
+}
+
+// === 4. Agent 类型标注 ===
+agent FinancialAnalyst implements AnalysisReport
+    requires "input contains financial data"
+    ensures "output contains analysis" {
+    role: "Senior Financial Advisor",
+    model: "minimax-m2.5",
+    prompt: "Analyze financial data and provide structured report."
+}
+
+// === 5. 使用语义类型 ===
+flow validate_user(email: Email, age: Age) -> str {
+    result = "User validated"
+}

@@ -1,0 +1,62 @@
+// P1-4: Built-In HTTP Server 示例
+// 展示 Nexa Agent-Native HTTP 服务器语法
+
+agent ChatBot {
+    input_type: str
+    output_type: str
+    prompt: "You are a helpful chat assistant. Respond concisely."
+}
+
+agent HelpBot {
+    input_type: str
+    output_type: str
+    prompt: "You provide helpful guidance to users."
+}
+
+// HTTP 服务器声明
+server 8080 {
+    // CORS 配置
+    cors { origins: ["*"] }
+    
+    // 静态文件服务
+    static "/assets" from "./public"
+    
+    // Agent 作为路由 handler (Nexa 特色)
+    route GET "/chat" => ChatBot
+    
+    // 语义路由 (Nexa 特色)
+    semantic route "/help" => HelpBot
+    
+    // 传统函数 handler
+    route GET "/health" => health_check
+    route GET "/users/{id}" => get_user
+    route GET "/" => home_page
+    
+    // 路径分组
+    group "/admin" {
+        route GET "/" => admin_panel
+    }
+}
+
+// Handler 函数
+flow health_check() {
+    return json({status: "ok", version: "1.0", timestamp: "2024-01-01"})
+}
+
+flow get_user(id) {
+    return json({id: id, name: "User " + id, email: id + "@example.com"})
+}
+
+flow home_page() {
+    return html("<h1>Welcome to Nexa HTTP Server</h1><p>Agent-Native, Intent-Driven</p>")
+}
+
+flow admin_panel() {
+    return html("<h1>Admin Dashboard</h1><p>Management Console</p>")
+}
+
+// 中间件函数
+flow rate_limit(req) {
+    // 简单速率限制示例
+    return req
+}

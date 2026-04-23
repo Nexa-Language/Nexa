@@ -3,10 +3,18 @@
 pub mod agent;
 pub mod tool;
 pub mod llm;
+pub mod contracts;
+pub mod result_types;
+pub mod jobs;  // P1-3: Background Job System
 
 pub use agent::{AgentConfig, AgentInstance, AgentRegistry};
 pub use tool::{ToolExecutor, ToolRegistry, ToolSpec};
 pub use llm::{LlmClient, LlmConfig};
+pub use contracts::{check_requires, check_ensures, capture_old_values, ContractViolation};
+// v1.2: Error Propagation (错误传播)
+pub use result_types::{NexaResult, NexaOption, ErrorPropagation, OtherwiseHandlerCtx, PropagationResult, propagate_or_else, wrap_agent_result};
+// P1-3: Background Job System
+pub use jobs::{JobPriority, JobStatus, BackoffStrategy, JobSpec, JobRecord, MemoryBackend, JobRegistry, JobQueue, calculate_backoff};
 
 use crate::bytecode::BytecodeModule;
 use crate::utils::error::{AvmError, AvmResult};

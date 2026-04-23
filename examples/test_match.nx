@@ -1,0 +1,99 @@
+// P3-3: Pattern Matching + Destructuring Demo
+// Demonstrates all 7 pattern types, match expressions, and destructuring
+
+// ===== Wildcard Pattern =====
+// _ matches anything, no binding
+flow wildcard_demo {
+    result = match 42 { _ => "matched anything" }
+    print(result)
+}
+
+// ===== Variable Pattern =====
+// name matches anything, binds variable
+flow variable_demo {
+    result = match 100 { n => n * 2 }
+    print(result)
+}
+
+// ===== Literal Pattern =====
+// int, float, string, bool match exact values
+flow literal_demo {
+    result = match 0 { 0 => "zero", 1 => "one", _ => "other" }
+    print(result)
+    
+    bool_result = match true { true => "yes", false => "no" }
+    print(bool_result)
+}
+
+// ===== Tuple Pattern =====
+// (a, b) matches tuple/list of specific length
+flow tuple_demo {
+    data = [10, 20]
+    result = match data { (x, y) => x + y, _ => 0 }
+    print(result)
+}
+
+// ===== Array Pattern =====
+// [a, b, ..rest] matches array with optional rest collector
+flow array_demo {
+    short = [1, 2]
+    result1 = match short { [a, b] => a + b, _ => 0 }
+    print(result1)
+    
+    long = [1, 2, 3, 4, 5]
+    result2 = match long { [first, second..rest] => first, _ => 0 }
+    print(result2)
+}
+
+// ===== Map Pattern =====
+// {name, age: a} matches dict with optional rest collector
+flow map_demo {
+    person = {"name": "Alice", "age": 30, "city": "NYC"}
+    result = match person { {name, age: a} => name, _ => "unknown" }
+    print(result)
+}
+
+// ===== Variant Pattern =====
+// Option::Some(v) matches enum variant
+flow variant_demo {
+    // Note: variant values need to be created via runtime helpers
+    // This demonstrates the syntax; actual variant creation
+    // requires ADT (P3-4) support
+    data = {"_nexa_enum": "Option", "_nexa_variant": "Some", "_nexa_fields": [42]}
+    result = match data { Option::Some(v) => v, Option::None => 0 }
+    print(result)
+}
+
+// ===== Match with Guard Condition =====
+flow guard_demo {
+    result = match 5 { n => n if n > 0, _ => "not positive" }
+    print(result)
+}
+
+// ===== Let Destructuring =====
+// let (a, b) = expr
+flow let_destructure_demo {
+    let (x, y) = [100, 200]
+    print(x)
+    print(y)
+}
+
+// ===== For Destructuring =====
+// for (key, value) in items
+flow for_destructure_demo {
+    items = [["a", 1], ["b", 2], ["c", 3]]
+    for (key, value) in items {
+        print(key)
+    }
+}
+
+// ===== Combined Demo =====
+flow combined_demo {
+    value = 42
+    result = match value {
+        0 => "zero",
+        1 => "one",
+        n => n + 100
+    }
+    print(result)
+}
