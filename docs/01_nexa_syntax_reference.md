@@ -1,8 +1,8 @@
-# Nexa 语法参考手册 (v1.2)
+# Nexa 语法参考手册 (v1.3)
 
-本手册涵盖了 Nexa 语言从基础语法到 v1.2 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流、Intent-Driven Development 以及 Design by Contract (契约式编程)。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
+本手册涵盖了 Nexa 语言从基础语法到 v1.3 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流、Intent-Driven Development、Design by Contract 以及 Agent-Native Tooling。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
 
-## 🆕 v1.2 新特性
+## 🆕 v1.3 新特性
 
 本版本新增以下核心特性：
 
@@ -12,6 +12,7 @@
 4. **比较运算符** - 支持 ==、!=、<、>、<=、>= 比较运算
 5. **Intent-Driven Development (IDD)** - `@implements`/`@supports` 注解 + `.nxintent` 文件 + IAL 引擎
 6. **Design by Contract (契约式编程)** - `requires`/`ensures`/`invariant` 契约，支持确定性条件和语义（自然语言）条件
+7. **Agent-Native Tooling** - `nexa inspect`/`validate`/`lint` 命令，Agent 感知的代码分析
 
 ## 1. 核心层级结构 (Core Hierarchy)
 
@@ -581,3 +582,48 @@ invariant: "agent always maintains professional tone"
 ```
 
 语义条件通过 LLM 评判器在运行时验证。
+
+## 10. Agent-Native Tooling (v1.3)
+
+Nexa v1.3 引入了内置 CLI 工具，提供智能体感知的代码检查、验证和 lint 功能。
+
+### 10.1 inspect — 结构化分析
+
+```bash
+nexa inspect script.nx
+```
+
+输出包含：
+- Agent 声明及其属性（role、model、prompt）
+- Tool 声明及参数定义
+- Flow 声明及管道依赖
+- Agent-Tool 依赖关系图
+
+### 10.2 validate — 语义验证
+
+```bash
+nexa validate script.nx
+```
+
+验证内容：
+- Agent 的 prompt/model/工具是否配置完整
+- Protocol 字段是否匹配 Agent 输出
+- Tool 参数是否与 Agent uses 对应
+- Flow 管道引用是否指向已声明的 Agent
+
+### 10.3 lint — 风格检查
+
+```bash
+nexa lint script.nx
+```
+
+Lint 规则：
+- Agent prompt 长度是否合理（>10 字符）
+- Agent 命名是否符合 PascalCase 规范
+- Tool 命名是否符合 CamelCase 规范
+- 是否有未使用的 Agent 或 Tool
+- 是否缺少必要的 `description` 属性
+
+### 10.4 intent-check 和 intent-coverage
+
+参见 §8 IDD 系统中的 CLI 命令描述。
