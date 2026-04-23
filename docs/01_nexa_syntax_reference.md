@@ -1,8 +1,8 @@
-# Nexa 语法参考手册 (v1.0.1-beta)
+# Nexa 语法参考手册 (v1.1)
 
-本手册涵盖了 Nexa 语言从基础语法到 v1.0.1-beta 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展以及传统控制流。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
+本手册涵盖了 Nexa 语言从基础语法到 v1.1 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流以及 Intent-Driven Development (意图驱动开发)。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
 
-## 🆕 v1.0.1-beta 新特性
+## 🆕 v1.1 新特性
 
 本版本新增以下核心特性：
 
@@ -10,6 +10,7 @@
 2. **Python 逃生舱** - 使用 `python! """..."""` 直接嵌入 Python 代码
 3. **二元运算符扩展** - 支持 +、-、*、/、% 算术运算
 4. **比较运算符** - 支持 ==、!=、<、>、<=、>= 比较运算
+5. **Intent-Driven Development (IDD)** - `@implements`/`@supports` 注解 + `.nxintent` 文件 + IAL 引擎
 
 ## 1. 核心层级结构 (Core Hierarchy)
 
@@ -420,3 +421,112 @@ Python 逃生舱使用 `python!` 关键字和三引号定界符，避免了：
 - Markdown 代码块冲突（不使用 ```）
 - 大括号嵌套问题（不使用 {}）
 - 清晰的边界标识
+
+## 8. Intent-Driven Development (IDD) (v1.1)
+
+Nexa 的 IDD 系统让需求文档变成可执行测试，形成"需求→实现→验证"的闭环。这是从 NTNT 语言学习的灵魂特性，融合了 Agent-native 验证，超越 NTNT 的 HTTP-only 模式。
+
+### 8.1 @implements 注解
+
+在 Nexa 源代码中使用 `@implements` 注解将 agent 链接到 intent feature：
+
+```nexa
+// @implements: feature.weather_bot
+agent WeatherBot uses WeatherAPI implements WeatherReport {
+    role: "Weather Assistant",
+    prompt: "Provide weather information"
+}
+```
+
+也支持 `@supports` 注解链接约束：
+
+```nexa
+// @supports: constraint.output_format
+agent Formatter {
+    role: "Format output"
+}
+```
+
+### 8.2 .nxintent 文件
+
+`.nxintent` 文件定义 Feature、Scenario 和 Glossary，描述期望行为：
+
+```yaml
+## Glossary
+
+| Term | Means |
+|------|-------|
+| a user asks {question} | agent run with input {question} |
+| the agent responds with {text} | output contains {text} |
+| the response is valid | protocol check passes |
+
+---
+
+Feature: Weather Bot
+  id: feature.weather_bot
+  description: "Weather information agent"
+
+  Scenario: Weather query
+    When a user asks "What is the weather in Beijing?"
+    → the agent responds with "weather"
+    → the response is valid
+
+  Scenario: Invalid query handling
+    When a user asks "xyzzy"
+    → the agent responds with "clarification"
+```
+
+**术语类型**：
+- **模式术语**：含 `{param}` 占位符，如 `they see {text}`
+- **精确术语**：无占位符，如 `the response is valid`
+- **展开术语**：映射到多个断言，如 `success response → ["status 2xx", "body contains 'ok'"]`
+
+### 8.3 IAL 引擎
+
+IAL (Intent Assertion Language) 是术语重写引擎，将自然语言断言递归解析为可执行测试：
+
+```
+"they see success response"
+    ↓ vocabulary lookup
+"component.success_response"
+    ↓ component expansion
+["status 2xx", "body contains 'ok'"]
+    ↓ standard term resolution
+[Check(InRange, "response.status", 200-299), Check(Contains, "response.body", "ok")]
+    ↓ execution
+[✓, ✓]
+```
+
+### 8.4 CLI 命令
+
+```bash
+# 验证代码是否符合 intent
+nexa intent-check weather_bot.nx
+
+# 显示特性覆盖率
+nexa intent-coverage weather_bot.nx
+
+# 指定 intent 文件路径
+nexa intent-check weather_bot.nx --intent weather_bot.nxintent
+
+# 详细输出
+nexa intent-check weather_bot.nx --verbose
+```
+
+### 8.5 Intent 声明语法
+
+```nexa
+// 声明意图
+intent Bot shall "respond politely to user questions"
+
+// 声明约束
+intent Bot shall not "generate harmful content"
+
+// 声明偏好
+intent Bot prefers "concise responses over verbose ones"
+```
+
+**关键能力**：
+- Intent 覆盖率测量：代码路径被 intents 覆盖的百分比
+- Intent 验证：运行时检查 intent 满足情况
+- 模糊 Intent 匹配：部分 intent 规范的近似匹配解析
