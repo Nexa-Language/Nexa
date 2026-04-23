@@ -636,6 +636,40 @@ Nexa v1.2.0 引入了 Design by Contract 系统，将契约式编程范式带到
 
 ---
 
+## 阶段 11: v1.3.0 — Agent-Native Tooling + Compiler Architecture Overhaul (2026-04-23 完成 ✅)
+
+Nexa v1.3.0 引入了 Agent-Native CLI 工具系统，并完成了编译器架构文档从 v0.9-alpha 到 v1.3 的全面重写。
+
+### 11.1 Agent-Native Tooling
+
+- [x] `nexa inspect` — 结构化分析 agents/tools/flows (含依赖关系图)
+- [x] `nexa validate` — 语义验证 (prompt/model/工具配置完整性)
+- [x] `nexa lint` — 风格和最佳实践检查 (命名规范、prompt 长度等)
+- [x] `nexa intent-check` — Intent 覆盖率验证
+- [x] `nexa intent-coverage` — 覆盖率百分比报告
+
+### 11.2 编译器架构重写
+
+`docs/02_compiler_architecture.md` 从 v0.9-alpha 全面重写为 v1.3，新增章节：
+
+- [x] AST Transformer Scoring System — `_score_ast_node()` 消歧策略
+- [x] BOILERPLATE Code Generation Pattern — 每个功能模块的导入和辅助函数模板
+- [x] Handle-as-dict Pattern — `_nexa_*` 前缀键的 Python dict 表示
+- [x] Thread-safe Registry Pattern — `_registry_lock` + `_id_counter` 全局注册表
+- [x] StdTool Namespace Pattern — `std.*` 命名空间通过 StdTool 注册
+- [x] ContractViolation 跨模块集成 — HTTP/KV/Concurrent/ADT
+- [x] DSL 声明模式 — 统一的 module_type name { declarations } 语法
+
+### 11.3 新增文件
+
+| 文件 | 说明 |
+|------|------|
+| `src/runtime/inspector.py` | 结构化分析引擎 |
+| `src/runtime/validator.py` | 语义验证引擎 |
+| `tests/test_inspector.py` | Inspector 测试套件 (41 tests) |
+
+---
+
 ### 社区生态与学术
 1. **开源贡献**：建立开放的贡献流程和代码审查机制。
 2. **理论基础论文**：分享非确定性计算的确定性控制流、基于模型的 `loop ... until` 与原生 `semantic_if` 等。
