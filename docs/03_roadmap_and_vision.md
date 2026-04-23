@@ -606,6 +606,36 @@ Nexa v1.1.0 引入了核心差异化特性——Intent-Driven Development 系统
 
 ---
 
+## 阶段 10: v1.2.0 — Design by Contract (DbC) (2026-04-23 完成 ✅)
+
+Nexa v1.2.0 引入了 Design by Contract 系统，将契约式编程范式带到 Agent 编程领域。
+
+### 10.1 Contract 核心组件
+
+- [x] **`requires` (前置条件)** — 函数/方法调用前必须满足的条件
+- [x] **`ensures` (后置条件)** — 函数/方法返回后必须满足的条件
+- [x] **`invariant` (不变条件)** — 对象生命周期中始终满足的条件
+- [x] **ContractViolation** — 契约违反异常，集成 HTTP/KV/Concurrent/ADT
+- [x] **语义契约** — 支持自然语言条件（通过 LLM 评判器验证）
+
+### 10.2 ContractViolation 集成
+
+| 模块 | 映射 |
+|------|------|
+| HTTP Server | 401 → requires violation, 403 → ensures violation |
+| KV Store | 失败操作 → ensures violation |
+| Concurrent | 任务失败 → contract violation |
+| ADT | 无效操作 → ContractViolation |
+
+### 10.3 新增文件
+
+| 文件 | 说明 |
+|------|------|
+| `src/runtime/contracts.py` | ContractSpec, ContractClause, ContractViolation, check_requires, check_ensures, capture_old_values |
+| `tests/test_contracts.py` | Contract 测试套件 (47 tests) |
+
+---
+
 ### 社区生态与学术
 1. **开源贡献**：建立开放的贡献流程和代码审查机制。
 2. **理论基础论文**：分享非确定性计算的确定性控制流、基于模型的 `loop ... until` 与原生 `semantic_if` 等。

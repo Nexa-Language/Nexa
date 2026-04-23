@@ -1,8 +1,8 @@
-# Nexa 语法参考手册 (v1.1)
+# Nexa 语法参考手册 (v1.2)
 
-本手册涵盖了 Nexa 语言从基础语法到 v1.1 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流以及 Intent-Driven Development (意图驱动开发)。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
+本手册涵盖了 Nexa 语言从基础语法到 v1.2 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流、Intent-Driven Development 以及 Design by Contract (契约式编程)。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
 
-## 🆕 v1.1 新特性
+## 🆕 v1.2 新特性
 
 本版本新增以下核心特性：
 
@@ -11,6 +11,7 @@
 3. **二元运算符扩展** - 支持 +、-、*、/、% 算术运算
 4. **比较运算符** - 支持 ==、!=、<、>、<=、>= 比较运算
 5. **Intent-Driven Development (IDD)** - `@implements`/`@supports` 注解 + `.nxintent` 文件 + IAL 引擎
+6. **Design by Contract (契约式编程)** - `requires`/`ensures`/`invariant` 契约，支持确定性条件和语义（自然语言）条件
 
 ## 1. 核心层级结构 (Core Hierarchy)
 
@@ -530,3 +531,53 @@ intent Bot prefers "concise responses over verbose ones"
 - Intent 覆盖率测量：代码路径被 intents 覆盖的百分比
 - Intent 验证：运行时检查 intent 满足情况
 - 模糊 Intent 匹配：部分 intent 规范的近似匹配解析
+
+## 9. Design by Contract (契约式编程) (v1.2)
+
+Nexa v1.2 引入了 Design by Contract (DbC) 系统，为 Agent 编程带来契约式编程范式。开发者可以指定前置条件、后置条件和不变条件，在运行时验证 Agent 行为。
+
+### 9.1 Contract 语法
+
+```nexa
+requires: input != None
+ensures: result.length > 0
+invariant: self.state in ["idle", "running"]
+```
+
+**三种契约类型**：
+
+| 契约 | 关键字 | 语义 |
+|------|--------|------|
+| 前置条件 | `requires` | 函数/方法调用前必须满足 |
+| 后置条件 | `ensures` | 函数/方法返回后必须满足 |
+| 不变条件 | `invariant` | 对象生命周期中始终满足 |
+
+### 9.2 ContractViolation
+
+契约违反时抛出 `ContractViolation` 异常，包含违反类型、条件文本和上下文信息：
+
+```nexa
+try {
+    result = SecureBot.run(user_input);
+} catch (ContractViolation e) {
+    print("Contract violated: " + e.clause);
+}
+```
+
+**ContractViolation 集成**：
+- HTTP Server: 401 → requires violation, 403 → ensures violation
+- KV Store: 失败操作 → ensures violation
+- Concurrent: 任务失败 → contract violation
+- ADT: 无效操作 → ContractViolation
+
+### 9.3 语义契约
+
+除了确定性条件，Contract 还支持语义（自然语言）条件：
+
+```nexa
+requires: "input contains a valid email address"
+ensures: "response is helpful and accurate"
+invariant: "agent always maintains professional tone"
+```
+
+语义条件通过 LLM 评判器在运行时验证。
