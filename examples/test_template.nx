@@ -1,0 +1,40 @@
+// Template System 示例 — P2-4: CSS-safe 双花括号模板引擎
+
+// 1. 基本模板表达式 — {{expr}} 自动 HTML 转义
+let greeting = template"""Hello {{name}}!"""
+let multi = template"""{{a}} and {{b}}"""
+let dotAccess = template"""Hello {{user.name}}"""
+
+// 2. 自动 HTML 转义 — {{expr}} 自动转义 <>&'"
+let safe = template"""Content: {{content}}"""
+// 若 content = "<script>alert(1)</script>"，渲染结果自动转义为 <script>...
+
+// 3. Raw 不转义 — {{{expr}}} 三花括号输出原始内容
+let raw = template"""{{{html}}}"""
+let mixed = template"""Escaped: {{html}}, Raw: {{{html}}}"""
+
+// 4. ForLoop + 元数据 — {{#for var in iterable}}...{{/for}}
+let listTpl = template"""{{#for item in items}}- {{@index1}}. {{item}}
+{{#empty}}No items found.{{/for}}"""
+let metaTpl = template"""{{#for x in nums}}[{{@index}}] {{x}}{{@first}}-first{{@last}}-last
+{{/for}}"""
+
+// 5. IfBlock + elif + else — {{#if cond}}...{{#elif c2}}...{{#else}}...{{/if}}
+let roleTpl = template"""{{#if role == 'admin'}}Admin access{{#elif role == 'mod'}}Moderator access{{#else}}User access{{/if}}"""
+let simpleIf = template"""{{#if active}}Active user{{#else}}Inactive{{/if}}"""
+
+// 6. 过滤器链 — {{expr | filter1 | filter2(arg)}}
+let filterTpl = template"""{{name | trim | upper}}"""
+let defaultTpl = template"""{{title | default(Untitled)}}"""
+let chainTpl = template"""{{text | trim | capitalize | truncate(50)}}"""
+let rawFilter = template"""{{{html | raw}}}"""
+
+// 7. Agent Prompt 模板
+agent templateBot {
+    model "gpt-4"
+    description "A template-powered assistant"
+    
+    // Agent prompt 模板 — 注入 agent 上下文
+    let promptTpl = template"""You are {{agent_name}}, {{agent_desc}}.
+Available tools: {{agent_tools}}."""
+}

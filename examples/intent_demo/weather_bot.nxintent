@@ -1,0 +1,25 @@
+## Glossary
+
+| Term | Means |
+|------|-------|
+| a user asks {question} | agent run with input {question} |
+| the agent responds with {text} | output contains {text} |
+| the response is valid | protocol check passes |
+| the pipeline produces {text} | pipeline output contains {text} |
+| clarification response | output is about clarification or asking for more details |
+| weather information | output mentions weather, temperature, conditions or forecast |
+
+---
+
+Feature: Weather Bot
+  id: feature.weather_bot
+  description: "Weather information agent"
+
+  Scenario: Weather query
+    When a user asks "What is the weather in Beijing?"
+    → the agent responds with "weather"
+    → the response is valid
+
+  Scenario: Invalid query handling
+    When a user asks "xyzzy"
+    → the agent responds with "clarification"

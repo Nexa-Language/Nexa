@@ -83,6 +83,11 @@ impl BytecodeCompiler {
                 let idx = self.add_constant(Constant::String(agent.name.clone()));
                 self.globals.insert(agent.name.clone(), idx);
             }
+            // v1.1: TypeAlias 声明 — 注册类型别名符号
+            Declaration::TypeAlias(type_alias) => {
+                let idx = self.add_constant(Constant::String(type_alias.name.clone()));
+                self.globals.insert(type_alias.name.clone(), idx);
+            }
         }
         Ok(())
     }
@@ -93,6 +98,8 @@ impl BytecodeCompiler {
             Declaration::Tool(tool) => self.compile_tool(tool),
             Declaration::Protocol(protocol) => self.compile_protocol(protocol),
             Declaration::Agent(agent) => self.compile_agent(agent),
+            // v1.1: TypeAlias 声明 — 暂不生成字节码（类型在 AST 级别检查）
+            Declaration::TypeAlias(_) => Ok(()),
         }
     }
 
@@ -177,12 +184,10 @@ impl BytecodeCompiler {
         // 进入新的作用域
         self.push_scope();
 
-        // 编译参数
-        for (i, param) in flow.parameters.iter().enumerate() {
-            if let Expression::Identifier(name) = param {
-                let local_idx = self.declare_local(name);
-                self.module.emit(OpCode::StoreLocal, Some(Operand::U32(local_idx)), None);
-            }
+        // v1.1: 编译参数（parameters 现在是 Vec<(String, TypeExpr)>）
+        for (i, (param_name, _param_type)) in flow.parameters.iter().enumerate() {
+            let local_idx = self.declare_local(param_name);
+            self.module.emit(OpCode::StoreLocal, Some(Operand::U32(local_idx)), None);
         }
 
         // 编译 body
@@ -239,6 +244,36 @@ impl BytecodeCompiler {
                     self.module.emit(OpCode::PushNull, None, None);
                 }
                 self.module.emit(OpCode::Return, None, None);
+            }
+            // v1.2: Error Propagation — ? 操作符和 otherwise 内联错误处理
+            Statement::TryAssignment { target, expression } => {
+                // x = expr? → 编译表达式，然后 try unwrap
+                // 简化实现：编译表达式后检查是否为 NexaResult
+                // 完整实现需要 TryUnwrap opcode
+                self.compile_expression(expression)?;
+                // 将结果存储到 target 变量（暂不实现 unwrap）
+                if let Some(idx) = self.globals.get(target) {
+                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(*idx)), None);
+                } else {
+                    let idx = self.add_constant(Constant::String(target.clone()));
+                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
+                }
+            }
+            Statement::OtherwiseAssignment { target, expression, handler: _ } => {
+                // x = expr otherwise handler → 编译表达式，fallback 处理
+                // 简化实现：编译表达式后存储到 target
+                self.compile_expression(expression)?;
+                if let Some(idx) = self.globals.get(target) {
+                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(*idx)), None);
+                } else {
+                    let idx = self.add_constant(Constant::String(target.clone()));
+                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
+                }
+            }
+            Statement::TryExpression(expr) => {
+                // expr? → 编译表达式，暂作为普通表达式处理
+                self.compile_expression(expr)?;
+                self.module.emit(OpCode::Pop, None, None);
             }
             Statement::Break => {
                 if let Some(loop_info) = self.loop_stack.last_mut() {
@@ -553,6 +588,11 @@ impl BytecodeCompiler {
             Expression::String(s) => {
                 let idx = self.add_constant(Constant::String(s.clone()));
                 self.module.emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
+            }
+            // v1.2: TryOp — ? 操作符表达式（错误传播）
+            // 简化实现：编译内部表达式（暂不实现 unwrap opcode）
+            Expression::TryOp { expression } => {
+                self.compile_expression(expression)?;
             }
             Expression::Identifier(name) => {
                 if let Some(idx) = self.lookup_local(name) {

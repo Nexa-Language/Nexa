@@ -59,6 +59,10 @@ pub enum AvmError {
 
     #[error("Not implemented: {0}")]
     NotImplemented(String),
+
+    /// v1.1: 渐进式类型系统类型检查错误
+    #[error("Type check error: {0}")]
+    TypeCheck(String),
 }
 
 impl From<StackError> for AvmError {

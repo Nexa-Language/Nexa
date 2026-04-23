@@ -1,6 +1,9 @@
 from typing import Any, Dict, List, Optional
 from .core import client, STRONG_MODEL
 from .secrets import nexa_secrets
+from .contracts import ContractSpec, ContractClause, ContractViolation, check_requires, check_ensures, capture_old_values, OldValues
+from .type_system import TypeChecker, TypeViolation, TypeMode, get_type_mode, TypeInferrer, PrimitiveTypeExpr, AliasTypeExpr
+from .result_types import NexaResult, NexaOption, ErrorPropagation, wrap_agent_result
 from openai import OpenAI
 import json
 import os
@@ -23,7 +26,8 @@ class NexaAgent:
     def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None,
                  model: str = STRONG_MODEL, role: str = "", memory_scope: str = "local",
                  protocol=None, max_tokens=None, stream=False, cache=False,
-                 max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3):
+                 max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3,
+                 contracts=None):
         self.name = name
         self.system_prompt = prompt
         if role:
@@ -65,6 +69,9 @@ class NexaAgent:
         # 新增: timeout 和 retry 属性
         self.timeout = timeout  # 请求超时时间（秒）
         self.retry = retry      # 最大重试次数
+        
+        # Design by Contract: 契约规格
+        self.contracts = contracts  # ContractSpec 或 None
         
         # COW 状态管理 - 用于 O(1) 克隆和 Tree-of-Thoughts 模式
         self._cow_state = CowAgentState()
@@ -123,6 +130,118 @@ class NexaAgent:
             )
                 
         self.client = OpenAI(api_key=api_key, base_url=base_url)
+
+    # v1.1: 渐进式类型系统 — 初始化 Agent 级别类型检查器
+    _type_checker_instance = None
+    
+    @classmethod
+    def _get_type_checker(cls) -> TypeChecker:
+        """获取全局类型检查器实例（懒加载）"""
+        if cls._type_checker_instance is None:
+            cls._type_checker_instance = TypeChecker()
+        return cls._type_checker_instance
+    
+    def _check_output_type(self, result: Any) -> Any:
+        """v1.1: 渐进式类型系统 — 检查 Agent 输出与 Protocol 的类型合规性
+        
+        根据 NEXA_TYPE_MODE:
+        - STRICT:    类型不匹配=抛 TypeViolation 异常
+        - WARN:      类型不匹配=日志警告并继续
+        - FORGIVING: 静默忽略
+        
+        Args:
+            result: Agent 执行结果（可能是 Pydantic 模型实例或字符串）
+        
+        Returns:
+            原始 result（如果所有类型检查通过或处于 forgiving/warn 模式）
+        
+        Raises:
+            TypeViolation: 如果 strict 模式下类型不匹配
+        """
+        type_mode = get_type_mode()
+        if type_mode == TypeMode.FORGIVING:
+            return result  # forgiving 模式完全跳过类型检查
+        
+        # 如果有 protocol，检查输出数据与 protocol 字段类型的合规性
+        if self.protocol and hasattr(self.protocol, '__name__'):
+            checker = self._get_type_checker()
+            protocol_name = self.protocol.__name__
+            
+            # 尝试将结果转换为字典进行检查
+            if hasattr(result, 'model_dump'):
+                # Pydantic v2 模型
+                result_dict = result.model_dump()
+            elif hasattr(result, 'dict'):
+                # Pydantic v1 模型
+                result_dict = result.dict()
+            elif isinstance(result, dict):
+                result_dict = result
+            elif isinstance(result, str):
+                # 纯字符串结果 — 尝试解析为 JSON
+                try:
+                    import json
+                    result_dict = json.loads(result)
+                except (json.JSONDecodeError, ValueError):
+                    # 字符串不是 JSON — 无法检查 protocol 合规性
+                    if type_mode == TypeMode.STRICT:
+                        raise TypeViolation(
+                            f"Agent '{self.name}' output is a string, not a JSON object matching protocol '{protocol_name}'",
+                            expected_type=AliasTypeExpr(protocol_name),
+                            actual_type=PrimitiveTypeExpr("str"),
+                            value=result,
+                            context={"agent": self.name, "protocol": protocol_name}
+                        )
+                    elif type_mode == TypeMode.WARN:
+                        import logging
+                        logging.getLogger("nexa.type_system").warning(
+                            f"⚠️ Agent '{self.name}' output is a string, not matching protocol '{protocol_name}'"
+                        )
+                    return result
+            else:
+                return result  # 未知结果类型，跳过
+            
+            # 检查 Protocol 合规性
+            type_result = checker.check_protocol_compliance(result_dict, protocol_name)
+            checker.handle_violation(type_result)
+        
+        return result
+    
+    def _check_ensures_contract(self, result: Any, old_values: Optional[OldValues] = None) -> Any:
+        """Design by Contract: 检查后置条件 (ensures) + v1.1 类型检查
+        
+        如果有契约且 ensures 检查失败:
+        - Agent ensures 失败: 触发重试（如果有 @retry）或抛 ContractViolation
+        
+        v1.1: 在 ensures 检查之后，还会进行输出类型合规性检查。
+        
+        Args:
+            result: Agent 执行结果
+            old_values: 入口时捕获的值
+        
+        Returns:
+            原始 result（如果所有条件满足）
+        
+        Raises:
+            ContractViolation: 如果 ensures 条件不满足
+            TypeViolation: 如果 strict 模式下类型不匹配
+        """
+        if not self.contracts or not self.contracts.has_ensures():
+            # v1.1: 即使没有 ensures 契约，也执行类型检查
+            return self._check_output_type(result)
+        
+        context = {"result": result, "input": str(self.messages[-1].get("content", "")) if self.messages else ""}
+        ens_violation = check_ensures(self.contracts, context, result, old_values)
+        if ens_violation:
+            print(f"[{self.name} Contract] Ensures violated: {ens_violation.args[0]}")
+            raise ContractViolation(
+                ens_violation.args[0],
+                clause_type=ens_violation.clause_type,
+                clause=ens_violation.clause,
+                context=ens_violation.context,
+                is_semantic=ens_violation.is_semantic
+            )
+        # v1.1: ensures 通过后，执行类型检查
+        return self._check_output_type(result)
 
     def _save_memory(self):
         if self.memory_file:
@@ -200,6 +319,28 @@ class NexaAgent:
         import threading
         from contextlib import contextmanager
         
+        # Design by Contract: 检查前置条件 (requires)
+        if self.contracts and self.contracts.has_requires():
+            context = {"input": " ".join([str(arg) for arg in args]), "args": args}
+            req_violation = check_requires(self.contracts, context)
+            if req_violation:
+                print(f"[{self.name} Contract] Requires violated: {req_violation.args[0]}")
+                # Agent requires 失败: 跳过执行，返回错误信息
+                # 如果有 fallback 配置，走 fallback；否则抛异常
+                raise ContractViolation(
+                    req_violation.args[0],
+                    clause_type=req_violation.clause_type,
+                    clause=req_violation.clause,
+                    context=req_violation.context,
+                    is_semantic=req_violation.is_semantic
+                )
+        
+        # Design by Contract: 捕获 old() 值（用于后置条件比较）
+        old_values = None
+        if self.contracts and self.contracts.has_ensures():
+            context_for_old = {"input": " ".join([str(arg) for arg in args]), "args": args}
+            old_values = capture_old_values(self.contracts, context_for_old)
+        
         @contextmanager
         def timeout_context(seconds):
             """超时上下文管理器
@@ -260,7 +401,7 @@ class NexaAgent:
                 print(f"< [{self.name} replied from CACHE]: {cached_result}\n")
                 self.messages.append({"role": "assistant", "content": cached_result})
                 self._save_memory()
-                return cached_result
+                return self._check_ensures_contract(cached_result, old_values)
 
             try:
                 with timeout_context(self.timeout):
@@ -280,7 +421,7 @@ class NexaAgent:
                         self.messages.append({"role": "assistant", "content": accumulated_reply})
                         self._write_cache(kwargs, accumulated_reply)
                         self._save_memory()
-                        return accumulated_reply
+                        return self._check_ensures_contract(accumulated_reply, old_values)
                     
                     # Non-streaming or Tool/Protocol mode
                     if "stream" in kwargs:
@@ -315,7 +456,7 @@ class NexaAgent:
                                 print(f"< [{self.name} replied (JSON)]: {reply}\n")
                                 self._write_cache(kwargs, reply)
                                 self._save_memory()
-                                return validated  # 返回 Pydantic 模型实例，支持属性访问
+                                return self._check_ensures_contract(validated, old_values)  # 返回 Pydantic 模型实例，支持属性访问
                                 
                             except Exception as e:
                                 retries -= 1
@@ -330,7 +471,7 @@ class NexaAgent:
                         print(f"< [{self.name} replied]: {reply}\n")
                         self._write_cache(kwargs, reply)
                         self._save_memory()
-                        return reply
+                        return self._check_ensures_contract(reply, old_values)
                         
             except NexaTimeoutError as e:
                 retries -= 1
@@ -339,6 +480,35 @@ class NexaAgent:
                 print(f"\n[{self.name} Timeout, Retrying... ({retries} attempts left)]")
                 continue
 
+    def run_result(self, *args) -> NexaResult:
+        """v1.2: 显式返回 NexaResult 包装的 Agent 执行结果
+        
+        与 run() 不同，此方法始终返回 NexaResult:
+        - 成功 → NexaResult.ok(value)
+        - 失败 → NexaResult.err(error_message)
+        
+        这是 ? 操作符和 otherwise 语句的核心:
+        - result = Agent.run_result("query")  → NexaResult
+        - result = Agent.run_result("query")? → unwrap or ErrorPropagation
+        - result = Agent.run_result("query") otherwise fallback → unwrap or fallback
+        
+        Args:
+            *args: 传递给 Agent 的输入参数
+        
+        Returns:
+            NexaResult.ok(value) — 成功时包含返回值
+            NexaResult.err(error_message) — 失败时包含错误信息
+        """
+        try:
+            raw_result = self.run(*args)
+            return wrap_agent_result(raw_result)
+        except (NexaTimeoutError, NexaQuotaExceededError) as e:
+            return NexaResult.err(str(e))
+        except ContractViolation as e:
+            return NexaResult.err(str(e))
+        except Exception as e:
+            return NexaResult.err(str(e))
+    
     def clone(self, new_name: str, **kwargs):
         """
         创建 Agent 克隆 - 使用 Copy-on-Write (COW) 实现 O(1) 时间复杂度

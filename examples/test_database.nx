@@ -1,0 +1,38 @@
+// P1-5: Database Integration — Nexa 内置数据库集成示例
+// @implements: p1_5.database.integration
+
+db app_db = connect("sqlite://:memory:")
+
+agent DataBot {
+  memory = db(app_db)
+  tools = [query, execute]
+  
+  flow setup() -> str {
+    execute(app_db, "CREATE TABLE users (id INTEGER PRIMARY KEY, name TEXT)", [])
+    execute(app_db, "INSERT INTO users (name) VALUES (?)", ["Alice"])
+    execute(app_db, "INSERT INTO users (name) VALUES (?)", ["Bob"])
+    return "Database initialized"
+  }
+  
+  flow find_user(name: str) -> str {
+    result = query_one(app_db, "SELECT * FROM users WHERE name = ?", [name])
+    ensures result != null
+    return result["name"]
+  }
+  
+  flow list_users() -> str {
+    results = query(app_db, "SELECT * FROM users", [])
+    return results
+  }
+}
+
+test "database initialization and query" {
+  setup_result = DataBot.setup()
+  assert setup_result == "Database initialized"
+  
+  alice = DataBot.find_user("Alice")
+  assert alice == "Alice"
+  
+  bob = DataBot.find_user("Bob")
+  assert bob == "Bob"
+}

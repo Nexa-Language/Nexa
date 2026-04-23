@@ -1,0 +1,57 @@
+// P1-3: Background Job System Examples
+// Nexa 语言原生的后台任务系统
+
+// ===== 简单Job — 传统代码执行 =====
+job SendWelcomeEmail on "emails" {
+    perform(user_id) {
+        print("Sending welcome email to user " + user_id)
+    }
+}
+
+// ===== 带配置的Job =====
+job ProcessPayment on "payments" {
+    retry: 5
+    timeout: 60
+    perform(order_id, amount) {
+        print("Processing payment for order " + order_id + " amount " + amount)
+    }
+    on_failure(error, attempt) {
+        print("Payment failed: " + error + " on attempt " + attempt)
+    }
+}
+
+// ===== 高优先级Job =====
+job SendSecurityAlert on "notifications" (priority: critical) {
+    perform(user_id, alert_type) {
+        print("Sending security alert " + alert_type + " to user " + user_id)
+    }
+}
+
+// ===== 入队和状态查询示例 =====
+flow main {
+    // 立即入队
+    let job_id = SendWelcomeEmail.enqueue(map { "user_id": "123" })
+    print("Enqueued job: " + job_id)
+    
+    // 查询状态
+    let status = JobQueue.status(job_id)
+    print("Job status: " + status)
+    
+    // 带选项覆盖入队
+    let job_id2 = SendWelcomeEmail.enqueue(map { "user_id": "456" }, map { "priority": "high" })
+    
+    // 延迟入队 — 1小时后执行
+    let scheduled_id = SendWelcomeEmail.enqueue_in(3600, map { "user_id": "789" })
+    
+    // 列出所有任务
+    let jobs = JobQueue.list_jobs()
+    print("Total jobs: " + jobs)
+    
+    // 取消任务
+    let cancelled = JobQueue.cancel(job_id2)
+    print("Cancelled: " + cancelled)
+    
+    // 清理已完成任务
+    let cleared = JobQueue.clear_completed()
+    print("Cleared: " + cleared + " completed jobs")
+}

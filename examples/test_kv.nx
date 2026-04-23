@@ -1,0 +1,35 @@
+// KV Store 示例 — P2-3: Agent-Native 统一键值存储
+kv myCache = open(":memory:")
+
+// 基本操作
+set(myCache, "user:123", "Alice")
+set(myCache, "counter:visits", 0)
+set(myCache, "session:abc", "token-value")
+
+// 类型化获取
+let user = get_str(myCache, "user:123")
+let visits = incr(myCache, "counter:visits", 1)
+
+// NX 操作 — 分布式锁
+let locked = set_nx(myCache, "lock:job:1", "worker-1")
+
+// 检查与列表
+let exists = has(myCache, "user:123")
+let keys = list(myCache, "user:")
+
+// 过期设置
+expire(myCache, "session:abc", 3600)
+let remaining = ttl(myCache, "session:abc")
+
+// 删除操作
+del(myCache, "session:abc")
+
+// Agent-Native — 语义查询
+agent cacheBot {
+    model "gpt-4"
+    
+    fn handle_query(query) {
+        let results = agent_kv_query(myCache, query)
+        return results
+    }
+}

@@ -1,0 +1,24 @@
+// P2-1: OAuth + JWT + Agent API Key 示例
+// Nexa Agent-Native 三层认证模型
+
+auth myAuth = enable_auth('[{"name":"google","client_id":"GOOGLE_ID","client_secret":"GOOGLE_SECRET"}]')
+
+server apiServer {
+    require_auth "/dashboard"
+    
+    route GET "/dashboard" => dashboard_handler
+    route GET "/auth/google" => auth_start_handler
+    route GET "/auth/google/callback" => auth_callback_handler
+    
+    static '/public' from './static'
+    cors map { "origins": ["*"] }
+}
+
+agent dashboardBot {
+    model "gpt-4"
+    
+    fn dashboard_handler(req) {
+        let user = get_user(req)
+        return html("<h1>Hello, Dashboard!</h1>")
+    }
+}

@@ -5,6 +5,8 @@ use logos::Lexer;
 use std::fmt;
 
 /// Nexa Token 类型
+///
+/// v1.1: 新增渐进式类型系统相关 token
 #[derive(Debug, Clone, PartialEq, logos::Logos)]
 pub enum Token {
     // 关键字
@@ -20,6 +22,16 @@ pub enum Token {
     Test,
     #[token("include")]
     Include,
+    
+    // v1.1: 渐进式类型系统关键字
+    #[token("type")]
+    Type,
+    #[token("Option")]
+    OptionType,
+    #[token("Result")]
+    ResultType,
+    #[token("unit")]
+    UnitType,
     
     // Agent 属性
     #[token("role")]
@@ -56,6 +68,8 @@ pub enum Token {
     Else,
     #[token("fallback")]
     Fallback,
+    #[token("otherwise")]
+    Otherwise,
     #[token("mcp")]
     Mcp,
     #[token("python")]
@@ -89,6 +103,32 @@ pub enum Token {
     #[token("continue")]
     Continue,
     
+    // Design by Contract (契约式编程) 关键字 - v1.1
+    #[token("requires")]
+    Requires,
+    #[token("ensures")]
+    Ensures,
+    #[token("invariant")]
+    Invariant,
+    
+    // P1-3: Background Job System 关键字
+    #[token("job")]
+    Job,
+    #[token("on")]
+    On,
+    #[token("perform")]
+    Perform,
+    #[token("on_failure")]
+    OnFailure,
+    
+    // v1.1: 类型系统操作符
+    #[token("->")]
+    TypeArrow,
+    #[token("|")]
+    TypePipe,
+    #[token("?")]
+    TypeQuestion,
+    
     // 操作符
     #[token(">>")]
     Pipeline,
@@ -102,6 +142,11 @@ pub enum Token {
     ParallelFork,
     #[token("&&")]
     ParallelMerge,
+    
+    // 比较操作符 (用于契约表达式和传统条件)
+    // 使用 regex 优先匹配多字符操作符（>= 优先于 >, <= 优先于 <）
+    #[regex(r">=|<=|==|!=|>|<")]
+    CmpOp,
     
     // 分隔符
     #[token("{")]
@@ -215,16 +260,28 @@ impl Token {
             Token::Catch => "catch",
             Token::Else => "else",
             Token::Fallback => "fallback",
+            Token::Otherwise => "otherwise",
             Token::Assert => "assert",
             Token::Return => "return",
             Token::Break => "break",
             Token::Continue => "continue",
+            Token::Requires => "requires",
+            Token::Ensures => "ensures",
+            Token::Invariant => "invariant",
+            Token::Type => "type",
+            Token::OptionType => "Option",
+            Token::ResultType => "Result",
+            Token::UnitType => "unit",
+            Token::TypeArrow => "->",
+            Token::TypePipe => "|",
+            Token::TypeQuestion => "?",
             Token::Pipeline => ">>",
             Token::Fork => "|>>",
             Token::Merge => "&>>",
             Token::Branch => "??",
             Token::ParallelFork => "||",
             Token::ParallelMerge => "&&",
+            Token::CmpOp => "cmp_op",
             Token::LBrace => "{",
             Token::RBrace => "}",
             Token::LBracket => "[",
@@ -252,6 +309,7 @@ impl Token {
             Token::Join => "join",
             Token::Std => "std",
             Token::Img => "img",
+            Token::Otherwise => "otherwise",
             Token::Limit => "limit",
             Token::Timeout => "timeout",
             Token::Retry => "retry",
@@ -271,6 +329,9 @@ impl fmt::Display for Token {
             Token::Null => write!(f, "null"),
             Token::Regex(r) => write!(f, "r\"{}\"", r),
             Token::Float(n) => write!(f, "{}", n),
+            Token::TypeArrow => write!(f, "->"),
+            Token::TypePipe => write!(f, "|"),
+            Token::TypeQuestion => write!(f, "?"),
             _ => write!(f, "{}", self.name()),
         }
     }

@@ -52,6 +52,9 @@ impl Parser {
                 Token::Test => {
                     program.tests.push(self.parse_test()?);
                 }
+                Token::Job => {
+                    program.declarations.push(Declaration::Job(self.parse_job()?));
+                }
                 _ => {
                     return Err(AvmError::ParseError(
                         format!("Unexpected token at top level: {:?}", self.peek_token())
@@ -141,6 +144,7 @@ impl Parser {
         
         Ok(ProtocolDeclaration {
             name,
+            fields: Vec::new(),  // v1.1: 从 schema 提取字段（简化处理）
             schema,
             body,
         })
@@ -158,6 +162,19 @@ impl Parser {
         let mut protocol = None;
         let mut memory_scope = None;
         let mut max_history_turns = None;
+        let mut requires_clauses = Vec::new();
+        let mut ensures_clauses = Vec::new();
+
+        // 解析 requires/ensures 契约条款（在 { 之前）
+        while self.check(Token::Requires) || self.check(Token::Ensures) {
+            if self.check(Token::Requires) {
+                self.advance(); // 消费 requires
+                requires_clauses.push(self.parse_contract_clause("requires")?);
+            } else if self.check(Token::Ensures) {
+                self.advance(); // 消费 ensures
+                ensures_clauses.push(self.parse_contract_clause("ensures")?);
+            }
+        }
 
         self.expect(Token::LBrace)?;
         
@@ -206,7 +223,19 @@ impl Parser {
         
         self.expect(Token::RBrace)?;
         
+        // 构建 ContractSpec
+        let contracts = if requires_clauses.is_empty() && ensures_clauses.is_empty() {
+            None
+        } else {
+            Some(ContractSpec {
+                requires: requires_clauses,
+                ensures: ensures_clauses,
+            })
+        };
+        
         Ok(AgentDeclaration {
+            input_type: None,    // v1.1: 输入类型
+            output_type: None,   // v1.1: 输出类型
             name,
             prompt,
             role,
@@ -215,7 +244,95 @@ impl Parser {
             protocol,
             memory_scope,
             max_history_turns,
+            contracts,
         })
+    }
+    
+    /// 解析契约条款: requires/ensures 后跟字符串（语义）或表达式（确定性）
+    fn parse_contract_clause(&mut self, clause_type: &str) -> AvmResult<ContractClause> {
+        // 检查是语义契约（字符串）还是确定性契约（表达式）
+        if let Token::String(s) = self.peek_token() {
+            // 语义契约: requires "natural language condition"
+            let condition_text = s;
+            self.advance();
+            Ok(ContractClause {
+                expression: None,
+                condition_text: Some(condition_text),
+                is_semantic: true,
+                clause_type: clause_type.to_string(),
+                message: None,
+            })
+        } else {
+            // 硯定性契约: requires amount > 0
+            // 解析为表达式字符串
+            let expr_str = self.parse_comparison_expression_string()?;
+            Ok(ContractClause {
+                expression: Some(expr_str),
+                condition_text: None,
+                is_semantic: false,
+                clause_type: clause_type.to_string(),
+                message: None,
+            })
+        }
+    }
+    
+    /// 解析比较表达式并将其转换为字符串表示
+    fn parse_comparison_expression_string(&mut self) -> AvmResult<String> {
+        // 左侧
+        let left = self.parse_expression_term_string()?;
+        
+        // 比较操作符（使用 CmpOp token）
+        let op = match self.peek_token() {
+            Token::CmpOp => {
+                let text = self.peek_text().clone();
+                self.advance();
+                text
+            }
+            _ => return Ok(left), // 没有比较操作符，返回单个表达式
+        };
+        
+        // 右侧
+        let right = self.parse_expression_term_string()?;
+        
+        Ok(format!("{} {} {}", left, op, right))
+    }
+    
+    /// 解析表达式项（标识符、字面量、属性访问）并转换为字符串
+    fn parse_expression_term_string(&mut self) -> AvmResult<String> {
+        match self.peek_token() {
+            Token::Identifier => {
+                let name = self.peek_text().clone();
+                self.advance();
+                // 检查是否有属性访问 (如 result.field)
+                if self.check(Token::Dot) {
+                    self.advance();
+                    let prop = self.peek_text().clone();
+                    self.expect_identifier()?;
+                    Ok(format!("{}.{}", name, prop))
+                } else {
+                    Ok(name)
+                }
+            }
+            Token::Int(n) => {
+                self.advance();
+                Ok(n.to_string())
+            }
+            Token::Float(f) => {
+                self.advance();
+                Ok(f.to_string())
+            }
+            Token::String(s) => {
+                self.advance();
+                Ok(format!("\"{}\"", s))
+            }
+            Token::Bool(b) => {
+                self.advance();
+                Ok(b.to_string())
+            }
+            _ => Err(AvmError::ParseError(
+                format!("Expected expression term in contract clause, got {:?}", self.peek_token())
+            )),
+        }
     }
 
     /// 解析 flow 声明
@@ -223,14 +340,24 @@ impl Parser {
         self.expect(Token::Flow)?;
         let name = self.expect_identifier()?;
         
-        let mut parameters = Vec::new();
+        // v1.1: parameters 现在是 Vec<(String, TypeExpr)>
+        let mut parameters: Vec<(String, TypeExpr)> = Vec::new();
+        let mut requires_clauses = Vec::new();
+        let mut ensures_clauses = Vec::new();
         
-        // 可选参数列表
+        // 可选参数列表 — v1.1: 支持 name: type_expr 格式
         if self.check(Token::LParen) {
             self.advance();
             if !self.check(Token::RParen) {
                 loop {
-                    parameters.push(self.parse_expression()?);
+                    let param_name = self.expect_identifier()?;
+                    let param_type = if self.check(Token::Colon) {
+                        self.advance();
+                        TypeExpr::Any  // 简化：暂不解析完整类型表达式
+                    } else {
+                        TypeExpr::Any
+                    };
+                    parameters.push((param_name, param_type));
                     if !self.match_token(Token::Comma) {
                         break;
                     }
@@ -239,14 +366,37 @@ impl Parser {
             self.expect(Token::RParen)?;
         }
         
+        // 解析 requires/ensures 契约条款（在 { 之前）
+        while self.check(Token::Requires) || self.check(Token::Ensures) {
+            if self.check(Token::Requires) {
+                self.advance(); // 消费 requires
+                requires_clauses.push(self.parse_contract_clause("requires")?);
+            } else if self.check(Token::Ensures) {
+                self.advance(); // 消费 ensures
+                ensures_clauses.push(self.parse_contract_clause("ensures")?);
+            }
+        }
+        
         self.expect(Token::LBrace)?;
         let body = self.parse_block_body()?;
         self.expect(Token::RBrace)?;
         
+        // 构建 ContractSpec
+        let contracts = if requires_clauses.is_empty() && ensures_clauses.is_empty() {
+            None
+        } else {
+            Some(ContractSpec {
+                requires: requires_clauses,
+                ensures: ensures_clauses,
+            })
+        };
+        
         Ok(FlowDeclaration {
+            return_type: None,   // v1.1: 返回类型
             name,
             parameters,
             body,
+            contracts,
         })
     }
 
@@ -263,6 +413,127 @@ impl Parser {
             name,
             body,
         })
+    }
+
+    /// P1-3: 解析 job 声明
+    ///
+    /// 语法: job Name on "queue" [(options)] { config* perform(params) { body } [on_failure(err, attempt) { body }] }
+    fn parse_job(&mut self) -> AvmResult<JobDeclaration> {
+        self.expect(Token::Job)?;
+        let name = self.expect_identifier()?;
+        self.expect(Token::On)?;
+        let queue = self.expect_string()?;
+        
+        // 解析可选的 inline options: (retry: 2, timeout: 120)
+        let mut options = Vec::new();
+        if self.check(Token::LParen) {
+            self.advance(); // consume (
+            while !self.check(Token::RParen) && !self.is_at_end() {
+                let key = self.expect_identifier()?;
+                self.expect(Token::Assign)?;
+                let value = self.parse_job_option_value()?;
+                options.push(JobOption { key, value });
+                if self.check(Token::Comma) {
+                    self.advance();
+                }
+            }
+            self.expect(Token::RParen)?;
+        }
+        
+        self.expect(Token::LBrace)?;
+        
+        // 解析 job body: config items + perform + [on_failure]
+        let mut config = Vec::new();
+        let mut perform_params = Vec::new();
+        let mut perform_body = Vec::new();
+        let mut on_failure = None;
+        
+        while !self.check(Token::RBrace) && !self.is_at_end() {
+            match self.peek_token() {
+                Token::Perform => {
+                    self.advance(); // consume perform
+                    self.expect(Token::LParen)?;
+                    // 解析参数列表
+                    while !self.check(Token::RParen) && !self.is_at_end() {
+                        perform_params.push(self.expect_identifier()?);
+                        if self.check(Token::Comma) {
+                            self.advance();
+                        }
+                    }
+                    self.expect(Token::RParen)?;
+                    // 解析 perform 体
+                    self.expect(Token::LBrace)?;
+                    perform_body = self.parse_block_body()?;
+                    self.expect(Token::RBrace)?;
+                }
+                Token::OnFailure => {
+                    self.advance(); // consume on_failure
+                    self.expect(Token::LParen)?;
+                    let error_param = self.expect_identifier()?;
+                    self.expect(Token::Comma)?;
+                    let attempt_param = self.expect_identifier()?;
+                    self.expect(Token::RParen)?;
+                    // 解析 on_failure 体
+                    self.expect(Token::LBrace)?;
+                    let on_failure_body = self.parse_block_body()?;
+                    self.expect(Token::RBrace)?;
+                    on_failure = Some(OnFailureDeclaration {
+                        error_param,
+                        attempt_param,
+                        body: on_failure_body,
+                    });
+                }
+                Token::Identifier => {
+                    // config item: key: value
+                    let key = self.expect_identifier()?;
+                    self.expect(Token::Colon)?;
+                    let value = self.parse_job_option_value()?;
+                    config.push(JobOption { key, value });
+                }
+                _ => {
+                    return Err(AvmError::ParseError(
+                        format!("Unexpected token in job body: {:?}", self.peek_token())
+                    ));
+                }
+            }
+        }
+        
+        self.expect(Token::RBrace)?;
+        
+        Ok(JobDeclaration {
+            name,
+            queue,
+            options,
+            config,
+            perform_params,
+            perform_body,
+            on_failure,
+        })
+    }
+    
+    /// P1-3: 解析 Job 选项值
+    fn parse_job_option_value(&mut self) -> AvmResult<JobOptionValue> {
+        match self.peek_token() {
+            Token::Int(n) => {
+                self.advance();
+                Ok(JobOptionValue::Int(n))
+            }
+            Token::Float(f) => {
+                self.advance();
+                Ok(JobOptionValue::Float(f))
+            }
+            Token::String(s) => {
+                self.advance();
+                Ok(JobOptionValue::String(s))
+            }
+            Token::Identifier => {
+                let id = self.expect_identifier()?;
+                Ok(JobOptionValue::Identifier(id))
+            }
+            _ => Err(AvmError::ParseError(
+                format!("Expected job option value, got: {:?}", self.peek_token())
+            )),
+        }
     }
 
     // ==================== 语句解析 ====================
@@ -308,11 +579,38 @@ impl Parser {
             }
             _ => {
                 // 尝试解析赋值或表达式
+                // v1.2: 支持 ? 操作符和 otherwise 内联错误处理
                 let expr = self.parse_expression()?;
                 
                 if self.match_token(Token::Assign) {
                     let value = self.parse_expression()?;
-                    let is_semantic = self.match_token(Token::Identifier) 
+                    
+                    // v1.2: 检查 ? 操作符 — x = expr?
+                    if self.check(Token::TypeQuestion) {
+                        self.advance(); // 消费 ?
+                        self.match_token(Token::Semicolon);
+                        // target 需要从 expr 提取标识符名称
+                        let target_name = self._extract_identifier_from_expr(&expr);
+                        return Ok(Statement::TryAssignment {
+                            target: target_name,
+                            expression: value,
+                        });
+                    }
+                    
+                    // v1.2: 检查 otherwise — x = expr otherwise handler
+                    if self.check(Token::Otherwise) {
+                        self.advance(); // 消费 otherwise
+                        let handler = self.parse_otherwise_handler()?;
+                        self.match_token(Token::Semicolon);
+                        let target_name = self._extract_identifier_from_expr(&expr);
+                        return Ok(Statement::OtherwiseAssignment {
+                            target: target_name,
+                            expression: value,
+                            handler,
+                        });
+                    }
+                    
+                    let is_semantic = self.match_token(Token::Identifier)
                         && self.previous_identifier().map_or(false, |s| s == "semantic");
                     self.match_token(Token::Semicolon);
                     Ok(Statement::Assignment {
@@ -321,6 +619,13 @@ impl Parser {
                         is_semantic,
                     })
                 } else {
+                    // v1.2: 检查 ? 操作符 — expr? (无赋值)
+                    if self.check(Token::TypeQuestion) {
+                        self.advance(); // 消费 ?
+                        self.match_token(Token::Semicolon);
+                        return Ok(Statement::TryExpression(expr));
+                    }
+                    
                     self.match_token(Token::Semicolon);
                     Ok(Statement::Expression(expr))
                 }
@@ -976,6 +1281,81 @@ impl Parser {
             Err(AvmError::ParseError(
                 format!("Expected identifier, got {:?}", self.peek_token())
             ))
+        }
+    }
+    // ==================== v1.2: Error Propagation 辅助方法 ====================
+    
+    /// 解析 otherwise handler
+    ///
+    /// otherwise handler 可以是:
+    /// - Agent 调用: AgentName.run(args) 或 AgentName.run_result(args)
+    /// - 字符串值: "fallback value"
+    /// - 变量引用: fallback_var
+    /// - 代码块: { stmt1; stmt2; }
+    fn parse_otherwise_handler(&mut self) -> AvmResult<OtherwiseHandler> {
+        match self.peek_token() {
+            // Agent 调用作为 fallback — IDENTIFIER.run(args)
+            Token::Identifier => {
+                let agent_name = self.peek_text().clone();
+                // 检查是否是 Agent 方法调用 (IDENTIFIER.run 或 IDENTIFIER.run_result)
+                if self.pos + 1 < self.tokens.len()
+                    && self.tokens[self.pos + 1].token == Token::Dot {
+                    self.advance(); // 消费 Agent 名称
+                    self.advance(); // 消费 .
+                    let method = self.peek_text().clone();
+                    self.advance(); // 消费方法名
+                    
+                    let mut args = Vec::new();
+                    if self.check(Token::LParen) {
+                        self.advance();
+                        if !self.check(Token::RParen) {
+                            loop {
+                                args.push(self.parse_expression()?);
+                                if !self.match_token(Token::Comma) {
+                                    break;
+                                }
+                            }
+                        }
+                        self.expect(Token::RParen)?;
+                    }
+                    
+                    Ok(OtherwiseHandler::AgentCall { agent_name, args })
+                } else {
+                    // 变量引用作为 fallback
+                    self.advance();
+                    Ok(OtherwiseHandler::Variable(agent_name))
+                }
+            }
+            // 字符串值作为 fallback
+            Token::String(s) => {
+                let value = s.clone();
+                self.advance();
+                Ok(OtherwiseHandler::Value(value))
+            }
+            // 代码块作为 fallback
+            Token::LBrace => {
+                self.advance();
+                let statements = self.parse_block_body()?;
+                self.expect(Token::RBrace)?;
+                Ok(OtherwiseHandler::Block(statements))
+            }
+            _ => Err(AvmError::ParseError(
+                format!("Expected otherwise handler (Agent call, value, variable, or block), got {:?}", self.peek_token())
+            )),
+        }
+    }
+    
+    /// 从 Expression 中提取标识符名称
+    ///
+    /// 用于 TryAssignment 和 OtherwiseAssignment 的 target 字段
+    fn _extract_identifier_from_expr(&self, expr: &Expression) -> String {
+        match expr {
+            Expression::Identifier(name) => name.clone(),
+            Expression::PropertyAccess { object, property } => {
+                let obj_str = self._extract_identifier_from_expr(object);
+                format!("{}.{}", obj_str, property)
+            }
+            _ => "_".to_string(), // 默认值，不应发生
         }
     }
 }

@@ -1,0 +1,25 @@
+// Weather Bot — Nexa Intent-Driven Development Demo
+
+protocol WeatherReport {
+    city: "string",
+    temperature: "string",
+    conditions: "string",
+    forecast: "string"
+}
+
+tool WeatherAPI {
+    description: "Fetch weather data for a city",
+    parameters: {"city": "string"}
+}
+
+// @implements: feature.weather_bot
+agent WeatherBot uses WeatherAPI implements WeatherReport {
+    role: "Weather Assistant",
+    model: "minimax-m2.5",
+    prompt: "Provide weather information for cities. When asked about weather, include temperature, conditions, and forecast."
+}
+
+flow main {
+    result = WeatherBot.run("What is the weather in Beijing?");
+    print(result);
+}
