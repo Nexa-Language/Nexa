@@ -334,15 +334,26 @@ STD_NAMESPACE_MAP = {
 - CLI 缺少 `cache clear` 命令清理缓存
 
 **修复内容**：
-- 在 `src/cli.py` 添加 `NEXA_VERSION = "0.9.7-alpha"` 常量
+- 在项目根目录创建 `VERSION` 文件作为单一版本源（当前版本：1.3.7）
+- 创建 `src/_version.py` 从 VERSION 文件读取版本号
+- `src/cli.py` 和 `src/nexa_sdk.py` 从 `_version.py` 导入版本，不再硬编码
 - 添加 `show_version()` 函数打印版本信息
 - 添加 `clear_cache()` 函数清理 `.nexa_cache` 目录
 - 在 `main()` 函数添加 `-v/--version` 参数处理
 
 **代码变更**：
 ```python
-# cli.py
-NEXA_VERSION = "0.9.7-alpha"
+# _version.py — 单一版本源读取模块
+def _read_version() -> str:
+    version_file = Path(__file__).resolve().parent.parent / "VERSION"
+    if version_file.exists():
+        return version_file.read_text().strip()
+    return "1.3.7"  # fallback
+
+NEXA_VERSION = f"v{_read_version()}"
+
+# cli.py — 从 _version 导入
+from src._version import NEXA_VERSION
 
 def clear_cache():
     cache_dir = Path(".nexa_cache")
@@ -351,7 +362,7 @@ def clear_cache():
         print("✅ Cache cleared successfully.")
 
 def show_version():
-    print(f"Nexa v{NEXA_VERSION}")
+    print(f"Nexa {NEXA_VERSION}")
 
 # main() 中添加
 parser.add_argument("-v", "--version", action="store_true", help="Show version and exit")
