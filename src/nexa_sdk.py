@@ -59,9 +59,8 @@ from .runtime.rbac import get_rbac_manager, Permission, Role
 
 
 # ==================== 版本信息 ====================
-
-__version__ = "v1.3.7"
-__author__ = "Nexa Genesis Team"
+# 从单一版本源读取，更新版本只需修改根目录 VERSION 文件
+from src._version import __version__, __author__
 
 
 # ==================== 编译结果 ====================

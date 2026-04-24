@@ -1,3 +1,21 @@
+# ========================================================================
+# Copyright (C) 2026 Nexa-Language
+# This file is part of Nexa Project.
+# 
+# Nexa is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+# 
+# Nexa is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
+# ========================================================================
+
 """
 Nexa Open-CLI 深度接入模块
 原生集成类似 spectreconsole/open-cli 的宿主命令行交互标准
@@ -427,7 +445,8 @@ class NexaCLI(OpenCLI):
     """Nexa 专用 CLI"""
     
     def __init__(self):
-        super().__init__(app_name="Nexa", version="0.9.6-rc")
+        from src._version import _raw_version
+        super().__init__(app_name="Nexa", version=_raw_version)
         self._register_nexa_commands()
         
     def _register_nexa_commands(self):
