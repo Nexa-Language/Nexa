@@ -1,3 +1,23 @@
+/*
+# ========================================================================
+Copyright (C) 2026 Nexa-Language
+This file is part of Nexa Project.
+
+Nexa is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+Nexa is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
+========================================================================
+*/
+
 //! 字节码指令集 (Bytecode Instructions)
 //!
 //! 定义 AVM 虚拟机的所有字节码指令
@@ -380,7 +400,7 @@ impl Default for BytecodeMetadata {
         Self {
             compile_time: 0,
             source_file: None,
-            compiler_version: "0.1.0".to_string(),
+            compiler_version: env!("NEXA_VERSION").to_string(),
             debug_info: false,
             optimization_level: 0,
         }

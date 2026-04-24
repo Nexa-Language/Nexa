@@ -32,5 +32,5 @@ pub mod ffi;
 // Re-export error types
 pub use utils::error::{AvmError, AvmResult};
 
-/// AVM version
-pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+/// AVM version — 从项目根目录 VERSION 文件读取（通过 build.rs 设置）
+pub const VERSION: &str = env!("NEXA_VERSION");
