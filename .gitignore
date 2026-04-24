@@ -64,6 +64,7 @@ Thumbs.db
 # ai相关
 plans/
 MEMORY_BANK.md
+scripts/
 
 # 生成的 Python 文件 (由 .nx 编译生成)
 examples/*.py
