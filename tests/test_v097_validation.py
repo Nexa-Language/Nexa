@@ -31,7 +31,7 @@ class TestCLIFeatures:
         """Verify NEXA_VERSION constant is defined"""
         assert NEXA_VERSION is not None
         assert isinstance(NEXA_VERSION, str)
-        assert NEXA_VERSION.startswith("0.9")
+        assert NEXA_VERSION.startswith("v1.")
     
     def test_show_version_function(self):
         """Verify show_version() function works"""

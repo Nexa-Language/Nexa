@@ -23,11 +23,11 @@ import shutil
 import time
 from pathlib import Path
 
-# Version info
-NEXA_VERSION = "v1.3.7"
-
 # Add src dir to sys.path to allow imports when running directly
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Version info — 从单一版本源读取
+from src._version import NEXA_VERSION
 
 from nexa_parser import parse
 from ast_transformer import NexaTransformer
@@ -543,7 +543,7 @@ def handle_workers_command(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Nexa Language CLI v0.9")
+    parser = argparse.ArgumentParser(description=f"Nexa Language CLI {NEXA_VERSION}")
     parser.add_argument("-v", "--version", action="store_true", help="Show version and exit")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
     
