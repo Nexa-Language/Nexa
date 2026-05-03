@@ -12,7 +12,7 @@
   
   **中文版** | **[English](README_EN.md)**
   
-  📚 **文档**: [中文](https://ouyangyipeng.github.io/Nexa-docs/) | [English](https://ouyangyipeng.github.io/Nexa-docs/en/)
+  📚 **文档**: [中文](https://docs.nexa-lang.com/) | [English](https://docs.nexa-lang.com/en/)
 </div>
 
 ---
