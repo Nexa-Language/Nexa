@@ -3,10 +3,11 @@
   <h1>Nexa Language</h1>
   <p><b><i>The Dawn of Agent-Native Programming. Write flows, not glue code.</i></b></p>
   <p>
-    <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v1.3.7-brightgreen.svg?style=for-the-badge" alt="Version"/>
-    <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg?style=for-the-badge" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1500+-orange.svg?style=for-the-badge" alt="Tests"/>
+    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
+    <img src="https://img.shields.io/badge/Version-v1.3.7-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
+    <img src="https://img.shields.io/badge/Tests-1500+-orange.svg" alt="Tests"/>
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
   </p>
   
   **中文版** | **[English](README_EN.md)**
