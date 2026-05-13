@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="The Birth of Nexa — Why the World Needs an Agent-Native Language. Every AI developer knows the pain of prompt string concatenation and fragile JSON parsing.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="The Birth of Nexa — Why the World Needs an Agent-Native Language">
+  <meta property="og:description" content="What if agents were first-class citizens in a programming language?">
+  <title>The Birth of Nexa — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#code">Code</a></li>
+        <li><a href="../index.html#architecture">Architecture</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← Back to Blog</a>
+    <div class="post-date">2026.01.15</div>
+    <h1>The Birth of Nexa — Why the World Needs an Agent-Native Language</h1>
+    <div class="post-tags">
+      <span class="tag">Vision</span>
+      <span class="tag">Design</span>
+      <span class="tag">Origin</span>
+    </div>
+
+    <div class="post-body">
+      <p>Every AI developer knows the pain. You start a new project, excited to build something with LLMs. An hour later, you're drowning in prompt string concatenation, fragile JSON parsing, manual context window management, and a maze of framework abstractions that feel like they're fighting you at every turn.</p>
+
+      <p>I've been there. In late 2025, I was building a multi-agent research system — the kind where one agent searches, another analyzes, a third synthesizes, and they all need to coordinate. The Python codebase grew to 800+ lines before I had even implemented the core logic. Most of it was glue: tool schema definitions, message array management, retry logic, context trimming.</p>
+
+      <blockquote>
+        "Why am I writing 50 lines of Python to express what should be 5 lines of intent?"
+      </blockquote>
+
+      <h2>The Framework Trap</h2>
+
+      <p>LangChain, the most popular LLM framework at the time, promised to solve this. But its abstraction layers — chains within chains, agents wrapping tools wrapping LLMs — created their own complexity. LangGraph improved things with explicit state machines, but you still needed 60+ lines for a simple ReAct loop. AutoGen offered multi-agent conversations but inherited Python's concurrency limitations. CrewAI simplified role-based agents but lacked any compile-time safety.</p>
+
+      <p>The common thread: <strong>every solution was a library bolted onto a general-purpose language</strong>. Python wasn't designed for agents. JavaScript wasn't designed for agents. We were using screwdrivers to hammer nails, and then building elaborate jigs to make it work.</p>
+
+      <h2>The Fundamental Insight</h2>
+
+      <p>In January 2026, while reading about Rust's ownership system, I had a moment of clarity. Rust didn't add memory safety as a library — it made ownership a <em>language construct</em>, enforced by the compiler. What if we did the same for agent safety?</p>
+
+      <p>What if <code>agent</code> was a keyword, not a class? What if <code>autoloop</code> was syntax, not a while-loop with manual exit conditions? What if context management was a scope, not a function you had to remember to call?</p>
+
+      <p>I spent the next two weeks sketching syntax on paper. The core idea was simple but radical:</p>
+
+      <ul>
+        <li><strong>Agents, tools, protocols, and flows</strong> should be first-class language constructs — not library wrappers</li>
+        <li><strong>Context management</strong> should be a language-level scope, with automatic eviction enforced by the compiler</li>
+        <li><strong>Tool binding</strong> should be zero-cost — annotate a function, and the compiler generates the JSON Schema</li>
+        <li><strong>Execution loops</strong> should be declarative — <code>autoloop</code> with compiler-verified exit conditions</li>
+        <li><strong>Error recovery</strong> should be AI-native — <code>try_agent</code> that feeds errors back to the LLM for self-correction</li>
+      </ul>
+
+      <h2>The Name</h2>
+
+      <p>"Nexa" comes from the Latin <em>nexus</em> — a connection, a bond, a central point. It captures what the language does: it connects agents, tools, and humans in a single, coherent programming model. The 'x' gives it a modern, tech-forward feel. And it's short — four letters, easy to type, easy to remember.</p>
+
+      <h2>What's Next</h2>
+
+      <p>With the vision clear and the syntax sketched, the next step is implementation. We're targeting a Python-based transpiler as the first backend — compile .nx files to pure Python that runs on the Nexa runtime. A Rust-based AVM (Agent Virtual Machine) will follow for production deployments.</p>
+
+      <p>This is day one of a long journey. But the destination is worth it: a world where building autonomous agents is as natural as writing a for-loop.</p>
+
+      <hr>
+
+      <p><em>— Owen, January 2026</em></p>
+    </div>
+  </article>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

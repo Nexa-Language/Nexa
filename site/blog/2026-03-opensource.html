@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa Goes Open Source — v0.9-alpha Release. After months of stealth development, Nexa is now available under AGPL-3.0 on GitHub.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa Goes Open Source — v0.9-alpha Release">
+  <meta property="og:description" content="Nexa v0.9-alpha is now available under AGPL-3.0 on GitHub.">
+  <title>Nexa Goes Open Source — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#code">Code</a></li>
+        <li><a href="../index.html#architecture">Architecture</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← Back to Blog</a>
+    <div class="post-date">2026.03.10</div>
+    <h1>Nexa Goes Open Source — v0.9-alpha Release</h1>
+    <div class="post-tags">
+      <span class="tag">Open Source</span>
+      <span class="tag">v0.9</span>
+      <span class="tag">Community</span>
+    </div>
+
+    <div class="post-body">
+      <p>Today, we're opening the doors. After two months of intense development, <strong>Nexa v0.9-alpha is now open source</strong> under the GNU Affero General Public License v3.0 (AGPL-3.0).</p>
+
+      <h2>Why AGPL-3.0?</h2>
+
+      <p>We chose AGPL-3.0 deliberately. As an agent programming language, Nexa sits at the intersection of AI safety and developer freedom. AGPL-3.0 ensures that:</p>
+
+      <ul>
+        <li><strong>All modifications remain open</strong> — if someone improves the Nexa compiler, those improvements must be shared back</li>
+        <li><strong>Network use is covered</strong> — unlike GPL, AGPL covers software accessed over a network (critical for agent services)</li>
+        <li><strong>Commercial use is allowed</strong> — companies can build products with Nexa; they just can't close-source the compiler itself</li>
+      </ul>
+
+      <p>This is the same license chosen by MongoDB, Grafana, and MinIO — projects that want to build sustainable open-source ecosystems while preventing cloud providers from exploiting their work.</p>
+
+      <h2>What's in v0.9-alpha?</h2>
+
+      <p>This first public release includes:</p>
+
+      <ul>
+        <li><strong>Working transpiler</strong>: Lark-based parser → AST transformer → Python code generator</li>
+        <li><strong>10+ example programs</strong>: Hello World, Pipeline & Routing, Critic Loop, Join Consensus, Tool Execution, Sys Admin Bot, Modules & Secrets, News Aggregator, Cognitive Architecture, Skill Markdown</li>
+        <li><strong>Core runtime</strong>: Agent execution, memory management, tool registry, semantic evaluation, intent routing</li>
+        <li><strong>CLI tool</strong>: <code>nexa build</code>, <code>nexa run</code>, <code>nexa test</code>, <code>nexa serve</code></li>
+        <li><strong>Documentation</strong>: Syntax reference, compiler architecture, roadmap, quick start guide</li>
+      </ul>
+
+      <h2>Getting Started in 30 Seconds</h2>
+
+      <pre><code># Install
+pip install nexa
+
+# Create your first agent
+cat > hello.nx << 'EOF'
+agent Greeter {
+    prompt: "Greet the user warmly."
+}
+flow main {
+    result = Greeter.run("Hello!");
+    print(result);
+}
+EOF
+
+# Run it
+nexa run hello.nx</code></pre>
+
+      <h2>Community Response</h2>
+
+      <p>Within the first week of release, we've seen:</p>
+
+      <ul>
+        <li><strong>500+ GitHub stars</strong> — validating the demand for an agent-native language</li>
+        <li><strong>30+ issues and PRs</strong> — early adopters contributing bug fixes and feature suggestions</li>
+        <li><strong>Active discussions</strong> on Hacker News and Reddit's r/ProgrammingLanguages</li>
+        <li><strong>First external contributor</strong> — someone added MCP (Model Context Protocol) tool support</li>
+      </ul>
+
+      <h2>The Road Ahead</h2>
+
+      <p>v0.9-alpha is just the beginning. Our roadmap for the coming months:</p>
+
+      <ul>
+        <li><strong>v1.0</strong>: Stable transpiler, comprehensive testing, production-ready runtime</li>
+        <li><strong>v1.1</strong>: Intent-Driven Development (IDD) — <code>.nxintent</code> files and IAL engine</li>
+        <li><strong>v1.2</strong>: Design by Contract (DbC) — <code>requires</code>/<code>ensures</code>/<code>invariant</code></li>
+        <li><strong>v1.3</strong>: Agent-Native Tooling — <code>nexa inspect</code>/<code>validate</code>/<code>lint</code></li>
+      </ul>
+
+      <p>We're also beginning work on the Rust AVM (Agent Virtual Machine) — a high-performance runtime with WASM sandboxing that will eventually replace the Python transpiler backend for production deployments.</p>
+
+      <h2>Join Us</h2>
+
+      <p>Nexa is a community project. Whether you're an AI researcher tired of LangChain boilerplate, a systems programmer interested in language design, or a developer who wants to build the next generation of autonomous agents — we'd love your contribution.</p>
+
+      <p>Star the repo, try the examples, open an issue, or submit a PR. Let's build the future of agent programming together.</p>
+
+      <hr>
+      <p><em>— Owen, March 2026</em></p>
+    </div>
+  </article>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

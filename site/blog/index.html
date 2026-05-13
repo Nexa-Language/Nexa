@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa Language Blog — Changelog, updates, and behind-the-scenes stories from the Nexa team.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa Blog — Changelog & Updates">
+  <meta property="og:description" content="Follow the journey of building the first Harness Native Programming Language.">
+  <title>Blog — Nexa Language</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+</head>
+<body>
+
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#code">Code</a></li>
+        <li><a href="../index.html#architecture">Architecture</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <header class="blog-header">
+    <h1>Nexa Blog</h1>
+    <p>Changelog, updates, and behind-the-scenes stories from the Nexa team.</p>
+  </header>
+
+  <div class="timeline">
+    <article class="timeline-item reveal">
+      <div class="timeline-dot"></div>
+      <a href="2026-05-harness.html" class="timeline-card">
+        <div class="timeline-date">2026.05.06</div>
+        <h3>Introducing Harness Native — The v2.0 Vision</h3>
+        <p>We're redefining what it means to be an agent programming language. Nexa v2.0 introduces the Harness Native paradigm — where agent safety is enforced by the compiler, not by runtime frameworks.</p>
+        <div class="timeline-tags">
+          <span class="tag">v2.0</span>
+          <span class="tag">Harness Native</span>
+          <span class="tag">Architecture</span>
+        </div>
+      </a>
+    </article>
+
+    <article class="timeline-item reveal">
+      <div class="timeline-dot"></div>
+      <a href="2026-04-ecosystem.html" class="timeline-card">
+        <div class="timeline-date">2026.04.23</div>
+        <h3>v1.3.7 Milestone — 16 Features, 1,500+ Tests</h3>
+        <p>From gradual typing to pattern matching, from background jobs to HTTP servers — Nexa v1.3.7 ships with 16 major features and a battle-tested test suite.</p>
+        <div class="timeline-tags">
+          <span class="tag">v1.3.7</span>
+          <span class="tag">Release</span>
+          <span class="tag">Features</span>
+        </div>
+      </a>
+    </article>
+
+    <article class="timeline-item reveal">
+      <div class="timeline-dot"></div>
+      <a href="2026-03-opensource.html" class="timeline-card">
+        <div class="timeline-date">2026.03.10</div>
+        <h3>Nexa Goes Open Source — v0.9-alpha Release</h3>
+        <p>After months of stealth development, we're opening the doors. Nexa v0.9-alpha is now available under AGPL-3.0 on GitHub — with a working transpiler, 10+ examples, and a growing community.</p>
+        <div class="timeline-tags">
+          <span class="tag">Open Source</span>
+          <span class="tag">v0.9</span>
+          <span class="tag">Community</span>
+        </div>
+      </a>
+    </article>
+
+    <article class="timeline-item reveal">
+      <div class="timeline-dot"></div>
+      <a href="2026-02-implementation.html" class="timeline-card">
+        <div class="timeline-date">2026.02.20</div>
+        <h3>From Zero to MVP — Building the First Transpiler</h3>
+        <p>How we built the Nexa transpiler in 6 weeks: Lark parser, Earley algorithm, AST transformer with ambiguity scoring, and a Python code generator that turns .nx files into runnable code.</p>
+        <div class="timeline-tags">
+          <span class="tag">Compiler</span>
+          <span class="tag">Engineering</span>
+          <span class="tag">MVP</span>
+        </div>
+      </a>
+    </article>
+
+    <article class="timeline-item reveal">
+      <div class="timeline-dot"></div>
+      <a href="2026-01-conception.html" class="timeline-card">
+        <div class="timeline-date">2026.01.15</div>
+        <h3>The Birth of Nexa — Why the World Needs an Agent-Native Language</h3>
+        <p>Every AI developer knows the pain: prompt string concatenation, fragile JSON parsing, manual context management. We asked: what if agents were first-class citizens in a programming language?</p>
+        <div class="timeline-tags">
+          <span class="tag">Vision</span>
+          <span class="tag">Design</span>
+          <span class="tag">Origin</span>
+        </div>
+      </a>
+    </article>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="../assets/nexa-logo.svg" alt="Nexa">
+        <span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

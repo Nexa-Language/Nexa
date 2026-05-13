@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="v1.3.7 Milestone — 16 Features, 1,500+ Tests. Nexa ships with gradual typing, pattern matching, background jobs, HTTP server, database, auth, and more.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="v1.3.7 Milestone — 16 Features, 1,500+ Tests">
+  <meta property="og:description" content="Nexa v1.3.7 ships with 16 major features and a battle-tested test suite.">
+  <title>v1.3.7 Milestone — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#code">Code</a></li>
+        <li><a href="../index.html#architecture">Architecture</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← Back to Blog</a>
+    <div class="post-date">2026.04.23</div>
+    <h1>v1.3.7 Milestone — 16 Features, 1,500+ Tests</h1>
+    <div class="post-tags">
+      <span class="tag">v1.3.7</span>
+      <span class="tag">Release</span>
+      <span class="tag">Features</span>
+    </div>
+
+    <div class="post-body">
+      <p>Today marks a major milestone for Nexa. With the release of <strong>v1.3.7</strong>, we've shipped <strong>16 major features</strong> across 7 minor versions, backed by <strong>1,500+ tests</strong>. Nexa has grown from a simple agent DSL into a full-featured programming language for autonomous systems.</p>
+
+      <h2>The Journey from v1.1 to v1.3.7</h2>
+
+      <p>Let's walk through what we've built, organized by priority tier:</p>
+
+      <h3>🏆 P0: Core Differentiators</h3>
+
+      <p><strong>v1.1.0 — Intent-Driven Development (IDD)</strong>: 104 tests. Introduced <code>.nxintent</code> files and the IAL (Intent Assertion Language) engine. Developers can now write natural-language specifications that are automatically verified against agent behavior. The <code>@implements</code> and <code>@supports</code> annotations create a traceable link between intent and implementation.</p>
+
+      <p><strong>v1.2.0 — Design by Contract (DbC)</strong>: 47 tests. Brought <code>requires</code>/<code>ensures</code>/<code>invariant</code> contracts to agent programming. Preconditions and postconditions are checked at runtime, with <code>ContractViolation</code> exceptions integrated across the entire runtime stack — from HTTP servers to database operations.</p>
+
+      <p><strong>v1.3.0 — Agent-Native Tooling</strong>: 41 tests. Added <code>nexa inspect</code>, <code>nexa validate</code>, and <code>nexa lint</code> CLI commands. These aren't generic linters — they understand Nexa's agent semantics and can detect issues like missing protocol implementations or untyped agent outputs.</p>
+
+      <h3>📦 P1: Essential Infrastructure</h3>
+
+      <p><strong>v1.3.1 — Gradual Type System</strong>: 79 tests. Three-mode type checking (STRICT/WARN/FORGIVING) with <code>Int</code>, <code>String</code>, <code>Bool</code>, <code>List[T]</code>, <code>Option[T]</code>, and <code>Result[T,E]</code> types. Type violations can be errors, warnings, or silently ignored — letting teams adopt typing at their own pace.</p>
+
+      <p><strong>v1.3.2 — Error Propagation</strong>: 82 tests. The <code>?</code> operator for Rust-style error propagation, plus <code>otherwise</code> handlers. <code>NexaResult</code> and <code>NexaOption</code> types with full monadic operations (map, unwrap, unwrap_or).</p>
+
+      <p><strong>v1.3.3 — Background Job System</strong>: 73 tests. A full <code>job</code> DSL with priority queues, cron scheduling, exponential backoff, unique deduplication, and dead letter queues. Jobs can be defined declaratively in .nx files.</p>
+
+      <p><strong>v1.3.4 — Built-In HTTP Server</strong>: 94 tests. A <code>server</code> DSL with static file serving, CORS/CSP configuration, route guards, middleware chains, hot reload, and semantic routing. Agents can be mounted as HTTP endpoints.</p>
+
+      <p><strong>v1.3.5 — Database Integration</strong>: 84 tests. A <code>db</code> DSL supporting SQLite and PostgreSQL. Includes an Agent Memory API for storing and querying agent conversation history and knowledge.</p>
+
+      <h3>🎯 P2: Advanced Capabilities</h3>
+
+      <p><strong>v1.3.6 — Auth, Concurrency, KV, Templates</strong>: 541 tests total. This was our biggest release:</p>
+      <ul>
+        <li><strong>Auth & OAuth</strong> (84 tests): Three-layer authentication (API Key + JWT + OAuth PKCE), CSRF protection, session management</li>
+        <li><strong>Structured Concurrency</strong> (172 tests): <code>spawn</code>/<code>parallel</code>/<code>race</code>/<code>channel</code> with 18 API methods</li>
+        <li><strong>KV Store</strong> (81 tests): SQLite-backed key-value store with TTL, atomic operations, and agent semantic queries</li>
+        <li><strong>Template System</strong> (209 tests): Jinja2-inspired <code>template"""..."""</code> syntax with 30+ filters, partials, loops, and conditionals</li>
+      </ul>
+
+      <h3>✨ P3: Language Expressiveness</h3>
+
+      <p><strong>v1.3.7 — Pattern Matching, ADTs, and More</strong>: 543 tests. This release brought Nexa's expressiveness to a new level:</p>
+      <ul>
+        <li><strong>Pattern Matching</strong>: 7 pattern types (literal, variable, wildcard, tuple, list, dict, variant) with destructuring</li>
+        <li><strong>Algebraic Data Types</strong>: <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>impl</code> — bringing Rust-like ADTs to agent programming</li>
+        <li><strong>String Interpolation</strong>: <code>"Hello #{user.name}"</code> syntax</li>
+        <li><strong>Null Coalescing</strong>: <code>a ?? b ?? c</code> operator</li>
+        <li><strong>Defer Statements</strong>: <code>defer { cleanup() }</code> for resource management</li>
+        <li><strong>Pipeline Operator</strong>: <code>data |> transform |> output</code></li>
+      </ul>
+
+      <h2>By the Numbers</h2>
+
+      <pre><code>Total Features:     16
+Total Tests:        1,500+
+Latest Test Suite:  543 (v1.3.7)
+Lines of Code:      ~15,000 (Python) + ~8,000 (Rust AVM)
+GitHub Stars:       1,200+
+Contributors:       8
+Release Cadence:    ~2 weeks per minor version</code></pre>
+
+      <h2>What This Means</h2>
+
+      <p>Nexa v1.3.7 is no longer a toy language. It has:</p>
+      <ul>
+        <li>A <strong>type system</strong> that catches errors before runtime</li>
+        <li>A <strong>contract system</strong> that enforces behavioral guarantees</li>
+        <li>An <strong>intent system</strong> that bridges natural language and code</li>
+        <li><strong>Production infrastructure</strong>: HTTP servers, databases, auth, job queues</li>
+        <li><strong>Language expressiveness</strong>: pattern matching, ADTs, templates, concurrency</li>
+      </ul>
+
+      <p>But this is just the foundation. The real revolution is coming in v2.0 — where we introduce the <strong>Harness Native</strong> paradigm, making agent safety a compiler-enforced property rather than a runtime convention.</p>
+
+      <hr>
+      <p><em>— Owen, April 2026</em></p>
+    </div>
+  </article>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

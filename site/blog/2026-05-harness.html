@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Introducing Harness Native — The v2.0 Vision. Nexa v2.0 introduces the Harness Native paradigm where agent safety is enforced by the compiler.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Introducing Harness Native — The Nexa v2.0 Vision">
+  <meta property="og:description" content="What if agent safety was enforced by the compiler, not by runtime frameworks?">
+  <title>Introducing Harness Native — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#code">Code</a></li>
+        <li><a href="../index.html#architecture">Architecture</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← Back to Blog</a>
+    <div class="post-date">2026.05.06</div>
+    <h1>Introducing Harness Native — The Nexa v2.0 Vision</h1>
+    <div class="post-tags">
+      <span class="tag">v2.0</span>
+      <span class="tag">Harness Native</span>
+      <span class="tag">Architecture</span>
+    </div>
+
+    <div class="post-body">
+      <p>Four months ago, we asked: <em>what if agents were first-class citizens in a programming language?</em> Nexa v1.x answered that question — agents, tools, protocols, and flows became keywords, not library wrappers.</p>
+
+      <p>Today, we're asking a deeper question: <strong>what if agent safety was enforced by the compiler, not by runtime frameworks?</strong></p>
+
+      <p>This is the vision behind <strong>Nexa v2.0 — the first Harness Native Programming Language</strong>.</p>
+
+      <h2>The Problem: Every Agent Framework is a Library</h2>
+
+      <p>Look at the landscape of agent development today:</p>
+
+      <ul>
+        <li><strong>LangChain/LangGraph</strong>: Python libraries. Context management, tool binding, and execution loops are all runtime conventions — nothing is enforced at compile time.</li>
+        <li><strong>AutoGPT/BabyAGI</strong>: Python scripts. No context management at all — agents routinely hit token limits and degrade.</li>
+        <li><strong>Claude Code/Devin</strong>: Products with built-in harnesses. Powerful, but the harness is proprietary and non-customizable.</li>
+        <li><strong>NeMo Guardrails</strong>: A runtime interception layer. Catches violations after they happen, rather than preventing them at the language level.</li>
+      </ul>
+
+      <p>The common thread: <strong>every solution implements agent safety as an afterthought</strong> — a runtime library, a configuration file, a guardrail that catches errors post-hoc. None of them make safety a <em>language property</em>.</p>
+
+      <h2>The Insight: Agent = Model + Harness</h2>
+
+      <p>Modern AI systems engineering has converged on a fundamental formula:</p>
+
+      <blockquote>
+        <strong>Agent = Model + Harness</strong>
+      </blockquote>
+
+      <p>The model provides probabilistic reasoning. The harness provides deterministic control — managing execution loops, context windows, tool execution, state persistence, lifecycle hooks, and evaluation.</p>
+
+      <p>We formalized the harness as a six-tuple <strong>H = (E, T, C, S, L, V)</strong>:</p>
+
+      <table style="width:100%; border-collapse: collapse; margin: 24px 0;">
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Component</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Name</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Responsibility</th>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">E</td>
+          <td style="padding: 10px 16px;">Execution Loop</td>
+          <td style="padding: 10px 16px; color: var(--text-secondary);">When and how to call the model</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">T</td>
+          <td style="padding: 10px 16px;">Tool Registry</td>
+          <td style="padding: 10px 16px; color: var(--text-secondary);">Schema generation and safe execution</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">C</td>
+          <td style="padding: 10px 16px;">Context Manager</td>
+          <td style="padding: 10px 16px; color: var(--text-secondary);">Window management and auto-eviction</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">S</td>
+          <td style="padding: 10px 16px;">State Store</td>
+          <td style="padding: 10px 16px; color: var(--text-secondary);">Persistence, snapshots, branching</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">L</td>
+          <td style="padding: 10px 16px;">Lifecycle Hooks</td>
+          <td style="padding: 10px 16px; color: var(--text-secondary);">Feed-forward guides + feedback sensors</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">V</td>
+          <td style="padding: 10px 16px;">Evaluation Interface</td>
+          <td style="padding: 10px 16px; color: var(--text-secondary);">Acceptance criteria verification</td>
+        </tr>
+      </table>
+
+      <h2>The Innovation: Harness as Language Constructs</h2>
+
+      <p>Instead of implementing the harness as a runtime library, we're making each component a <strong>language-level keyword</strong> with <strong>compile-time verification</strong>:</p>
+
+      <pre><code><span class="comment">// Nexa v2.0 — Harness Native</span>
+<span class="keyword">agent</span> <span class="function">BugFixer</span>(issue: <span class="type">string</span>) {
+    <span class="keyword">system</span> <span class="string">`Fix: #{issue}`</span>
+
+    <span class="comment">// Harness C: Context policy — compiler verifies eviction strategy</span>
+    <span class="keyword">context_policy</span> {
+        <span class="keyword">max_tokens</span>: <span class="type">100000</span>,
+        <span class="keyword">on_overflow</span>: <span class="type">summarize_early_observations</span>
+    }
+
+    <span class="comment">// Harness L: Lifecycle hooks — compiler verifies hook signatures</span>
+    <span class="keyword">before_step</span> { trace.log(<span class="string">"starting"</span>, step_count); }
+    <span class="keyword">after_step</span>  { trace.log(<span class="string">"completed"</span>, step_count); }
+
+    <span class="comment">// Harness E: Autonomous loop — compiler verifies exit condition exists</span>
+    <span class="keyword">autoloop</span> <span class="keyword">max_steps</span>: <span class="type">50</span> <span class="keyword">exit_when</span>: <span class="string">"issue is resolved"</span> {
+        <span class="comment">// Harness E+L: AI-native error recovery</span>
+        <span class="keyword">try_agent</span> {
+            <span class="function">step</span>();  <span class="comment">// Reason → Act → Observe → Reflect</span>
+        } <span class="keyword">catch_correction</span>(e: <span class="type">ToolError</span>) {
+            <span class="keyword">reflect</span> <span class="string">`Tool failed: #{e.message}. Adjust and retry.`</span>
+        }
+    }
+}</code></pre>
+
+      <p>This isn't just syntax sugar. The <strong>Harness Validator</strong> — a new compiler stage — enforces 26 rules at compile time:</p>
+
+      <ul>
+        <li><strong>E-001</strong>: <code>autoloop</code> must have <code>max_steps</code> or <code>exit_when</code> — ERROR if missing</li>
+        <li><strong>T-001</strong>: <code>@tool</code> functions must have a description — ERROR if missing</li>
+        <li><strong>C-001</strong>: <code>with_context</code> must specify <code>max_tokens</code> — ERROR if missing</li>
+        <li><strong>EC-001</strong>: <code>try_agent</code> must have at least one <code>catch_correction</code> — ERROR if missing</li>
+      </ul>
+
+      <p>Just as Rust's borrow checker eliminates memory bugs at compile time, Nexa's Harness Validator eliminates agent safety gaps before a single line runs.</p>
+
+      <h2>The Rust Analogy</h2>
+
+      <p>This is the analogy we keep coming back to:</p>
+
+      <table style="width:100%; border-collapse: collapse; margin: 24px 0;">
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Dimension</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Rust</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Nexa v2.0</th>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px;">Problem</td>
+          <td style="padding: 10px 16px;">Memory safety</td>
+          <td style="padding: 10px 16px;">Agent uncertainty</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px;">Mechanism</td>
+          <td style="padding: 10px 16px;">Ownership + borrow checker</td>
+          <td style="padding: 10px 16px;">Harness 6-tuple + Validator</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px;">Enforcement</td>
+          <td style="padding: 10px 16px;">Compile-time</td>
+          <td style="padding: 10px 16px;">Compile-time + runtime</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 16px;">Escape hatch</td>
+          <td style="padding: 10px 16px;"><code>unsafe { }</code></td>
+          <td style="padding: 10px 16px;"><code>unharnessed { }</code></td>
+        </tr>
+      </table>
+
+      <p>Rust proved that you can eliminate an entire class of bugs by making safety a language property. Nexa v2.0 aims to do the same for agent development.</p>
+
+      <h2>The Road to v2.0</h2>
+
+      <p>We've planned 9 milestones from M0 (Harness Validator) to M9 (official release):</p>
+
+      <ol>
+        <li><strong>M0</strong>: Harness Validator + Parser extension — compile-time safety checks</li>
+        <li><strong>M1</strong>: Execution Engine + Context Manager — <code>autoloop</code> and <code>with_context</code></li>
+        <li><strong>M2</strong>: Tool Registry + Lifecycle Hooks — <code>@tool</code> and <code>before_step</code>/<code>after_step</code></li>
+        <li><strong>M3</strong>: State Store + Trace System — <code>snapshot</code>/<code>fork</code> and decision tree export</li>
+        <li><strong>M4</strong>: Evaluation Interface + LLM Router — <code>verify</code> and dynamic model routing</li>
+        <li><strong>M5</strong>: Actor System — <code>spawn</code>/<code>pass</code>/<code>await</code> for multi-agent orchestration</li>
+        <li><strong>M6</strong>: WASM Sandbox + Full Integration — secure tool execution</li>
+        <li><strong>M7</strong>: AVM Bytecode Backend — Rust-powered Agent Virtual Machine</li>
+        <li><strong>M8-M9</strong>: Release Candidate + Official Release</li>
+      </ol>
+
+      <p>Each milestone is independently deliverable and tested. v1.x code continues to work with zero modifications via <code>--harness=off</code>.</p>
+
+      <h2>Join the Journey</h2>
+
+      <p>Nexa v2.0 is the most ambitious rethinking of agent programming since the field began. We're building a language where safety isn't a library you import — it's a property the compiler guarantees.</p>
+
+      <p>If this vision resonates with you, star the repo, try the examples, and join the discussion. The future of agent programming is being written right now — in Nexa.</p>
+
+      <hr>
+      <p><em>— Owen, May 2026</em></p>
+    </div>
+  </article>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

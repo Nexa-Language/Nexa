@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="From Zero to MVP — Building the First Nexa Transpiler in 6 weeks. Lark parser, Earley algorithm, AST transformer, and Python code generator.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="From Zero to MVP — Building the First Nexa Transpiler">
+  <meta property="og:description" content="How we built the Nexa transpiler in 6 weeks.">
+  <title>From Zero to MVP — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="../index.html#features">Features</a></li>
+        <li><a href="../index.html#code">Code</a></li>
+        <li><a href="../index.html#architecture">Architecture</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← Back to Blog</a>
+    <div class="post-date">2026.02.20</div>
+    <h1>From Zero to MVP — Building the First Nexa Transpiler</h1>
+    <div class="post-tags">
+      <span class="tag">Compiler</span>
+      <span class="tag">Engineering</span>
+      <span class="tag">MVP</span>
+    </div>
+
+    <div class="post-body">
+      <p>Six weeks ago, Nexa existed only as a syntax sketch in a notebook. Today, we have a working transpiler that turns <code>.nx</code> files into executable Python code. Here's how we built it.</p>
+
+      <h2>Choosing the Right Parser</h2>
+
+      <p>The first major decision: which parsing algorithm? Nexa's grammar is complex — it has pipeline operators, DAG expressions, semantic conditionals, pattern matching, and ADT declarations, all of which can appear in expression position and create ambiguities.</p>
+
+      <p>Traditional LALR(1) parsers (used by Yacc/Bison) require an unambiguous grammar — a non-starter for Nexa's expression-heavy syntax. LL(k) recursive descent parsers are more flexible but require careful left-recursion elimination. We chose <strong>Lark with the Earley algorithm</strong>.</p>
+
+      <blockquote>
+        Earley parsing handles any context-free grammar, including ambiguous ones. It produces a parse forest when multiple interpretations exist — and we can resolve ambiguity with scoring.
+      </blockquote>
+
+      <h2>The Ambiguity Scoring System</h2>
+
+      <p>When the Earley parser encounters ambiguity (e.g., is <code>match x { ... }</code> a pattern match expression or the start of a match-intent statement?), it produces multiple parse trees. Our AST Transformer resolves this with a scoring table:</p>
+
+      <pre><code>_SCORE_TABLE = {
+    "MatchExpression": 50,      # Pattern matching — high specificity
+    "StructDeclaration": 60,    # ADT struct — very high specificity
+    "PipelineExpression": 30,   # Pipeline — common, lower priority
+    "DAGForkExpression": 35,    # DAG fork — medium priority
+    "Literal": 38,              # Literal values
+    "Variable": 35,             # Variable references — lowest
+}</code></pre>
+
+      <p>The principle: <strong>more specific constructs score higher</strong>. When the parser produces multiple interpretations, we pick the one with the highest total score. This elegantly handles Nexa's expression-rich syntax without requiring grammar refactoring.</p>
+
+      <h2>Three-Stage Compilation Pipeline</h2>
+
+      <p>The transpiler follows a classic three-stage architecture, but with Nexa-specific innovations at each stage:</p>
+
+      <h3>Stage 1: Lexer + Parser</h3>
+      <p>Lark's Earley parser consumes the <code>.nx</code> source and produces a parse tree. We defined ~30 core grammar rules covering agents, tools, protocols, flows, tests, pipelines, DAG operators, semantic conditionals, and control flow.</p>
+
+      <h3>Stage 2: AST Transformer</h3>
+      <p>The parse tree is transformed into a typed AST. This is where the magic happens:</p>
+      <ul>
+        <li><strong>Desugaring</strong>: Pipeline operators (<code>A >> B</code>) become nested function calls. Null coalescing (<code>a ?? b</code>) becomes <code>_nexa_null_coalesce(a, b)</code>. String interpolation (<code>"Hello #{name}"</code>) becomes <code>_nexa_interp_str(...)</code>.</li>
+        <li><strong>Ambiguity resolution</strong>: The scoring system picks the best parse from ambiguous forests.</li>
+        <li><strong>Validation</strong>: Basic semantic checks (e.g., agent references must exist).</li>
+      </ul>
+
+      <h3>Stage 3: Code Generator</h3>
+      <p>The AST is walked to generate Python code. A BOILERPLATE header injects all runtime imports. Each AST node type has a corresponding code generation method. The output is pure Python that runs on the Nexa runtime.</p>
+
+      <h2>The BOILERPLATE Pattern</h2>
+
+      <p>One of our key design decisions: generated Python code includes a comprehensive BOILERPLATE that imports the entire Nexa runtime. This means:</p>
+      <ul>
+        <li>Generated code is self-contained — no hidden dependencies</li>
+        <li>Runtime features (memory, secrets, type checking, pattern matching) are always available</li>
+        <li>Adding a new runtime feature is as simple as adding one import line to BOILERPLATE</li>
+      </ul>
+
+      <h2>First Light</h2>
+
+      <p>On February 18, we ran the first successful compilation:</p>
+
+      <pre><code>$ nexa build examples/01_hello_world.nx
+[OK] Generated: out_hello_world.py
+$ python out_hello_world.py
+[Researcher] Searching for 'Nexa programming language'...
+[Semantic_IF Evaluating] Condition: 'mentions agent-native'
+[Semantic_IF Result] -> True
+Nexa is an agent-native programming language designed for...</code></pre>
+
+      <p>It worked. A 15-line <code>.nx</code> file compiled to Python, ran the agent, executed a semantic conditional, and produced a coherent result. The vision was becoming reality.</p>
+
+      <h2>What's Next</h2>
+
+      <p>With the core transpiler working, we're now expanding the example suite and preparing for an open-source release. The next milestone: v0.9-alpha with 10+ working examples, documentation, and a public GitHub repository.</p>
+
+      <hr>
+      <p><em>— Owen, February 2026</em></p>
+    </div>
+  </article>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="index.html">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    </div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+</body>
+</html>

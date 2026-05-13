@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa — The first Harness Native Programming Language. Write flows, not glue code. Build autonomous agents with language-level safety.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa Language — Agent-Native Programming">
+  <meta property="og:description" content="The first Harness Native Programming Language. Build autonomous agents with language-level safety.">
+  <meta property="og:image" content="https://www.nexa-lang.com/assets/nexa-logo.png">
+  <meta property="og:url" content="https://www.nexa-lang.com">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <title>Nexa — The Agent-Native Programming Language</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" type="image/svg+xml" href="assets/nexa-logo.svg">
+</head>
+<body>
+
+  <!-- Particle Background -->
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo">
+        <img src="assets/nexa-logo.svg" alt="Nexa Logo">
+        Nexa
+      </a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#code">Code</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a href="blog/">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <img src="assets/nexa-logo.svg" alt="Nexa" class="hero-logo">
+    <div class="hero-badge">
+      <span class="dot"></span> v2.0 Harness Native — Coming Soon
+    </div>
+    <h1>
+      The Dawn of<br>
+      <span class="gradient-text">Agent-Native</span> Programming
+    </h1>
+    <p class="hero-subtitle">
+      Write flows, not glue code. Nexa is the <strong>first Harness Native Programming Language</strong> — 
+      where agent safety is enforced by the compiler, not by runtime frameworks.
+    </p>
+    <div class="hero-actions">
+      <a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="btn btn-primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        Star on GitHub
+      </a>
+      <a href="#features" class="btn btn-secondary">Explore Features</a>
+    </div>
+    <div class="scroll-indicator">
+      <span>Scroll to explore</span>
+      <div class="arrow"></div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section" id="features">
+    <div class="section-inner">
+      <div class="section-label reveal">Why Nexa</div>
+      <h2 class="section-title reveal">A Language Designed for Agents,<br>Not Adapted for Them</h2>
+      <p class="section-desc reveal">
+        Every other "agent framework" is a library bolted onto a general-purpose language. 
+        Nexa is built from the ground up with agent safety, context management, and autonomous execution as first-class language constructs.
+      </p>
+
+      <div class="features-grid">
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-icon">⚡</div>
+          <h3>Agent-Native Syntax</h3>
+          <p>Agents, tools, protocols, and flows are first-class citizens — not library wrappers. Define complex multi-agent topologies in a few lines of declarative code.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-icon">🛡️</div>
+          <h3>Harness Built-in</h3>
+          <p>The world's first Harness Native language. Context management, execution loops, lifecycle hooks, and safety guards are enforced at the compiler level — like Rust for agent safety.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-icon">🔀</div>
+          <h3>DAG Orchestration</h3>
+          <p>Native fork, merge, pipeline, and conditional branch operators. Compose complex agent workflows as directed acyclic graphs with zero boilerplate.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-4">
+          <div class="feature-icon">🔒</div>
+          <h3>Gradual Type System</h3>
+          <p>From forgiving to strict — choose your safety level. Structural types, semantic types, Option/Result types, and compile-time protocol verification.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-5">
+          <div class="feature-icon">🧪</div>
+          <h3>1,500+ Tests</h3>
+          <p>Battle-tested across 16 major features. Design by Contract, Error Propagation, Pattern Matching, ADTs, Background Jobs, HTTP Server, Database, Auth, and more.</p>
+        </div>
+
+        <div class="feature-card reveal reveal-delay-6">
+          <div class="feature-icon">🚀</div>
+          <h3>AVM Runtime</h3>
+          <p>A Rust-powered Agent Virtual Machine with WASM sandboxing, COW memory, context paging, and work-stealing scheduler — 20x faster than Python transpilation.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Code Demo -->
+  <section class="section" id="code">
+    <div class="section-inner">
+      <div class="section-label reveal">Code at a Glance</div>
+      <h2 class="section-title reveal">Less Code, More Intent</h2>
+      <p class="section-desc reveal">
+        See how Nexa eliminates boilerplate. The same agent workflow that takes 60+ lines of Python takes just 15 lines of Nexa.
+      </p>
+
+      <div class="code-demo">
+        <div class="code-block reveal reveal-delay-1">
+          <div class="code-block-header">
+            <span class="code-dot red"></span>
+            <span class="code-dot yellow"></span>
+            <span class="code-dot green"></span>
+            <span class="code-block-label">bugfixer.nx</span>
+          </div>
+          <pre><span class="comment">// Nexa — 15 lines, Harness built-in</span>
+<span class="keyword">agent</span> <span class="function">BugFixer</span>(issue: <span class="type">string</span>) {
+    <span class="keyword">system</span> <span class="string">`Fix: #{issue}`</span>
+
+    <span class="keyword">context_policy</span> {
+        <span class="keyword">max_tokens</span>: <span class="type">100000</span>,
+        <span class="keyword">on_overflow</span>: <span class="type">summarize</span>
+    }
+
+    <span class="keyword">autoloop</span> <span class="keyword">max_steps</span>: <span class="type">50</span> <span class="keyword">exit_when</span>: <span class="string">"resolved"</span> {
+        <span class="keyword">try_agent</span> {
+            <span class="function">step</span>();
+        } <span class="keyword">catch_correction</span>(e: <span class="type">ToolError</span>) {
+            <span class="keyword">reflect</span> <span class="string">`Error: #{e}. Retry.`</span>
+        }
+    }
+}</pre>
+        </div>
+
+        <div class="code-block reveal reveal-delay-2">
+          <div class="code-block-header">
+            <span class="code-dot red"></span>
+            <span class="code-dot yellow"></span>
+            <span class="code-dot green"></span>
+            <span class="code-block-label">bugfixer.py (equivalent)</span>
+          </div>
+          <pre><span class="comment"># Python + LangGraph — 60+ lines of glue</span>
+<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph
+<span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI
+
+<span class="comment"># Manual tool schema</span>
+<span class="keyword">def</span> <span class="function">grep</span>(pattern, path=<span class="string">"."</span>):
+    <span class="comment"># ... 10 lines of subprocess ...</span>
+
+<span class="comment"># Manual context management</span>
+<span class="keyword">def</span> <span class="function">manage_context</span>(messages, max_tokens):
+    <span class="comment"># ... 8 lines of token counting ...</span>
+
+<span class="comment"># Manual ReAct loop</span>
+<span class="keyword">def</span> <span class="function">bug_fixer_loop</span>(issue, max_steps=<span class="type">50</span>):
+    model = ChatOpenAI(model=<span class="string">"gpt-4"</span>)
+    messages = [{<span class="string">"role"</span>: <span class="string">"system"</span>, ...}]
+    <span class="keyword">for</span> step <span class="keyword">in</span> range(max_steps):
+        <span class="comment"># ... 30+ lines of manual orchestration ...</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="section" id="architecture">
+    <div class="section-inner">
+      <div class="section-label reveal">Architecture</div>
+      <h2 class="section-title reveal">From Source to Execution</h2>
+      <p class="section-desc reveal">
+        Nexa compiles through a multi-stage pipeline with Harness validation — ensuring safety before a single line runs.
+      </p>
+
+      <div class="arch-diagram reveal">
+        <div class="arch-node">
+          <h4>.nx Source</h4>
+          <p>Agent-Native DSL</p>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node">
+          <h4>Lark Parser</h4>
+          <p>Earley Algorithm</p>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node">
+          <h4>AST Transformer</h4>
+          <p>Desugaring + Scoring</p>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node" style="border-color: var(--border-glow);">
+          <h4>Harness Validator</h4>
+          <p>Compile-time Safety</p>
+        </div>
+        <span class="arch-arrow">→</span>
+        <div class="arch-node">
+          <h4>Code Generator</h4>
+          <p>Python / AVM / WASM</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="stats-bar">
+        <div class="stat-item reveal reveal-delay-1">
+          <div class="stat-number">16+</div>
+          <div class="stat-label">Core Features</div>
+        </div>
+        <div class="stat-item reveal reveal-delay-2">
+          <div class="stat-number">1,500+</div>
+          <div class="stat-label">Tests Passed</div>
+        </div>
+        <div class="stat-item reveal reveal-delay-3">
+          <div class="stat-number">543</div>
+          <div class="stat-label">Latest Test Suite</div>
+        </div>
+        <div class="stat-item reveal reveal-delay-4">
+          <div class="stat-number">20×</div>
+          <div class="stat-label">AVM vs Python Speed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <div class="section-inner">
+      <h2 class="reveal">Ready to Build the Future of Agents?</h2>
+      <p class="reveal">Join us in making agent programming safe, declarative, and beautiful.</p>
+      <div class="cta-actions reveal">
+        <a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="btn btn-primary">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          Star on GitHub
+        </a>
+        <div class="install-cmd">
+          pip install nexa
+          <button class="copy-btn">Copy</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <img src="assets/nexa-logo.svg" alt="Nexa">
+        <span>Nexa Language</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li><a href="blog/">Blog</a></li>
+        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
+      </ul>
+      <span class="footer-copy">&copy; 2026 Nexa Language. Made with ❤️ by the Nexa Team.</span>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+</body>
+</html>
