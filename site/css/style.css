@@ -156,8 +156,9 @@ body {
   width: 40px; height: 40px; border-radius: 10px;
   background: var(--accent-gradient); flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; box-shadow: 0 4px 12px var(--accent-primary-glow);
+  box-shadow: 0 4px 12px var(--accent-primary-glow);
 }
+.nexa-plus-icon i { width: 20px; height: 20px; color: #fff; }
 .nexa-plus-info h4 { font-family: var(--font-display); font-size: 0.95rem; color: var(--text-primary); margin-bottom: 4px; }
 .nexa-plus-info p { font-size: 0.8rem; color: var(--text-tertiary); line-height: 1.4; }
 
@@ -300,7 +301,8 @@ body {
 .feature-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: var(--accent-gradient); opacity: 0; transition: opacity var(--duration-normal); }
 .feature-card:hover { transform: translateY(-4px); border-color: var(--border-glow); box-shadow: 0 16px 48px rgba(108, 92, 231, 0.1); }
 .feature-card:hover::before { opacity: 1; }
-.feature-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; margin-bottom: 24px; box-shadow: 0 4px 16px var(--accent-primary-glow); }
+.feature-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; margin-bottom: 24px; box-shadow: 0 4px 16px var(--accent-primary-glow); }
+.feature-icon i { width: 24px; height: 24px; color: #fff; }
 .feature-card h3 { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; color: var(--text-primary); margin-bottom: 12px; letter-spacing: -0.01em; }
 .feature-card p { font-size: 0.9rem; color: var(--text-secondary); line-height: 1.6; }
 
@@ -321,6 +323,20 @@ body {
 .code-block .comment { color: #546e7a; font-style: italic; } .code-block .function { color: #82aaff; }
 .code-block .type { color: #ffcb6b; } .code-block .operator { color: #89ddff; }
 
+/* Code explanation blocks (fills empty space in shorter code panels) */
+.code-explain {
+  padding: 20px 24px 24px;
+  display: flex; flex-direction: column; gap: 16px;
+  border-top: 1px solid var(--border-subtle);
+}
+.code-explain-item {
+  display: flex; gap: 12px; align-items: flex-start;
+  font-size: 0.82rem; color: var(--text-secondary); line-height: 1.5;
+}
+.code-explain-item i { width: 18px; height: 18px; color: var(--accent-primary); flex-shrink: 0; margin-top: 1px; }
+.code-explain-item strong { color: var(--text-primary); font-weight: 600; }
+.code-explain-item code { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-accent); background: rgba(108,92,231,0.1); padding: 1px 5px; border-radius: 3px; }
+
 /* ═══════════════════════════════════════════════════════════════════════
    ARCHITECTURE DIAGRAM v2 — Icons + No Wrap
    ═══════════════════════════════════════════════════════════════════════ */
@@ -336,7 +352,8 @@ body {
   transition: border-color var(--duration-normal), transform var(--duration-normal);
 }
 .arch-node:hover { border-color: var(--border-glow); transform: translateY(-3px); }
-.arch-node-icon { font-size: 1.8rem; margin-bottom: 10px; }
+.arch-node-icon { margin-bottom: 10px; }
+.arch-node-icon i { width: 28px; height: 28px; color: var(--accent-primary); }
 .arch-node h4 { font-family: var(--font-display); font-size: 0.9rem; color: var(--text-primary); margin-bottom: 4px; }
 .arch-node p { font-size: 0.72rem; color: var(--text-tertiary); }
 .arch-arrow {

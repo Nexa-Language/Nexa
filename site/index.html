@@ -16,6 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" type="image/svg+xml" href="assets/nexa-logo.svg">
+  <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
 
@@ -54,27 +55,27 @@
   <div class="nexa-plus-panel">
     <div class="nexa-plus-inner">
       <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener" class="nexa-plus-card">
-        <div class="nexa-plus-icon">📚</div>
+        <div class="nexa-plus-icon"><i data-lucide="book-open"></i></div>
         <div class="nexa-plus-info"><h4>Documentation</h4><p>Full language reference, compiler architecture, and quick start guides.</p></div>
       </a>
       <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
-        <div class="nexa-plus-icon">🔧</div>
+        <div class="nexa-plus-icon"><i data-lucide="wrench"></i></div>
         <div class="nexa-plus-info"><h4>SkCC</h4><p>Skills Compiler — compile agent skills into optimized runtime modules.</p></div>
       </a>
       <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
-        <div class="nexa-plus-icon">🧪</div>
+        <div class="nexa-plus-icon"><i data-lucide="flask-conical"></i></div>
         <div class="nexa-plus-info"><h4>EvoBench</h4><p>Agent benchmark suite — measure and compare autonomous agent performance.</p></div>
       </a>
       <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
-        <div class="nexa-plus-icon">🧬</div>
+        <div class="nexa-plus-icon"><i data-lucide="dna"></i></div>
         <div class="nexa-plus-info"><h4>EpiContext</h4><p>Evolutionary context management — genetic algorithms for optimal context windows.</p></div>
       </a>
       <a href="https://github.com/Nexa-Language" target="_blank" rel="noopener" class="nexa-plus-card">
-        <div class="nexa-plus-icon">🏛️</div>
+        <div class="nexa-plus-icon"><i data-lucide="building-2"></i></div>
         <div class="nexa-plus-info"><h4>Nexa Organization</h4><p>GitHub organization with all Nexa projects and repositories.</p></div>
       </a>
       <a href="https://author.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
-        <div class="nexa-plus-icon">👤</div>
+        <div class="nexa-plus-icon"><i data-lucide="user"></i></div>
         <div class="nexa-plus-info"><h4>Author</h4><p>Owen — creator of the Nexa language and Harness Native methodology.</p></div>
       </a>
     </div>
@@ -154,32 +155,32 @@
       </p>
       <div class="features-grid">
         <div class="feature-card reveal reveal-delay-1">
-          <div class="feature-icon">⚡</div>
+          <div class="feature-icon"><i data-lucide="zap"></i></div>
           <h3>Harness Native Syntax</h3>
           <p>Agents, tools, protocols, and flows are first-class citizens — not library wrappers. The Harness six-tuple (E, T, C, S, L, V) is enforced at the language level.</p>
         </div>
         <div class="feature-card reveal reveal-delay-2">
-          <div class="feature-icon">🛡️</div>
+          <div class="feature-icon"><i data-lucide="shield-check"></i></div>
           <h3>Compiler-Enforced Safety</h3>
           <p>26 Harness Validator rules check your code at compile time. Missing exit conditions, untyped tools, context overflow risks — caught before a single line runs.</p>
         </div>
         <div class="feature-card reveal reveal-delay-3">
-          <div class="feature-icon">🔀</div>
+          <div class="feature-icon"><i data-lucide="git-branch-plus"></i></div>
           <h3>DAG Orchestration</h3>
           <p>Native fork, merge, pipeline, and conditional branch operators. Compose complex agent workflows as directed acyclic graphs with zero boilerplate.</p>
         </div>
         <div class="feature-card reveal reveal-delay-4">
-          <div class="feature-icon">🔒</div>
+          <div class="feature-icon"><i data-lucide="lock"></i></div>
           <h3>Gradual Type System</h3>
           <p>From forgiving to strict — choose your safety level. Structural types, semantic types, Option/Result types, and compile-time protocol verification.</p>
         </div>
         <div class="feature-card reveal reveal-delay-5">
-          <div class="feature-icon">🧪</div>
+          <div class="feature-icon"><i data-lucide="flask-conical"></i></div>
           <h3>1,500+ Tests</h3>
           <p>Battle-tested across 16 major features. Design by Contract, Error Propagation, Pattern Matching, ADTs, Background Jobs, HTTP Server, Database, Auth, and more.</p>
         </div>
         <div class="feature-card reveal reveal-delay-6">
-          <div class="feature-icon">🚀</div>
+          <div class="feature-icon"><i data-lucide="rocket"></i></div>
           <h3>AVM Runtime</h3>
           <p>A Rust-powered Agent Virtual Machine with WASM sandboxing, COW memory, context paging, and work-stealing scheduler — 20× faster than Python transpilation.</p>
         </div>
@@ -217,6 +218,11 @@
         <span class="keyword">catch_correction</span>(e: <span class="type">ToolError</span>) { <span class="keyword">reflect</span> <span class="string">`Error: #{e}. Retry.`</span> }
     }
 }</pre>
+          <div class="code-explain">
+            <div class="code-explain-item"><i data-lucide="shield-check"></i><div><strong>Harness C</strong> — <code>context_policy</code> is compiler-verified. Missing <code>max_tokens</code> or <code>on_overflow</code> → compile ERROR.</div></div>
+            <div class="code-explain-item"><i data-lucide="repeat"></i><div><strong>Harness E</strong> — <code>autoloop</code> requires <code>exit_when</code> or <code>max_steps</code>. The compiler rejects infinite loops at build time.</div></div>
+            <div class="code-explain-item"><i data-lucide="refresh-cw"></i><div><strong>Harness L</strong> — <code>try_agent</code> + <code>catch_correction</code> feeds errors back to the LLM for self-healing, not crash-and-burn.</div></div>
+          </div>
         </div>
         <div class="code-block reveal reveal-delay-2">
           <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.py — 55+ lines, no compile-time safety</span></div>
@@ -285,6 +291,11 @@
     result = topic |>> [<span class="function">Researcher</span>, <span class="function">Analyst</span>] &>> <span class="function">Reviewer</span> >> <span class="function">Writer</span>;
     <span class="function">print</span>(result);
 }</pre>
+          <div class="code-explain">
+            <div class="code-explain-item"><i data-lucide="git-branch-plus"></i><div><strong>Fork <code>|>> [A, B]</code></strong> — parallel fan-out to multiple agents. The compiler verifies all targets are declared agents.</div></div>
+            <div class="code-explain-item"><i data-lucide="merge"></i><div><strong>Merge <code>&>> C</code></strong> — combine parallel results into a single downstream agent. Strategy: concat, vote, or consensus.</div></div>
+            <div class="code-explain-item"><i data-lucide="arrow-right"></i><div><strong>Pipeline <code>>> D</code></strong> — sequential chaining. Output flows left-to-right with automatic type propagation.</div></div>
+          </div>
         </div>
         <div class="code-block reveal reveal-delay-2">
           <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">pipeline.py — 40+ lines</span></div>
@@ -344,15 +355,15 @@ result = app.invoke({<span class="string">"topic"</span>: <span class="string">"
       <h2 class="section-title reveal">From Source to Execution</h2>
       <p class="section-desc reveal">Nexa compiles through a multi-stage pipeline with Harness validation — ensuring safety before a single line runs.</p>
       <div class="arch-diagram reveal">
-        <div class="arch-node"><div class="arch-node-icon">📄</div><h4>.nx Source</h4><p>Harness Native DSL</p></div>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="file-code"></i></div><h4>.nx Source</h4><p>Harness Native DSL</p></div>
         <span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon">🔍</div><h4>Lark Parser</h4><p>Earley Algorithm</p></div>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="search"></i></div><h4>Lark Parser</h4><p>Earley Algorithm</p></div>
         <span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon">🌳</div><h4>AST Transformer</h4><p>Desugaring + Scoring</p></div>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="git-branch"></i></div><h4>AST Transformer</h4><p>Desugaring + Scoring</p></div>
         <span class="arch-arrow">→</span>
-        <div class="arch-node" style="border-color: var(--border-glow);"><div class="arch-node-icon">🛡️</div><h4>Harness Validator</h4><p>Compile-time Safety</p></div>
+        <div class="arch-node" style="border-color: var(--border-glow);"><div class="arch-node-icon"><i data-lucide="shield-check"></i></div><h4>Harness Validator</h4><p>Compile-time Safety</p></div>
         <span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon">⚡</div><h4>Code Generator</h4><p>Python / AVM / WASM</p></div>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="zap"></i></div><h4>Code Generator</h4><p>Python / AVM / WASM</p></div>
       </div>
     </div>
   </section>
@@ -428,5 +439,6 @@ result = app.invoke({<span class="string">"topic"</span>: <span class="string">"
   </footer>
 
   <script src="js/main.js"></script>
+  <script>lucide.createIcons();</script>
 </body>
 </html>
