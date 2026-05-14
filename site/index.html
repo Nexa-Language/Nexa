@@ -63,11 +63,11 @@
       </a>
       <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
         <div class="nexa-plus-icon">🧪</div>
-        <div class="nexa-plus-info"><h4>evobench</h4><p>Agent benchmark suite — measure and compare autonomous agent performance.</p></div>
+        <div class="nexa-plus-info"><h4>EvoBench</h4><p>Agent benchmark suite — measure and compare autonomous agent performance.</p></div>
       </a>
       <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
         <div class="nexa-plus-icon">🧬</div>
-        <div class="nexa-plus-info"><h4>epicontext</h4><p>Evolutionary context management — genetic algorithms for optimal context windows.</p></div>
+        <div class="nexa-plus-info"><h4>EpiContext</h4><p>Evolutionary context management — genetic algorithms for optimal context windows.</p></div>
       </a>
       <a href="https://github.com/Nexa-Language" target="_blank" rel="noopener" class="nexa-plus-card">
         <div class="nexa-plus-icon">🏛️</div>
@@ -188,35 +188,148 @@
   </section>
 
   <!-- ═══════════════════════════════════════════════════════════════════
-       CODE DEMO
+       CODE DEMO 1 — Harness Native
        ═══════════════════════════════════════════════════════════════════ -->
   <section class="section" id="code">
     <div class="section-inner">
       <div class="section-label reveal">Code at a Glance</div>
-      <h2 class="section-title reveal">Less Code, More Intent</h2>
-      <p class="section-desc reveal">See how Nexa eliminates boilerplate. The same agent workflow that takes 60+ lines of Python takes just 15 lines of Nexa.</p>
+      <h2 class="section-title reveal">Harness Native — Safety by Design</h2>
+      <p class="section-desc reveal">In Nexa, the Harness six-tuple (E, T, C, S, L, V) is enforced at the language level. The compiler verifies exit conditions, context policies, and error recovery — before a single line runs.</p>
       <div class="code-demo">
         <div class="code-block reveal reveal-delay-1">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.nx</span></div>
-          <pre><span class="comment">// Nexa — 15 lines, Harness built-in</span>
-<span class="keyword">agent</span> <span class="function">BugFixer</span>(issue: <span class="type">string</span>) {
-    <span class="keyword">system</span> <span class="string">`Fix: #{issue}`</span>
-    <span class="keyword">context_policy</span> { <span class="keyword">max_tokens</span>: <span class="type">100000</span> }
-    <span class="keyword">autoloop</span> <span class="keyword">max_steps</span>: <span class="type">50</span> <span class="keyword">exit_when</span>: <span class="string">"resolved"</span> {
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.nx — 18 lines, compiler-verified safety</span></div>
+          <pre><span class="comment">// Nexa — Harness Native Agent Language</span>
+<span class="keyword">@tool</span>(<span class="string">"Search codebase with regex"</span>)
+<span class="keyword">fn</span> <span class="function">grep</span>(pattern: <span class="type">string</span>, path: <span class="type">string</span> = <span class="string">"."</span>): <span class="type">string</span> {
+    <span class="keyword">return</span> std.shell.exec(<span class="string">"grep -rn #{pattern} #{path}"</span>);
+}
+
+<span class="keyword">agent</span> <span class="function">BugFixer</span>(issue: <span class="type">string</span>) <span class="keyword">uses</span> grep {
+    <span class="keyword">system</span> <span class="string">`You are an expert engineer. Fix: #{issue}`</span>
+
+    <span class="comment">// Harness C: compiler verifies eviction strategy exists</span>
+    <span class="keyword">context_policy</span> { <span class="keyword">max_tokens</span>: <span class="type">100000</span>, <span class="keyword">on_overflow</span>: <span class="type">summarize</span> }
+
+    <span class="comment">// Harness E: compiler verifies exit condition exists</span>
+    <span class="keyword">autoloop</span> <span class="keyword">max_steps</span>: <span class="type">50</span> <span class="keyword">exit_when</span>: <span class="string">"issue is resolved"</span> {
+        <span class="comment">// Harness L: AI-native error self-correction</span>
         <span class="keyword">try_agent</span> { <span class="function">step</span>(); }
-        <span class="keyword">catch_correction</span>(e) { <span class="keyword">reflect</span> <span class="string">`Retry.`</span> }
+        <span class="keyword">catch_correction</span>(e: <span class="type">ToolError</span>) { <span class="keyword">reflect</span> <span class="string">`Error: #{e}. Retry.`</span> }
     }
 }</pre>
         </div>
         <div class="code-block reveal reveal-delay-2">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.py (equivalent)</span></div>
-          <pre><span class="comment"># Python + LangGraph — 60+ lines of glue</span>
-<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.py — 55+ lines, no compile-time safety</span></div>
+          <pre><span class="comment"># Python + LangGraph — manual glue code</span>
+<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
 <span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI
-<span class="comment"># Manual tool schema — 10 lines</span>
-<span class="comment"># Manual context management — 8 lines</span>
-<span class="comment"># Manual ReAct loop — 30+ lines</span>
-<span class="comment"># No compile-time safety checks</span></pre>
+<span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool
+<span class="keyword">import</span> subprocess, json
+
+<span class="comment"># Manual tool schema — must match OpenAI format exactly</span>
+<span class="keyword">@tool</span>
+<span class="keyword">def</span> <span class="function">grep</span>(pattern: str, path: str = <span class="string">"."</span>) -> str:
+    <span class="string">"""Search codebase with regex"""</span>
+    r = subprocess.run([<span class="string">"grep"</span>,<span class="string">"-rn"</span>,pattern,path],capture_output=<span class="type">True</span>)
+    <span class="keyword">return</span> r.stdout.decode()
+
+<span class="comment"># Manual context management — no auto-eviction</span>
+<span class="keyword">def</span> <span class="function">manage_context</span>(messages, max_tokens=<span class="type">100000</span>):
+    total = sum(len(m[<span class="string">"content"</span>])//<span class="type">4</span> <span class="keyword">for</span> m <span class="keyword">in</span> messages)
+    <span class="keyword">if</span> total > max_tokens * <span class="type">0.8</span>:
+        <span class="keyword">return</span> messages[:<span class="type">5</span>] + messages[-<span class="type">3</span>:]  <span class="comment"># crude truncation</span>
+    <span class="keyword">return</span> messages
+
+<span class="comment"># Manual ReAct loop — no exit condition verification</span>
+<span class="keyword">def</span> <span class="function">bug_fixer</span>(issue: str, max_steps=<span class="type">50</span>):
+    model = ChatOpenAI(model=<span class="string">"gpt-4"</span>)
+    messages = [{<span class="string">"role"</span>:<span class="string">"system"</span>,<span class="string">"content"</span>:<span class="string">f"Fix: {issue}"</span>}]
+    <span class="keyword">for</span> step <span class="keyword">in</span> range(max_steps):
+        response = model.invoke(messages, tools=[grep])
+        messages.append({<span class="string">"role"</span>:<span class="string">"assistant"</span>,<span class="string">"content"</span>:response.content})
+        <span class="keyword">if</span> response.tool_calls:
+            <span class="keyword">for</span> tc <span class="keyword">in</span> response.tool_calls:
+                <span class="keyword">try</span>:
+                    result = tc.execute()
+                    messages.append({<span class="string">"role"</span>:<span class="string">"tool"</span>,<span class="string">"content"</span>:result})
+                <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
+                    messages.append({<span class="string">"role"</span>:<span class="string">"tool"</span>,<span class="string">"content"</span>:<span class="string">f"Error: {e}"</span>})
+        messages = manage_context(messages)
+        <span class="keyword">if</span> <span class="string">"resolved"</span> <span class="keyword">in</span> response.content.lower(): <span class="keyword">break</span>
+    <span class="keyword">return</span> messages[-<span class="type">1</span>][<span class="string">"content"</span>]
+<span class="comment"># No Harness Validator. No sandbox. No trace. No HITL.</span></pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       CODE DEMO 2 — More Intent, Less Code
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="section">
+    <div class="section-inner">
+      <div class="section-label reveal">Expressiveness</div>
+      <h2 class="section-title reveal">Less Code, More Intent</h2>
+      <p class="section-desc reveal">Multi-agent DAG orchestration that takes 40+ lines of Python takes just 8 lines of Nexa — with compiler-verified topology.</p>
+      <div class="code-demo">
+        <div class="code-block reveal reveal-delay-1">
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">pipeline.nx — 8 lines</span></div>
+          <pre><span class="comment">// Nexa — declarative DAG orchestration</span>
+<span class="keyword">agent</span> <span class="function">Researcher</span> { <span class="keyword">prompt</span>: <span class="string">"Research the given topic."</span> }
+<span class="keyword">agent</span> <span class="function">Analyst</span>   { <span class="keyword">prompt</span>: <span class="string">"Analyze findings quantitatively."</span> }
+<span class="keyword">agent</span> <span class="function">Writer</span>    { <span class="keyword">prompt</span>: <span class="string">"Synthesize into a report."</span> }
+<span class="keyword">agent</span> <span class="function">Reviewer</span>  { <span class="keyword">prompt</span>: <span class="string">"Review for accuracy."</span> }
+
+<span class="keyword">flow</span> <span class="function">main</span>(topic: <span class="type">string</span>) {
+    <span class="comment">// Fork: parallel research + analysis → Merge: review → Pipeline: write</span>
+    result = topic |>> [<span class="function">Researcher</span>, <span class="function">Analyst</span>] &>> <span class="function">Reviewer</span> >> <span class="function">Writer</span>;
+    <span class="function">print</span>(result);
+}</pre>
+        </div>
+        <div class="code-block reveal reveal-delay-2">
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">pipeline.py — 40+ lines</span></div>
+          <pre><span class="comment"># Python + LangGraph — manual DAG construction</span>
+<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
+<span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI
+<span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict
+<span class="keyword">import</span> concurrent.futures
+
+model = ChatOpenAI(model=<span class="string">"gpt-4"</span>)
+
+<span class="keyword">class</span> <span class="type">State</span>(TypedDict):
+    topic: str; research: str; analysis: str; review: str; report: str
+
+<span class="keyword">def</span> <span class="function">research_node</span>(state: State) -> State:
+    state[<span class="string">"research"</span>] = model.invoke(<span class="string">f"Research: {state['topic']}"</span>)
+    <span class="keyword">return</span> state
+
+<span class="keyword">def</span> <span class="function">analysis_node</span>(state: State) -> State:
+    state[<span class="string">"analysis"</span>] = model.invoke(<span class="string">f"Analyze: {state['topic']}"</span>)
+    <span class="keyword">return</span> state
+
+<span class="keyword">def</span> <span class="function">review_node</span>(state: State) -> State:
+    combined = state[<span class="string">"research"</span>] + <span class="string">"\n"</span> + state[<span class="string">"analysis"</span>]
+    state[<span class="string">"review"</span>] = model.invoke(<span class="string">f"Review: {combined}"</span>)
+    <span class="keyword">return</span> state
+
+<span class="keyword">def</span> <span class="function">writer_node</span>(state: State) -> State:
+    state[<span class="string">"report"</span>] = model.invoke(<span class="string">f"Write report: {state['review']}"</span>)
+    <span class="keyword">return</span> state
+
+<span class="comment"># Manual graph construction — 15+ lines of wiring</span>
+graph = StateGraph(State)
+graph.add_node(<span class="string">"research"</span>, research_node)
+graph.add_node(<span class="string">"analysis"</span>, analysis_node)
+graph.add_node(<span class="string">"review"</span>, review_node)
+graph.add_node(<span class="string">"writer"</span>, writer_node)
+graph.add_edge(<span class="string">"research"</span>, <span class="string">"review"</span>)
+graph.add_edge(<span class="string">"analysis"</span>, <span class="string">"review"</span>)
+graph.add_edge(<span class="string">"review"</span>, <span class="string">"writer"</span>)
+graph.set_entry_point(<span class="string">"research"</span>)
+graph.add_edge(<span class="string">"writer"</span>, END)
+app = graph.compile()
+result = app.invoke({<span class="string">"topic"</span>: <span class="string">"Quantum Computing"</span>})
+<span class="comment"># No compile-time topology verification</span></pre>
         </div>
       </div>
     </div>
@@ -291,8 +404,8 @@
         <h4>Ecosystem</h4>
         <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Documentation</a>
         <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a>
-        <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">evobench</a>
-        <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">epicontext</a>
+        <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">EvoBench</a>
+        <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">EpiContext</a>
       </div>
       <div class="footer-col">
         <h4>Resources</h4>
