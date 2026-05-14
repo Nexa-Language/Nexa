@@ -219,9 +219,10 @@
     }
 }</pre>
           <div class="code-explain">
-            <div class="code-explain-item"><i data-lucide="shield-check"></i><div><strong>Harness C</strong> — <code>context_policy</code> is compiler-verified. Missing <code>max_tokens</code> or <code>on_overflow</code> → compile ERROR.</div></div>
-            <div class="code-explain-item"><i data-lucide="repeat"></i><div><strong>Harness E</strong> — <code>autoloop</code> requires <code>exit_when</code> or <code>max_steps</code>. The compiler rejects infinite loops at build time.</div></div>
-            <div class="code-explain-item"><i data-lucide="refresh-cw"></i><div><strong>Harness L</strong> — <code>try_agent</code> + <code>catch_correction</code> feeds errors back to the LLM for self-healing, not crash-and-burn.</div></div>
+            <div class="code-explain-item"><i data-lucide="shield-check"></i><div><strong>Harness C — Context Manager</strong><br>The <code>context_policy</code> block is <em>compiler-verified</em>. If you forget to specify <code>max_tokens</code> or an <code>on_overflow</code> strategy, the Harness Validator rejects your code at compile time — before a single token is sent to the LLM. No more silent context window overflows that degrade model performance mid-task.</div></div>
+            <div class="code-explain-item"><i data-lucide="repeat"></i><div><strong>Harness E — Execution Loop</strong><br><code>autoloop</code> is a first-class language construct, not a while-loop with manual bookkeeping. The compiler enforces that every loop has an <code>exit_when</code> condition or <code>max_steps</code> limit. Infinite agent loops are caught at build time, not discovered at 3 AM when your cloud bill arrives.</div></div>
+            <div class="code-explain-item"><i data-lucide="refresh-cw"></i><div><strong>Harness L — Lifecycle Hooks</strong><br><code>try_agent</code> + <code>catch_correction</code> implements AI-native error recovery. When a tool fails, the error is automatically fed back to the LLM via <code>reflect</code> — triggering self-correction instead of crash-and-burn. Traditional try-catch walks away; Harness L teaches the agent to try again, smarter.</div></div>
+            <div class="code-explain-item"><i data-lucide="zap"></i><div><strong>Harness T — Tool Registry</strong><br>The <code>@tool</code> annotation auto-generates JSON Schema from your function signature. No manual schema writing, no format mismatches. The compiler verifies every tool has a description and typed parameters — <code>risk_level=high</code> tools require explicit <code>requires_approval</code>.</div></div>
           </div>
         </div>
         <div class="code-block reveal reveal-delay-2">
@@ -292,9 +293,10 @@
     <span class="function">print</span>(result);
 }</pre>
           <div class="code-explain">
-            <div class="code-explain-item"><i data-lucide="git-branch-plus"></i><div><strong>Fork <code>|>> [A, B]</code></strong> — parallel fan-out to multiple agents. The compiler verifies all targets are declared agents.</div></div>
-            <div class="code-explain-item"><i data-lucide="merge"></i><div><strong>Merge <code>&>> C</code></strong> — combine parallel results into a single downstream agent. Strategy: concat, vote, or consensus.</div></div>
-            <div class="code-explain-item"><i data-lucide="arrow-right"></i><div><strong>Pipeline <code>>> D</code></strong> — sequential chaining. Output flows left-to-right with automatic type propagation.</div></div>
+            <div class="code-explain-item"><i data-lucide="git-branch-plus"></i><div><strong>Fork — <code>|>> [A, B]</code></strong><br>Parallel fan-out to multiple agents with a single operator. The compiler statically verifies that every target in the fork list is a declared agent — no runtime NameError surprises. Results are collected concurrently with automatic thread pooling.</div></div>
+            <div class="code-explain-item"><i data-lucide="merge"></i><div><strong>Merge — <code>&>> C</code></strong><br>Combine parallel results into a single downstream agent. Choose your strategy: <code>concat</code> (append all), <code>vote</code> (majority selection), <code>consensus</code> (LLM-mediated agreement), or <code>summarize</code> (intelligent compression). The compiler verifies the merge target exists.</div></div>
+            <div class="code-explain-item"><i data-lucide="arrow-right"></i><div><strong>Pipeline — <code>>> D</code></strong><br>Sequential chaining with automatic type propagation. Output flows left-to-right through each agent. The compiler traces the full pipeline to verify every hop connects a valid agent — catching broken chains before execution.</div></div>
+            <div class="code-explain-item"><i data-lucide="workflow"></i><div><strong>DAG Topology — Compiler-Verified</strong><br>Unlike LangGraph's runtime graph construction, Nexa DAG operators are validated at compile time. The compiler checks for cycles, verifies all node references, and ensures the topology is well-formed — eliminating an entire class of runtime orchestration bugs.</div></div>
           </div>
         </div>
         <div class="code-block reveal reveal-delay-2">
