@@ -3,10 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="The Birth of Nexa — Why the World Needs an Agent-Native Language. Every AI developer knows the pain of prompt string concatenation and fragile JSON parsing.">
+  <meta name="description" content="The Birth of Nexa — Why the World Needs a Harness Native Agent Language.">
   <meta name="theme-color" content="#0a0a1a">
-  <meta property="og:title" content="The Birth of Nexa — Why the World Needs an Agent-Native Language">
-  <meta property="og:description" content="What if agents were first-class citizens in a programming language?">
+  <meta property="og:title" content="The Birth of Nexa — Why the World Needs a Harness Native Agent Language">
   <title>The Birth of Nexa — Nexa Blog</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -16,59 +15,45 @@
 </head>
 <body>
   <canvas id="particles-canvas"></canvas>
-
   <nav class="nav">
     <div class="nav-inner">
-      <a href="../index.html" class="nav-logo">
-        <img src="../assets/nexa-logo.svg" alt="Nexa Logo"> Nexa
-      </a>
+      <a href="../index.html" class="nav-logo"><img src="../assets/nexa-logo.svg" alt="Nexa"> Nexa</a>
       <ul class="nav-links">
-        <li><a href="../index.html#features">Features</a></li>
-        <li><a href="../index.html#code">Code</a></li>
-        <li><a href="../index.html#architecture">Architecture</a></li>
-        <li><a href="index.html">Blog</a></li>
-        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
-        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener" class="nav-cta">Get Started</a></li>
+        <li class="nav-item"><a href="../index.html">Home <span class="chevron">▾</span></a><div class="nav-dropdown"><a href="../index.html#features">Features</a><a href="../index.html#code">Code</a><a href="../index.html#architecture">Architecture</a></div></li>
+        <li class="nav-item"><a href="index.html">Blog</a></li>
+        <li class="nav-item"><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li class="nav-item"><a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Docs</a></li>
+        <li class="nav-item"><button class="nav-plus-trigger">Nexa<span class="nav-plus">⁺</span> <span class="chevron">▾</span></button></li>
       </ul>
-      <button class="nav-toggle" aria-label="Toggle navigation">
-        <span></span><span></span><span></span>
-      </button>
+      <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
     </div>
   </nav>
+  <div class="nexa-plus-panel"><div class="nexa-plus-inner">
+    <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">📚</div><div class="nexa-plus-info"><h4>Documentation</h4><p>Full language reference and guides.</p></div></a>
+    <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🔧</div><div class="nexa-plus-info"><h4>SkCC</h4><p>Skills Compiler.</p></div></a>
+    <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🧪</div><div class="nexa-plus-info"><h4>evobench</h4><p>Agent benchmark suite.</p></div></a>
+    <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🧬</div><div class="nexa-plus-info"><h4>epicontext</h4><p>Evolutionary context management.</p></div></a>
+    <a href="https://github.com/Nexa-Language" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🏛️</div><div class="nexa-plus-info"><h4>Nexa Organization</h4><p>All Nexa projects.</p></div></a>
+    <a href="https://author.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">👤</div><div class="nexa-plus-info"><h4>Author</h4><p>Owen — creator of Nexa.</p></div></a>
+  </div></div>
 
   <article class="blog-post">
     <a href="index.html" class="back-link">← Back to Blog</a>
     <div class="post-date">2026.01.15</div>
-    <h1>The Birth of Nexa — Why the World Needs an Agent-Native Language</h1>
-    <div class="post-tags">
-      <span class="tag">Vision</span>
-      <span class="tag">Design</span>
-      <span class="tag">Origin</span>
-    </div>
-
+    <h1>The Birth of Nexa — Why the World Needs a Harness Native Agent Language</h1>
+    <div class="post-tags"><span class="tag">Vision</span><span class="tag">Design</span><span class="tag">Origin</span></div>
     <div class="post-body">
       <p>Every AI developer knows the pain. You start a new project, excited to build something with LLMs. An hour later, you're drowning in prompt string concatenation, fragile JSON parsing, manual context window management, and a maze of framework abstractions that feel like they're fighting you at every turn.</p>
-
       <p>I've been there. In late 2025, I was building a multi-agent research system — the kind where one agent searches, another analyzes, a third synthesizes, and they all need to coordinate. The Python codebase grew to 800+ lines before I had even implemented the core logic. Most of it was glue: tool schema definitions, message array management, retry logic, context trimming.</p>
-
-      <blockquote>
-        "Why am I writing 50 lines of Python to express what should be 5 lines of intent?"
-      </blockquote>
-
+      <blockquote>"Why am I writing 50 lines of Python to express what should be 5 lines of intent?"</blockquote>
       <h2>The Framework Trap</h2>
-
-      <p>LangChain, the most popular LLM framework at the time, promised to solve this. But its abstraction layers — chains within chains, agents wrapping tools wrapping LLMs — created their own complexity. LangGraph improved things with explicit state machines, but you still needed 60+ lines for a simple ReAct loop. AutoGen offered multi-agent conversations but inherited Python's concurrency limitations. CrewAI simplified role-based agents but lacked any compile-time safety.</p>
-
+      <p>LangChain, the most popular LLM framework at the time, promised to solve this. But its abstraction layers — chains within chains, agents wrapping tools wrapping LLMs — created their own complexity. LangGraph improved things with explicit state machines, but you still needed 60+ lines for a simple ReAct loop. AutoGen offered multi-agent conversations but inherited Python's concurrency limitations.</p>
       <p>The common thread: <strong>every solution was a library bolted onto a general-purpose language</strong>. Python wasn't designed for agents. JavaScript wasn't designed for agents. We were using screwdrivers to hammer nails, and then building elaborate jigs to make it work.</p>
-
       <h2>The Fundamental Insight</h2>
-
       <p>In January 2026, while reading about Rust's ownership system, I had a moment of clarity. Rust didn't add memory safety as a library — it made ownership a <em>language construct</em>, enforced by the compiler. What if we did the same for agent safety?</p>
-
       <p>What if <code>agent</code> was a keyword, not a class? What if <code>autoloop</code> was syntax, not a while-loop with manual exit conditions? What if context management was a scope, not a function you had to remember to call?</p>
-
       <p>I spent the next two weeks sketching syntax on paper. The core idea was simple but radical:</p>
-
       <ul>
         <li><strong>Agents, tools, protocols, and flows</strong> should be first-class language constructs — not library wrappers</li>
         <li><strong>Context management</strong> should be a language-level scope, with automatic eviction enforced by the compiler</li>
@@ -76,37 +61,23 @@
         <li><strong>Execution loops</strong> should be declarative — <code>autoloop</code> with compiler-verified exit conditions</li>
         <li><strong>Error recovery</strong> should be AI-native — <code>try_agent</code> that feeds errors back to the LLM for self-correction</li>
       </ul>
-
+      <p>This became the foundation of the <strong>Harness Native</strong> methodology — the idea that agent safety should be a language property, not a runtime convention.</p>
       <h2>The Name</h2>
-
-      <p>"Nexa" comes from the Latin <em>nexus</em> — a connection, a bond, a central point. It captures what the language does: it connects agents, tools, and humans in a single, coherent programming model. The 'x' gives it a modern, tech-forward feel. And it's short — four letters, easy to type, easy to remember.</p>
-
-      <h2>What's Next</h2>
-
-      <p>With the vision clear and the syntax sketched, the next step is implementation. We're targeting a Python-based transpiler as the first backend — compile .nx files to pure Python that runs on the Nexa runtime. A Rust-based AVM (Agent Virtual Machine) will follow for production deployments.</p>
-
-      <p>This is day one of a long journey. But the destination is worth it: a world where building autonomous agents is as natural as writing a for-loop.</p>
-
+      <p>"Nexa" comes from the Latin <em>nexus</em> — a connection, a bond, a central point. It captures what the language does: it connects agents, tools, and humans in a single, coherent programming model.</p>
       <hr>
-
       <p><em>— Owen, January 2026</em></p>
     </div>
   </article>
 
   <footer class="footer">
-    <div class="footer-inner">
-      <div class="footer-brand">
-        <img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span>
-      </div>
-      <ul class="footer-links">
-        <li><a href="https://github.com/ouyangyipeng/nexa" target="_blank" rel="noopener">GitHub</a></li>
-        <li><a href="index.html">Blog</a></li>
-        <li><a href="https://github.com/ouyangyipeng/nexa/blob/main/LICENSE" target="_blank" rel="noopener">AGPL-3.0</a></li>
-      </ul>
-      <span class="footer-copy">&copy; 2026 Nexa Language.</span>
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Product</h4><a href="../index.html">Home</a><a href="../index.html#features">Features</a><a href="../index.html#architecture">Architecture</a><a href="index.html">Blog</a></div>
+      <div class="footer-col"><h4>Ecosystem</h4><a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Documentation</a><a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a><a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">evobench</a><a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">epicontext</a></div>
+      <div class="footer-col"><h4>Resources</h4><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a><a href="https://github.com/Nexa-Language" target="_blank" rel="noopener">Organization</a><a href="https://author.nexa-lang.com/" target="_blank" rel="noopener">Author</a></div>
+      <div class="footer-col"><h4>Contact</h4><span class="footer-contact">nexa-lang@proton.me</span></div>
     </div>
+    <div class="footer-bottom"><div class="footer-brand"><img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span></div><span class="footer-copy">&copy; 2026 Nexa Language. Licensed under AGPL-3.0.</span></div>
   </footer>
-
   <script src="../js/main.js"></script>
 </body>
 </html>

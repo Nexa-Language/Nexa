@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/img/nexa-logo-noframe.png" alt="Nexa Logo" width="100" />
   <h1>Nexa Language</h1>
-  <p><b><i>The Dawn of Agent-Native Programming. Write flows, not glue code.</i></b></p>
+  <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
@@ -19,7 +19,7 @@
 
 ## ⚡ What is Nexa?
 
-**Nexa** 是一门为大语言模型（LLM）与智能体系统（Agentic Systems）量身定制的**智能体原生 (Agent-Native) 编程语言**。
+**Nexa** 是 **the first Harness Native Agent Language**——一门为大语言模型（LLM）与智能体系统（Agentic Systems）量身定制的编程语言，将 Agent 安全从运行时框架下沉为语言级原语。
 
 当代 AI 应用开发充斥着大量的 Prompt 拼接、臃肿的 JSON 解析套件、不可靠的正则皮带，以及复杂的框架。Nexa 将高层级的意图路由、多智能体并发组装、管道流传输以及工具执行沙盒提权为核心语法一等公民，直接通过底层的 `Transpiler` 转换为稳定可靠的 Python Runtime，让你能够用最优雅的语法定义最硬核的 LLM 计算图（DAG）。
 

@@ -1,7 +1,7 @@
 <div align="center">
   <img src="docs/img/nexa-logo-noframe.png" alt="Nexa Logo" width="100" />
   <h1>Nexa Language</h1>
-  <p><b><i>The Dawn of Agent-Native Programming. Write flows, not glue code.</i></b></p>
+  <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
@@ -19,7 +19,7 @@
 
 ## ⚡ What is Nexa?
 
-**Nexa** is an **Agent-Native programming language** designed specifically for Large Language Models (LLMs) and Agentic Systems.
+**Nexa** is **the first Harness Native Agent Language** — a programming language designed specifically for Large Language Models (LLMs) and Agentic Systems, where agent safety is a language property, not a runtime convention.
 
 Modern AI application development is plagued by massive Prompt concatenation, bloated JSON parsing suites, unreliable regex belts, and complex frameworks. Nexa elevates high-level intent routing, multi-agent concurrent assembly, pipeline streaming, and tool execution sandboxing as first-class syntax citizens. Through the underlying `Transpiler`, it transforms into stable, reliable Python Runtime, allowing you to define the most hardcore LLM computation graphs (DAGs) with the most elegant syntax.
 
