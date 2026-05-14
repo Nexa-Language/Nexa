@@ -15,21 +15,12 @@
   <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
 </head>
 <body>
-
   <canvas id="particles-canvas"></canvas>
-
   <nav class="nav">
     <div class="nav-inner">
       <a href="../index.html" class="nav-logo"><img src="../assets/nexa-logo.svg" alt="Nexa"> Nexa</a>
       <ul class="nav-links">
-        <li class="nav-item">
-          <a href="../index.html">Home <span class="chevron">▾</span></a>
-          <div class="nav-dropdown">
-            <a href="../index.html#features">Features</a>
-            <a href="../index.html#code">Code</a>
-            <a href="../index.html#architecture">Architecture</a>
-          </div>
-        </li>
+        <li class="nav-item"><a href="../index.html">Home <span class="chevron">▾</span></a><div class="nav-dropdown"><a href="../index.html#features">Features</a><a href="../index.html#code">Code</a><a href="../index.html#architecture">Architecture</a></div></li>
         <li class="nav-item"><a href="index.html">Blog</a></li>
         <li class="nav-item"><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a></li>
         <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
@@ -39,143 +30,121 @@
       <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
     </div>
   </nav>
-
-  <div class="nexa-plus-panel">
-    <div class="nexa-plus-inner">
-      <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">📚</div><div class="nexa-plus-info"><h4>Documentation</h4><p>Full language reference and guides.</p></div></a>
-      <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🔧</div><div class="nexa-plus-info"><h4>SkCC</h4><p>Skills Compiler for agent runtime modules.</p></div></a>
-      <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🧪</div><div class="nexa-plus-info"><h4>evobench</h4><p>Agent benchmark suite.</p></div></a>
-      <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🧬</div><div class="nexa-plus-info"><h4>epicontext</h4><p>Evolutionary context management.</p></div></a>
-      <a href="https://github.com/Nexa-Language" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🏛️</div><div class="nexa-plus-info"><h4>Nexa Organization</h4><p>All Nexa projects on GitHub.</p></div></a>
-      <a href="https://author.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">👤</div><div class="nexa-plus-info"><h4>Author</h4><p>Owen — creator of Nexa.</p></div></a>
-    </div>
-  </div>
+  <div class="nexa-plus-panel"><div class="nexa-plus-inner">
+    <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">📚</div><div class="nexa-plus-info"><h4>Documentation</h4><p>Full language reference and guides.</p></div></a>
+    <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🔧</div><div class="nexa-plus-info"><h4>SkCC</h4><p>Skills Compiler for agent runtime modules.</p></div></a>
+    <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🧪</div><div class="nexa-plus-info"><h4>EvoBench</h4><p>Agent benchmark suite.</p></div></a>
+    <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🧬</div><div class="nexa-plus-info"><h4>EpiContext</h4><p>Evolutionary context management.</p></div></a>
+    <a href="https://github.com/Nexa-Language" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">🏛️</div><div class="nexa-plus-info"><h4>Nexa Organization</h4><p>All Nexa projects on GitHub.</p></div></a>
+    <a href="https://author.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card"><div class="nexa-plus-icon">👤</div><div class="nexa-plus-info"><h4>Author</h4><p>Owen — creator of Nexa.</p></div></a>
+  </div></div>
 
   <header class="blog-header">
     <h1>Nexa Blog</h1>
     <p>Changelog, updates, and behind-the-scenes stories from the Nexa team.</p>
   </header>
 
-  <div class="blog-toolbar">
-    <input type="text" class="blog-search" placeholder="Search posts...">
-    <select class="blog-sort">
-      <option value="newest">Newest first</option>
-      <option value="oldest">Oldest first</option>
-    </select>
-  </div>
-
-  <div class="blog-list">
-    <a href="2026-05-harness.html" class="blog-card">
-      <div class="blog-card-avatar">N</div>
-      <div class="blog-card-body">
-        <div class="blog-card-meta">
-          <span class="blog-card-author">Nexa Team</span>
-          <span class="blog-card-date">2026.05.06</span>
-        </div>
-        <h3>Introducing Harness Native — The v2.0 Vision</h3>
-        <p>We're redefining what it means to be an agent programming language. Nexa v2.0 introduces the Harness Native paradigm — where agent safety is enforced by the compiler, not by runtime frameworks.</p>
-        <div class="blog-card-tags"><span class="tag">v2.0</span><span class="tag">Harness Native</span><span class="tag">Architecture</span></div>
+  <div class="blog-layout">
+    <!-- Left: Sticky Timeline -->
+    <aside class="blog-timeline-side">
+      <h3>Timeline</h3>
+      <div class="timeline-side">
+        <div class="timeline-side-item"><span class="timeline-side-date">2026.05</span><a href="2026-05-harness.html">Harness Native v2.0</a></div>
+        <div class="timeline-side-item"><span class="timeline-side-date">2026.04</span><a href="2026-04-ecosystem.html">v1.3.7 — 16 Features</a></div>
+        <div class="timeline-side-item"><span class="timeline-side-date">2026.03</span><a href="2026-03-opensource.html">Open Source Release</a></div>
+        <div class="timeline-side-item"><span class="timeline-side-date">2026.02</span><a href="2026-02-implementation.html">First Transpiler MVP</a></div>
+        <div class="timeline-side-item"><span class="timeline-side-date">2026.01</span><a href="2026-01-conception.html">The Birth of Nexa</a></div>
       </div>
-    </a>
+    </aside>
 
-    <a href="2026-04-ecosystem.html" class="blog-card">
-      <div class="blog-card-avatar">N</div>
-      <div class="blog-card-body">
-        <div class="blog-card-meta">
-          <span class="blog-card-author">Nexa Team</span>
-          <span class="blog-card-date">2026.04.23</span>
-        </div>
-        <h3>v1.3.7 Milestone — 16 Features, 1,500+ Tests</h3>
-        <p>From gradual typing to pattern matching, from background jobs to HTTP servers — Nexa v1.3.7 ships with 16 major features and a battle-tested test suite.</p>
-        <div class="blog-card-tags"><span class="tag">v1.3.7</span><span class="tag">Release</span><span class="tag">Features</span></div>
+    <!-- Right: Search + Grid Cards -->
+    <div class="blog-content">
+      <div class="blog-toolbar">
+        <input type="text" class="blog-search" placeholder="Search posts...">
+        <select class="blog-sort">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+        </select>
       </div>
-    </a>
 
-    <a href="2026-03-opensource.html" class="blog-card">
-      <div class="blog-card-avatar">N</div>
-      <div class="blog-card-body">
-        <div class="blog-card-meta">
-          <span class="blog-card-author">Nexa Team</span>
-          <span class="blog-card-date">2026.03.10</span>
-        </div>
-        <h3>Nexa Goes Open Source — v0.9-alpha Release</h3>
-        <p>After months of stealth development, we're opening the doors. Nexa v0.9-alpha is now available under AGPL-3.0 on GitHub — with a working transpiler, 10+ examples, and a growing community.</p>
-        <div class="blog-card-tags"><span class="tag">Open Source</span><span class="tag">v0.9</span><span class="tag">Community</span></div>
+      <div class="blog-grid">
+        <a href="2026-05-harness.html" class="blog-card">
+          <div class="blog-card-header">
+            <div class="blog-card-avatar"><img src="../assets/nexa-logo.svg" alt="Nexa"></div>
+            <div class="blog-card-meta">
+              <span class="blog-card-author">Nexa Team</span>
+              <span class="blog-card-date">2026.05.06</span>
+            </div>
+          </div>
+          <h3>Introducing Harness Native — The v2.0 Vision</h3>
+          <p>We're redefining what it means to be an agent programming language. Nexa v2.0 introduces the Harness Native paradigm — where agent safety is enforced by the compiler, not by runtime frameworks.</p>
+          <div class="blog-card-tags"><span class="tag">v2.0</span><span class="tag">Harness Native</span><span class="tag">Architecture</span></div>
+        </a>
+
+        <a href="2026-04-ecosystem.html" class="blog-card">
+          <div class="blog-card-header">
+            <div class="blog-card-avatar"><img src="../assets/nexa-logo.svg" alt="Nexa"></div>
+            <div class="blog-card-meta">
+              <span class="blog-card-author">Nexa Team</span>
+              <span class="blog-card-date">2026.04.23</span>
+            </div>
+          </div>
+          <h3>v1.3.7 Milestone — 16 Features, 1,500+ Tests</h3>
+          <p>From gradual typing to pattern matching, from background jobs to HTTP servers — Nexa v1.3.7 ships with 16 major features and a battle-tested test suite.</p>
+          <div class="blog-card-tags"><span class="tag">v1.3.7</span><span class="tag">Release</span><span class="tag">Features</span></div>
+        </a>
+
+        <a href="2026-03-opensource.html" class="blog-card">
+          <div class="blog-card-header">
+            <div class="blog-card-avatar"><img src="../assets/nexa-logo.svg" alt="Nexa"></div>
+            <div class="blog-card-meta">
+              <span class="blog-card-author">Nexa Team</span>
+              <span class="blog-card-date">2026.03.10</span>
+            </div>
+          </div>
+          <h3>Nexa Goes Open Source — v0.9-alpha Release</h3>
+          <p>After months of stealth development, we're opening the doors. Nexa v0.9-alpha is now available under AGPL-3.0 on GitHub — with a working transpiler, 10+ examples, and a growing community.</p>
+          <div class="blog-card-tags"><span class="tag">Open Source</span><span class="tag">v0.9</span><span class="tag">Community</span></div>
+        </a>
+
+        <a href="2026-02-implementation.html" class="blog-card">
+          <div class="blog-card-header">
+            <div class="blog-card-avatar"><img src="../assets/nexa-logo.svg" alt="Nexa"></div>
+            <div class="blog-card-meta">
+              <span class="blog-card-author">Nexa Team</span>
+              <span class="blog-card-date">2026.02.20</span>
+            </div>
+          </div>
+          <h3>From Zero to MVP — Building the First Transpiler</h3>
+          <p>How we built the Nexa transpiler in 6 weeks: Lark parser, Earley algorithm, AST transformer with ambiguity scoring, and a Python code generator that turns .nx files into runnable code.</p>
+          <div class="blog-card-tags"><span class="tag">Compiler</span><span class="tag">Engineering</span><span class="tag">MVP</span></div>
+        </a>
+
+        <a href="2026-01-conception.html" class="blog-card">
+          <div class="blog-card-header">
+            <div class="blog-card-avatar"><img src="../assets/nexa-logo.svg" alt="Nexa"></div>
+            <div class="blog-card-meta">
+              <span class="blog-card-author">Nexa Team</span>
+              <span class="blog-card-date">2026.01.15</span>
+            </div>
+          </div>
+          <h3>The Birth of Nexa — Why the World Needs a Harness Native Agent Language</h3>
+          <p>Every AI developer knows the pain: prompt string concatenation, fragile JSON parsing, manual context management. We asked: what if agent safety was a language property?</p>
+          <div class="blog-card-tags"><span class="tag">Vision</span><span class="tag">Design</span><span class="tag">Origin</span></div>
+        </a>
       </div>
-    </a>
-
-    <a href="2026-02-implementation.html" class="blog-card">
-      <div class="blog-card-avatar">N</div>
-      <div class="blog-card-body">
-        <div class="blog-card-meta">
-          <span class="blog-card-author">Nexa Team</span>
-          <span class="blog-card-date">2026.02.20</span>
-        </div>
-        <h3>From Zero to MVP — Building the First Transpiler</h3>
-        <p>How we built the Nexa transpiler in 6 weeks: Lark parser, Earley algorithm, AST transformer with ambiguity scoring, and a Python code generator that turns .nx files into runnable code.</p>
-        <div class="blog-card-tags"><span class="tag">Compiler</span><span class="tag">Engineering</span><span class="tag">MVP</span></div>
-      </div>
-    </a>
-
-    <a href="2026-01-conception.html" class="blog-card">
-      <div class="blog-card-avatar">N</div>
-      <div class="blog-card-body">
-        <div class="blog-card-meta">
-          <span class="blog-card-author">Nexa Team</span>
-          <span class="blog-card-date">2026.01.15</span>
-        </div>
-        <h3>The Birth of Nexa — Why the World Needs a Harness Native Agent Language</h3>
-        <p>Every AI developer knows the pain: prompt string concatenation, fragile JSON parsing, manual context management. We asked: what if agent safety was a language property?</p>
-        <div class="blog-card-tags"><span class="tag">Vision</span><span class="tag">Design</span><span class="tag">Origin</span></div>
-      </div>
-    </a>
-  </div>
-
-  <div class="blog-timeline-mini">
-    <h3>Timeline</h3>
-    <div class="timeline-mini">
-      <div class="timeline-mini-item"><span class="timeline-mini-date">2026.05</span><a href="2026-05-harness.html">Harness Native v2.0 Vision</a></div>
-      <div class="timeline-mini-item"><span class="timeline-mini-date">2026.04</span><a href="2026-04-ecosystem.html">v1.3.7 — 16 Features</a></div>
-      <div class="timeline-mini-item"><span class="timeline-mini-date">2026.03</span><a href="2026-03-opensource.html">Open Source Release</a></div>
-      <div class="timeline-mini-item"><span class="timeline-mini-date">2026.02</span><a href="2026-02-implementation.html">First Transpiler MVP</a></div>
-      <div class="timeline-mini-item"><span class="timeline-mini-date">2026.01</span><a href="2026-01-conception.html">The Birth of Nexa</a></div>
     </div>
   </div>
 
   <footer class="footer">
     <div class="footer-grid">
-      <div class="footer-col">
-        <h4>Product</h4>
-        <a href="../index.html">Home</a>
-        <a href="../index.html#features">Features</a>
-        <a href="../index.html#architecture">Architecture</a>
-        <a href="index.html">Blog</a>
-      </div>
-      <div class="footer-col">
-        <h4>Ecosystem</h4>
-        <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Documentation</a>
-        <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a>
-        <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">evobench</a>
-        <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">epicontext</a>
-      </div>
-      <div class="footer-col">
-        <h4>Resources</h4>
-        <a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a>
-        <a href="https://github.com/Nexa-Language" target="_blank" rel="noopener">Organization</a>
-        <a href="https://author.nexa-lang.com/" target="_blank" rel="noopener">Author</a>
-      </div>
-      <div class="footer-col">
-        <h4>Contact</h4>
-        <span class="footer-contact">nexa-lang@proton.me</span>
-      </div>
+      <div class="footer-col"><h4>Product</h4><a href="../index.html">Home</a><a href="../index.html#features">Features</a><a href="../index.html#architecture">Architecture</a><a href="index.html">Blog</a></div>
+      <div class="footer-col"><h4>Ecosystem</h4><a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Documentation</a><a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a><a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">EvoBench</a><a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">EpiContext</a></div>
+      <div class="footer-col"><h4>Resources</h4><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a><a href="https://github.com/Nexa-Language" target="_blank" rel="noopener">Organization</a><a href="https://author.nexa-lang.com/" target="_blank" rel="noopener">Author</a></div>
+      <div class="footer-col"><h4>Contact</h4><span class="footer-contact">nexa-lang@proton.me</span></div>
     </div>
-    <div class="footer-bottom">
-      <div class="footer-brand"><img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span></div>
-      <span class="footer-copy">&copy; 2026 Nexa Language. Licensed under AGPL-3.0.</span>
-    </div>
+    <div class="footer-bottom"><div class="footer-brand"><img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span></div><span class="footer-copy">&copy; 2026 Nexa Language. Licensed under AGPL-3.0.</span></div>
   </footer>
-
   <script src="../js/main.js"></script>
 </body>
 </html>
