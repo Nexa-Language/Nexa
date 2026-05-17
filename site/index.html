@@ -88,7 +88,7 @@
     <div class="hero-inner">
       <div class="hero-left">
         <img src="assets/nexa-logo.svg" alt="Nexa" class="hero-logo">
-        <div class="hero-badge"><span class="dot"></span> v2.0 Harness Native — Coming Soon</div>
+        <div class="hero-badge"><span class="dot" style="background:#22c55e;"></span> v2.1 Released — Production Ready</div>
         <h1>The First<br><span class="gradient-text">Harness Native</span><br>Agent Language</h1>
         <p class="hero-subtitle">
           Nexa is the <strong>first Harness Native Agent Language</strong> — where agent safety is enforced by the compiler, not by runtime frameworks. Write flows, not glue code.
@@ -222,7 +222,6 @@
             <div class="code-explain-item"><i data-lucide="shield-check"></i><div><strong>Harness C — Context Manager</strong><br>The <code>context_policy</code> block is <em>compiler-verified</em>. If you forget to specify <code>max_tokens</code> or an <code>on_overflow</code> strategy, the Harness Validator rejects your code at compile time — before a single token is sent to the LLM. No more silent context window overflows that degrade model performance mid-task.</div></div>
             <div class="code-explain-item"><i data-lucide="repeat"></i><div><strong>Harness E — Execution Loop</strong><br><code>autoloop</code> is a first-class language construct, not a while-loop with manual bookkeeping. The compiler enforces that every loop has an <code>exit_when</code> condition or <code>max_steps</code> limit. Infinite agent loops are caught at build time, not discovered at 3 AM when your cloud bill arrives.</div></div>
             <div class="code-explain-item"><i data-lucide="refresh-cw"></i><div><strong>Harness L — Lifecycle Hooks</strong><br><code>try_agent</code> + <code>catch_correction</code> implements AI-native error recovery. When a tool fails, the error is automatically fed back to the LLM via <code>reflect</code> — triggering self-correction instead of crash-and-burn. Traditional try-catch walks away; Harness L teaches the agent to try again, smarter.</div></div>
-            <div class="code-explain-item"><i data-lucide="zap"></i><div><strong>Harness T — Tool Registry</strong><br>The <code>@tool</code> annotation auto-generates JSON Schema from your function signature. No manual schema writing, no format mismatches. The compiler verifies every tool has a description and typed parameters — <code>risk_level=high</code> tools require explicit <code>requires_approval</code>.</div></div>
           </div>
         </div>
         <div class="code-block reveal reveal-delay-2">
@@ -377,9 +376,52 @@ result = app.invoke({<span class="string">"topic"</span>: <span class="string">"
     <div class="section-inner">
       <div class="stats-bar">
         <div class="stat-item reveal reveal-delay-1"><div class="stat-number">23+</div><div class="stat-label">Core Features</div></div>
-        <div class="stat-item reveal reveal-delay-2"><div class="stat-number">1,800+</div><div class="stat-label">Tests Passed</div></div>
-        <div class="stat-item reveal reveal-delay-3"><div class="stat-number">296</div><div class="stat-label">v2.0 Harness Tests</div></div>
+        <div class="stat-item reveal reveal-delay-2"><div class="stat-number">1,935</div><div class="stat-label">Tests Passed</div></div>
+        <div class="stat-item reveal reveal-delay-3"><div class="stat-number">12+4</div><div class="stat-label">v2.0 + v2.1 Examples</div></div>
         <div class="stat-item reveal reveal-delay-4"><div class="stat-number">20×</div><div class="stat-label">AVM vs Python Speed</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       HARNESS — The Six Dimensions
+       ═══════════════════════════════════════════════════════════════════ -->
+  <section class="section" id="harness">
+    <div class="section-inner">
+      <div class="section-label reveal">Harness H=(E,T,C,S,L,V)</div>
+      <h2 class="section-title reveal">Six Dimensions. One Language. Compiler-Verified.</h2>
+      <p class="section-desc reveal">The Harness six-tuple is not a framework — it's syntax, enforced by the compiler.</p>
+      <div class="harness-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-top:40px;">
+        <div class="harness-card reveal reveal-delay-1" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
+          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">E — Execution</div>
+          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">autoloop max_steps: 10, exit_when: "resolved" { ... }</code>
+          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Autonomous ReAct loop with compiler-enforced exit conditions. No more infinite agent loops.</p>
+        </div>
+        <div class="harness-card reveal reveal-delay-2" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
+          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">T — Tool</div>
+          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">@tool("description") fn my_tool(x: string): string { ... }</code>
+          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Zero-cost tool binding. Compiler auto-generates OpenAI function calling schema from type signature.</p>
+        </div>
+        <div class="harness-card reveal reveal-delay-3" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
+          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">C — Context</div>
+          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">with_context max_tokens: 50000, strategy: sliding_window { ... }</code>
+          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Importance-weighted context paging. Silent context overflow degraded performance — eliminated at language level.</p>
+        </div>
+        <div class="harness-card reveal reveal-delay-4" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
+          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">S — State</div>
+          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">snap = snapshot(); ... restore(snap);</code>
+          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">COW state snapshots with fork/merge for Tree-of-Thoughts exploration. Roll back decisions as a primitive.</p>
+        </div>
+        <div class="harness-card reveal reveal-delay-5" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
+          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">L — Lifecycle</div>
+          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">before_step { ... }; reflect "What went wrong?";</code>
+          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Compiler-enforced lifecycle hooks + AI-native self-reflection. Agents learn instead of crashing.</p>
+        </div>
+        <div class="harness-card reveal reveal-delay-6" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
+          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">V — Verify</div>
+          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">verify result satisfies ExpectedOutput;</code>
+          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Compile-time + runtime output verification with multi-model routing. Quality is a language property.</p>
+        </div>
       </div>
     </div>
   </section>
