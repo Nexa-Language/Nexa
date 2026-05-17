@@ -23,9 +23,8 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! 提供 C 语言调用 AVM 的完整接口
 
 use std::ffi::{CStr, CString};
-use std::os::raw::{c_char, c_int, c_void, c_ulong, c_double};
+use std::os::raw::{c_char, c_int, c_void, c_ulong};
 use std::ptr;
-use std::slice;
 
 use crate::compiler::parser::Parser;
 use crate::bytecode::compiler::BytecodeCompiler;

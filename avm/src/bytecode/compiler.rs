@@ -108,6 +108,7 @@ impl BytecodeCompiler {
                 let idx = self.add_constant(Constant::String(type_alias.name.clone()));
                 self.globals.insert(type_alias.name.clone(), idx);
             }
+            Declaration::Job(_) => {} // P1-3: Job declarations don't need global symbols
         }
         Ok(())
     }
@@ -120,6 +121,7 @@ impl BytecodeCompiler {
             Declaration::Agent(agent) => self.compile_agent(agent),
             // v1.1: TypeAlias 声明 — 暂不生成字节码（类型在 AST 级别检查）
             Declaration::TypeAlias(_) => Ok(()),
+            Declaration::Job(_) => Ok(()), // P1-3: Job declarations compiled separately
         }
     }
 
@@ -205,7 +207,7 @@ impl BytecodeCompiler {
         self.push_scope();
 
         // v1.1: 编译参数（parameters 现在是 Vec<(String, TypeExpr)>）
-        for (i, (param_name, _param_type)) in flow.parameters.iter().enumerate() {
+        for (_i, (param_name, _param_type)) in flow.parameters.iter().enumerate() {
             let local_idx = self.declare_local(param_name);
             self.module.emit(OpCode::StoreLocal, Some(Operand::U32(local_idx)), None);
         }
@@ -854,7 +856,9 @@ mod tests {
             flows: vec![FlowDeclaration {
                 name: "main".to_string(),
                 parameters: vec![],
+                return_type: None,
                 body: vec![],
+                contracts: None,
             }],
             tests: vec![],
         };
@@ -879,6 +883,9 @@ mod tests {
                 protocol: None,
                 memory_scope: None,
                 max_history_turns: None,
+                contracts: None,
+                input_type: None,
+                output_type: None,
             })],
             flows: vec![],
             tests: vec![],

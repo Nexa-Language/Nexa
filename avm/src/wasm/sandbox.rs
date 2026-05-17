@@ -362,6 +362,7 @@ pub struct WasmSandbox {
     /// 沙盒配置
     config: SandboxConfig,
     /// WASM 配置
+    #[allow(dead_code)]
     wasm_config: WasmConfig,
     /// 审计日志
     audit_log: Arc<Mutex<AuditLog>>,

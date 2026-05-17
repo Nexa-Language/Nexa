@@ -30,9 +30,9 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 use crate::bytecode::{BytecodeModule, Instruction, OpCode, Operand, Constant};
 use crate::utils::error::{AvmError, AvmResult};
 use crate::runtime::contracts::{check_requires, check_ensures, capture_old_values};
-use crate::runtime::result_types::{NexaResult, NexaOption, ErrorPropagation, OtherwiseHandlerCtx, PropagationResult, propagate_or_else};
+use crate::runtime::result_types::{NexaResult, PropagationResult, propagate_or_else};
 use crate::compiler::ast::{ContractSpec, Statement, OtherwiseHandler};
-use super::stack::{Stack, Value, CallFrame};
+use super::stack::{Stack, Value};
 use std::collections::HashMap;
 
 /// 解释器配置
@@ -71,6 +71,7 @@ pub struct ExecutionResult {
 
 /// AVM 解释器
 pub struct Interpreter {
+    #[allow(dead_code)]
     config: InterpreterConfig,
     stack: Stack,
     globals: HashMap<String, Value>,
@@ -368,10 +369,10 @@ impl Interpreter {
     fn exec_otherwise_handler(
         &mut self,
         handler: &OtherwiseHandler,
-        result: &NexaResult,
+        _result: &NexaResult,
     ) -> AvmResult<Value> {
         match handler {
-            OtherwiseHandler::AgentCall { agent_name, args } => {
+            OtherwiseHandler::AgentCall { agent_name, args: _ } => {
                 // Agent fallback: 在 AVM 中简化为字符串标记
                 // 实际 Agent 调用需要异步运行时支持
                 Ok(Value::String(format!("fallback:{}", agent_name)))
@@ -388,8 +389,8 @@ impl Interpreter {
             OtherwiseHandler::Block(statements) => {
                 // 执行代码块中的语句
                 // 简化处理：返回最后一个语句的结果
-                let mut last_value = Value::Null;
-                for stmt in statements {
+                let last_value = Value::Null;
+                for _stmt in statements {
                     // 这里需要 AST 级别的语句执行
                     // 当前简化为返回 Null
                     // 完整实现需要递归执行每条语句
@@ -403,7 +404,7 @@ impl Interpreter {
     ///
     /// 在 AVM 中，NexaResult 以特殊的字典形式存储：
     /// {"_nexa_result": true, "is_ok": true/false, "value": ..., "error": ...}
-    fn is_nexa_result(&self, value: &Value) -> bool {
+    fn is_nexa_result(&self, _value: &Value) -> bool {
         // 简化判断：当前 AVM Value 不直接支持 NexaResult 类型标记
         // 后续可以通过 Value 扩展或特殊标记来区分
         false

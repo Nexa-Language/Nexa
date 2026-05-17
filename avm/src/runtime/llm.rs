@@ -20,7 +20,7 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 
 //! LLM 运行时
 
-use crate::utils::error::{AvmError, AvmResult};
+use crate::utils::error::AvmResult;
 use std::collections::HashMap;
 
 /// LLM 配置

@@ -244,6 +244,7 @@ impl TypeChecker {
             Declaration::Protocol(protocol) => self.check_protocol(protocol),
             Declaration::Tool(_) => Ok(()), // Tool 不需要类型检查
             Declaration::TypeAlias(type_alias) => self.check_type_alias(type_alias),
+            Declaration::Job(_) => Ok(()), // P1-3: Job declarations don't need type checking
         }
     }
 

@@ -23,7 +23,6 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! 提供高性能、安全的 WASM 模块加载和执行能力
 
 use crate::utils::error::{AvmError, AvmResult};
-use std::time::Duration;
 
 /// WASM 运行时配置
 #[derive(Debug, Clone)]
@@ -379,7 +378,7 @@ impl WasmModule {
                         let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize]).to_string();
                         pos += name_len as usize;
                         
-                        let kind = bytes[pos];
+                        let _kind = bytes[pos];
                         pos += 1;
                         
                         let (index, consumed) = read_leb128_u32(&bytes[pos..])?;
@@ -483,6 +482,7 @@ pub struct WasmInstance {
     /// 实例内存
     memory: Vec<u8>,
     /// 全局变量
+    #[allow(dead_code)]
     globals: Vec<WasmValue>,
     /// 执行统计
     stats: ExecutionStats,

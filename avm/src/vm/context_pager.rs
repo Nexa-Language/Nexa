@@ -551,7 +551,7 @@ impl ContextPager {
         let mut embedding = vec![0.0; self.config.embedding_dim];
         let words: Vec<&str> = text.split_whitespace().collect();
         
-        for (i, word) in words.iter().enumerate() {
+        for (_i, word) in words.iter().enumerate() {
             let hash = self.simple_hash(word);
             let idx = hash as usize % self.config.embedding_dim;
             embedding[idx] += 1.0;
@@ -581,6 +581,7 @@ impl ContextPager {
     }
     
     /// 计算余弦相似度
+    #[allow(dead_code)]
     fn cosine_similarity(&self, a: &[f32], b: &[f32]) -> f32 {
         Self::cosine_similarity_static(a, b)
     }

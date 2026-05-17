@@ -28,10 +28,10 @@ thiserror = "1.0"
 anyhow = "1.0"
 
 # WASM runtime (optional)
-wasmtime = { version = "20", optional = true }
+wasmtime = { version = "21", optional = true }
 
 # Python FFI (optional)
-pyo3 = { version = "0.21", features = ["extension-module"], optional = true }
+pyo3 = { version = "0.24", features = ["extension-module"], optional = true }
 
 # CLI
 clap = { version = "4", features = ["derive"] }

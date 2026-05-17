@@ -32,7 +32,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Job 优先级
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum JobPriority {
     Low = 0,
     Normal = 1,
@@ -42,7 +42,7 @@ pub enum JobPriority {
 
 impl JobPriority {
     pub fn from_name(name: &str) -> Self {
-        match name.to_lowercase() {
+        match name.to_lowercase().as_str() {
             "low" => JobPriority::Low,
             "normal" => JobPriority::Normal,
             "high" => JobPriority::High,
@@ -188,7 +188,7 @@ impl MemoryBackend {
                 if let Some(existing) = self.records.get(existing_id) {
                     if existing.status == JobStatus::Pending || existing.status == JobStatus::Running {
                         if let Some(expires) = existing.unique_expires_at {
-                            if self.now_secs() < expires {
+                            if Self::now_secs() < expires {
                                 return None; // 唯一锁未过期，拒绝入队
                             }
                         }
@@ -203,11 +203,12 @@ impl MemoryBackend {
 
         // 如果是延迟任务
         if let Some(scheduled_at) = record.scheduled_at {
-            if scheduled_at > self.now_secs() {
-                self.scheduled.push(record);
-                self.scheduled.sort_by(|a, b| a.scheduled_at.cmp(&b.scheduled_at));
+            if scheduled_at > Self::now_secs() {
+                let unique_key = record.unique_key.clone();
+                self.scheduled.push(record.clone());
+                self.scheduled.sort_by(|a, b| a.scheduled_at.unwrap_or(0.0).total_cmp(&b.scheduled_at.unwrap_or(0.0)));
                 self.records.insert(job_id.clone(), record);
-                if let Some(key) = &record.unique_key {
+                if let Some(key) = &unique_key {
                     self.unique_locks.insert(key.clone(), job_id.clone());
                 }
                 return Some(job_id);
@@ -215,9 +216,10 @@ impl MemoryBackend {
         }
 
         // 正常入队
+        let unique_key = record.unique_key.clone();
         self.queues.get_mut(&record.priority).unwrap().push_back(job_id.clone());
         self.records.insert(job_id.clone(), record);
-        if let Some(key) = &record.unique_key {
+        if let Some(key) = &unique_key {
             self.unique_locks.insert(key.clone(), job_id.clone());
         }
         Some(job_id)
@@ -233,7 +235,7 @@ impl MemoryBackend {
                     if let Some(record) = self.records.get_mut(&job_id) {
                         // 检查过期
                         if let Some(expires) = record.expires_at {
-                            if self.now_secs() > expires {
+                            if Self::now_secs() > expires {
                                 record.status = JobStatus::Expired;
                                 continue;
                             }
@@ -243,7 +245,7 @@ impl MemoryBackend {
                             continue;
                         }
                         record.status = JobStatus::Running;
-                        record.started_at = Some(self.now_secs());
+                        record.started_at = Some(Self::now_secs());
                         record.attempt_count += 1;
                         return Some(record.clone());
                     }
@@ -263,14 +265,14 @@ impl MemoryBackend {
         if let Some(record) = self.records.get_mut(job_id) {
             if record.status == JobStatus::Pending || record.status == JobStatus::Running {
                 record.status = JobStatus::Cancelled;
-                record.completed_at = Some(self.now_secs());
+                record.completed_at = Some(Self::now_secs());
                 // 从队列移除
                 for queue in self.queues.values_mut() {
                     queue.retain(|id| id != job_id);
                 }
                 // 释放唯一锁
                 if let Some(key) = &record.unique_key {
-                    if self.unique_locks.get(key) == Some(job_id) {
+                    if self.unique_locks.get(key).map(|s| s.as_str()) == Some(job_id) {
                         self.unique_locks.remove(key);
                     }
                 }
@@ -284,7 +286,7 @@ impl MemoryBackend {
     pub fn mark_completed(&mut self, job_id: &str) {
         if let Some(record) = self.records.get_mut(job_id) {
             record.status = JobStatus::Completed;
-            record.completed_at = Some(self.now_secs());
+            record.completed_at = Some(Self::now_secs());
             self.release_unique_lock(job_id);
         }
     }
@@ -295,7 +297,7 @@ impl MemoryBackend {
             record.last_error = Some(error.to_string());
             if record.attempt_count >= max_retries {
                 record.status = JobStatus::Dead;
-                record.completed_at = Some(self.now_secs());
+                record.completed_at = Some(Self::now_secs());
                 self.release_unique_lock(job_id);
                 return JobStatus::Dead;
             } else {
@@ -337,7 +339,7 @@ impl MemoryBackend {
             records
         };
         let mut sorted = filtered;
-        sorted.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+        sorted.sort_by(|a, b| b.created_at.total_cmp(&a.created_at));
         sorted.truncate(limit);
         sorted
     }
@@ -352,7 +354,7 @@ impl MemoryBackend {
         for id in &to_remove {
             if let Some(record) = self.records.get(id) {
                 if let Some(key) = &record.unique_key {
-                    if self.unique_locks.get(key) == Some(id) {
+                    if self.unique_locks.get(key).map(|s| s.as_str()) == Some(id.as_str()) {
                         self.unique_locks.remove(key);
                     }
                 }
@@ -375,7 +377,7 @@ impl MemoryBackend {
     }
 
     fn promote_scheduled_jobs(&mut self) {
-        let now = self.now_secs();
+        let now = Self::now_secs();
         while !self.scheduled.is_empty() && self.scheduled[0].scheduled_at.unwrap_or(0.0) <= now {
             let record = self.scheduled.remove(0);
             if let Some(r) = self.records.get_mut(&record.job_id) {
@@ -388,7 +390,7 @@ impl MemoryBackend {
     fn release_unique_lock(&mut self, job_id: &str) {
         if let Some(record) = self.records.get(job_id) {
             if let Some(key) = &record.unique_key {
-                if self.unique_locks.get(key) == Some(job_id) {
+                if self.unique_locks.get(key).map(|s| s.as_str()) == Some(job_id) {
                     self.unique_locks.remove(key);
                 }
             }
@@ -443,7 +445,7 @@ impl JobQueue {
     }
 
     /// 入队任务
-    pub fn enqueue(&self, spec_name: &str, args: &str, options: Option<HashMap<String, String>>) -> Option<String> {
+    pub fn enqueue(&self, spec_name: &str, args: &str, _options: Option<HashMap<String, String>>) -> Option<String> {
         let registry = self.registry.lock().unwrap();
         let spec = registry.get(spec_name);
         if spec.is_none() {

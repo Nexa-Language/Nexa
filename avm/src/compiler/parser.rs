@@ -1303,6 +1303,18 @@ impl Parser {
             ))
         }
     }
+
+    fn expect_string(&mut self) -> AvmResult<String> {
+        if let Token::String(s) = self.peek_token() {
+            let s = s.clone();
+            self.pos += 1;
+            Ok(s)
+        } else {
+            Err(AvmError::ParseError(
+                format!("Expected string literal, got {:?}", self.peek_token())
+            ))
+        }
+    }
     // ==================== v1.2: Error Propagation 辅助方法 ====================
     
     /// 解析 otherwise handler
@@ -1322,7 +1334,7 @@ impl Parser {
                     && self.tokens[self.pos + 1].token == Token::Dot {
                     self.advance(); // 消费 Agent 名称
                     self.advance(); // 消费 .
-                    let method = self.peek_text().clone();
+                    let _method = self.peek_text().clone();
                     self.advance(); // 消费方法名
                     
                     let mut args = Vec::new();
