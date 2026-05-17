@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa v2.0.0 is released — Harness Native Runtime with 296 new tests, AVM Rust 0 errors, and Nexa Code CLI.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa v2.0.0 Released — Harness Native Runtime">
+  <meta property="og:description" content="296 new tests, AVM Rust 0 errors 0 warnings, and the first Nexa Code CLI agent.">
+  <title>Nexa v2.0.0 Released — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo"><img src="../assets/nexa-logo.svg" alt="Nexa"> Nexa</a>
+      <ul class="nav-links">
+        <li class="nav-item"><a href="../index.html">Home <span class="chevron">▾</span></a><div class="nav-dropdown"><a href="../index.html#features">Features</a><a href="../index.html#code">Code</a><a href="../index.html#architecture">Architecture</a></div></li>
+        <li class="nav-item"><a href="index.html">Blog</a></li>
+        <li class="nav-item"><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li class="nav-item"><a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Docs</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <div class="blog-post-inner">
+      <div class="blog-post-header">
+        <span class="blog-post-date">May 15, 2026</span>
+        <span class="blog-post-tag">Release</span>
+        <span class="blog-post-tag">v2.0.0</span>
+        <span class="blog-post-tag">Harness Runtime</span>
+      </div>
+
+      <h1>Nexa v2.0.0 Released — Harness Native Runtime</h1>
+
+      <p>After months of design and implementation, <strong>Nexa v2.0.0</strong> is officially released. This is the most significant architectural evolution since the v1.0 AVM introduction — transforming the Harness six-tuple H=(E,T,C,S,L,V) from compile-time validation into <strong>runtime first-class primitives</strong>.</p>
+
+      <h2>What Changed</h2>
+
+      <p>The core design decision: the Harness is no longer just a compiler check. Each dimension now has a <strong>dedicated runtime subsystem</strong> that executes alongside your agent:</p>
+
+      <table style="width:100%; border-collapse: collapse; margin: 24px 0;">
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Dimension</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Syntax</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Runtime</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Tests</th>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">E</td>
+          <td style="padding: 10px 16px;"><code>autoloop</code></td>
+          <td style="padding: 10px 16px;">HarnessKernel + AutoLoopConfig</td>
+          <td style="padding: 10px 16px;">52</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">T</td>
+          <td style="padding: 10px 16px;"><code>@tool</code></td>
+          <td style="padding: 10px 16px;">ToolRegistry + ToolSchema</td>
+          <td style="padding: 10px 16px;">53</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">C</td>
+          <td style="padding: 10px 16px;"><code>with_context</code></td>
+          <td style="padding: 10px 16px;">ContextManager + importance_weighted</td>
+          <td style="padding: 10px 16px;">52</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">S</td>
+          <td style="padding: 10px 16px;"><code>snapshot/restore</code></td>
+          <td style="padding: 10px 16px;">StateStore + fork/merge</td>
+          <td style="padding: 10px 16px;">45</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">L</td>
+          <td style="padding: 10px 16px;"><code>before_step/reflect</code></td>
+          <td style="padding: 10px 16px;">LifecycleHookManager</td>
+          <td style="padding: 10px 16px;">53</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">V</td>
+          <td style="padding: 10px 16px;"><code>verify</code></td>
+          <td style="padding: 10px 16px;">EvaluationInterface + LLMRouter</td>
+          <td style="padding: 10px 16px;">59</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">Actor</td>
+          <td style="padding: 10px 16px;"><code>spawn/pass/await</code></td>
+          <td style="padding: 10px 16px;">ActorSystem</td>
+          <td style="padding: 10px 16px;">18</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">WASM</td>
+          <td style="padding: 10px 16px;">sandbox</td>
+          <td style="padding: 10px 16px;">WASM Sandbox + full harness</td>
+          <td style="padding: 10px 16px;">15</td>
+        </tr>
+      </table>
+
+      <p><strong>Total: 296 new tests</strong>, plus v1.x 1500+ tests = <strong>1800+ tests</strong>.</p>
+
+      <h2>AVM Rust: 0 Errors, 0 Warnings</h2>
+
+      <p>A major engineering effort went into fixing the AVM Rust backend. We resolved:</p>
+
+      <ul>
+        <li><strong>17 compilation errors</strong> in <code>avm/src/runtime/jobs.rs</code> — associated function vs method confusion, f64 comparison, String/&str mismatches, borrow checker conflicts</li>
+        <li><strong>21 warnings</strong> across 8 files — unused imports, unused variables, dead code</li>
+        <li><strong>Security upgrades</strong>: wasmtime v20→v21 (9 CVEs), pyo3 v0.21→v0.24 (1 CVE)</li>
+      </ul>
+
+      <p>Result: <code>cargo check</code> — <strong>0 errors, 0 warnings</strong>. Clean build.</p>
+
+      <h2>12 v2.0 Examples</h2>
+
+      <p>All examples compile successfully with <code>nexa build --harness=warn</code>:</p>
+
+      <pre><code>examples/v2.0/
+  01_autoloop.nx          — E-dimension: autonomous ReAct loop
+  02_with_context.nx      — C-dimension: context management
+  03_try_agent.nx         — E+L: fault-tolerant execution + reflection
+  04_tool_annotation.nx   — T-dimension: zero-cost tool binding
+  05_snapshot_restore.nx  — S-dimension: state snapshots
+  06_fork_merge.nx        — S-dimension: branch exploration
+  07_verify.nx            — V-dimension: output verification
+  08_reflect.nx           — L-dimension: reflection injection
+  09_lifecycle_hooks.nx   — L-dimension: lifecycle interception
+  10_actor_system.nx      — Actor: multi-agent orchestration
+  11_well_harnessed.nx    — full-dimension example
+  12_harness_cli.nx       — Claude Code-like CLI framework</code></pre>
+
+      <h2>Nexa Code — The First Harness Native CLI Agent</h2>
+
+      <p>Alongside v2.0, we're releasing <strong>Nexa Code</strong> — an interactive AI programming assistant built entirely on the Harness Runtime. It uses all six dimensions:</p>
+
+      <ul>
+        <li><strong>E</strong>: <code>autoloop</code> for autonomous ReAct cycles</li>
+        <li><strong>T</strong>: <code>@tool</code> for file read/write/search/exec</li>
+        <li><strong>C</strong>: <code>with_context</code> for conversation management</li>
+        <li><strong>S</strong>: <code>snapshot/restore</code> for error recovery</li>
+        <li><strong>L</strong>: <code>before_step/after_step/reflect</code> for lifecycle control</li>
+        <li><strong>V</strong>: <code>verify</code> for output quality checks</li>
+      </ul>
+
+      <p>See our companion blog post: <a href="2026-05-nexa-code.html">Introducing Nexa Code</a>.</p>
+
+      <h2>Backward Compatibility</h2>
+
+      <p>v1.x code is fully backward compatible. v2.0 features are opt-in via <code>--harness=warn</code>:</p>
+
+      <pre><code><span class="comment">// v1.x code still works unchanged</span>
+<span class="keyword">agent</span> <span class="function">ChatBot</span> { prompt: <span class="string">"..."</span> }
+<span class="keyword">flow</span> <span class="function">main</span> { result = ChatBot.run(<span class="string">"hello"</span>) }
+
+<span class="comment">// v2.0: add Harness primitives incrementally</span>
+<span class="keyword">flow</span> <span class="function">main</span> {
+    <span class="keyword">autoloop</span> <span class="keyword">max_steps</span>: <span class="type">5</span> {
+        <span class="keyword">with_context</span> <span class="keyword">max_tokens</span>: <span class="type">50000</span> {
+            <span class="keyword">try_agent</span> {
+                result = ChatBot.run(<span class="string">"hello"</span>)
+                <span class="keyword">verify</span> result <span class="keyword">satisfies</span> <span class="type">string</span>
+            } <span class="keyword">catch_correction</span>(e: <span class="type">ToolError</span>) {
+                <span class="keyword">reflect</span> <span class="string">"Adjusting approach"</span>
+            }
+        }
+    }
+}</code></pre>
+
+      <h2>What's Next</h2>
+
+      <ul>
+        <li><strong>v2.1</strong>: Production hardening — real LLM API integration, WASM execution, REPL mode</li>
+        <li><strong>v2.2</strong>: Distributed Harness — multi-node Actor communication, distributed StateStore</li>
+        <li><strong>v3.0</strong>: AVM Bytecode Production — full bytecode interpreter, performance benchmarks</li>
+      </ul>
+
+      <hr>
+      <p><em>— Owen, May 15, 2026</em></p>
+    </div>
+  </article>
+
+  <footer class="footer">
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Product</h4><a href="../index.html">Home</a><a href="../index.html#features">Features</a><a href="../index.html#architecture">Architecture</a><a href="index.html">Blog</a></div>
+      <div class="footer-col"><h4>Ecosystem</h4><a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Documentation</a><a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a><a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">EvoBench</a><a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">EpiContext</a></div>
+      <div class="footer-col"><h4>Resources</h4><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a><a href="https://github.com/Nexa-Language" target="_blank" rel="noopener">Organization</a><a href="https://author.nexa-lang.com/" target="_blank" rel="noopener">Author</a></div>
+      <div class="footer-col"><h4>Contact</h4><span class="footer-contact">nexa-lang@proton.me</span></div>
+    </div>
+    <div class="footer-bottom"><div class="footer-brand"><img src="../assets/nexa-logo.svg" alt="Nexa"><span>Nexa Language</span></div><span class="footer-copy">&copy; 2026 Nexa Language. Licensed under AGPL-3.0.</span></div>
+  </footer>
+
+  <script src="../js/main.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
