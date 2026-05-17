@@ -189,6 +189,8 @@ class FileBackend(HITLBackend):
     """File-based HITL backend for async approval workflow"""
     
     def __init__(self, config: Dict[str, Any] = None):
+        if config is None:
+            config = {}
         super().__init__(config)
         self.pending_dir = Path(config.get("pending_dir", ".nexa_pending"))
         self.approved_dir = Path(config.get("approved_dir", ".nexa_approved"))
