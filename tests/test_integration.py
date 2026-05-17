@@ -100,7 +100,7 @@ class TestExampleFiles(unittest.TestCase):
         
         example_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "examples", "01_hello_world.nx"
+            "examples", "v0.1", "01_hello_world.nx"
         )
         
         if os.path.exists(example_path):
@@ -111,20 +111,24 @@ class TestExampleFiles(unittest.TestCase):
             self.assertIsNotNone(result)
     
     def test_all_examples_parseable(self):
-        """测试所有示例文件可解析"""
+        """测试所有示例文件可解析（递归搜索 examples/ 子目录）"""
         from src.nexa_sdk import compile as nexa_compile
+        import glob
         
         examples_dir = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "examples"
         )
         
-        nx_files = [f for f in os.listdir(examples_dir) if f.endswith('.nx')]
+        # 递归查找 .nx 文件，排除 _archive 目录
+        nx_files = sorted(
+            f for f in glob.glob(os.path.join(examples_dir, "**", "*.nx"), recursive=True)
+            if "_archive" not in f
+        )
         
         parsed_count = 0
-        for nx_file in nx_files:
+        for path in nx_files:
             try:
-                path = os.path.join(examples_dir, nx_file)
                 with open(path, 'r') as f:
                     code = f.read()
                 
