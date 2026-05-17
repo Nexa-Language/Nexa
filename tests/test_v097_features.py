@@ -296,7 +296,7 @@ class TestAllExamplesCompile(unittest.TestCase):
         from src.ast_transformer import NexaTransformer
         from src.code_generator import CodeGenerator
         
-        with open('examples/01_hello_world.nx', 'r', encoding='utf-8') as f:
+        with open('examples/v0.1/01_hello_world.nx', 'r', encoding='utf-8') as f:
             code = f.read()
         
         tree = parse(code)
@@ -313,7 +313,7 @@ class TestAllExamplesCompile(unittest.TestCase):
         from src.ast_transformer import NexaTransformer
         from src.code_generator import CodeGenerator
         
-        with open('examples/15_dag_topology.nx', 'r', encoding='utf-8') as f:
+        with open('examples/v1.0/15_dag_topology.nx', 'r', encoding='utf-8') as f:
             code = f.read()
         
         tree = parse(code)

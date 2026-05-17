@@ -46,7 +46,7 @@ class TestInspectNexaFile:
 
     def test_inspect_pipeline_and_routing(self):
         """Test inspecting examples/02_pipeline_and_routing.nx"""
-        file_path = os.path.join(EXAMPLES_DIR, "02_pipeline_and_routing.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v0.1/02_pipeline_and_routing.nx")
         result = inspect_nexa_file(file_path)
 
         # Basic structure
@@ -88,7 +88,7 @@ class TestInspectNexaFile:
 
     def test_inspect_dag_topology(self):
         """Test inspecting examples/15_dag_topology.nx — DAG topology inference"""
-        file_path = os.path.join(EXAMPLES_DIR, "15_dag_topology.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.0/15_dag_topology.nx")
         result = inspect_nexa_file(file_path)
 
         agents = result["agents"]
@@ -179,7 +179,7 @@ flow main {
 
     def test_inspect_tool_file(self):
         """Test inspecting examples/test_custom_tool.nx — tool extraction"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_custom_tool.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_custom_tool.nx")
         result = inspect_nexa_file(file_path)
 
         # Tools extracted
@@ -210,7 +210,7 @@ flow main {
 
     def test_inspect_protocol_file(self):
         """Test inspecting examples/test_protocol_implements.nx — protocol extraction"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_protocol_implements.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_protocol_implements.nx")
         result = inspect_nexa_file(file_path)
 
         # Protocols extracted
@@ -234,7 +234,7 @@ flow main {
 
     def test_inspect_decorator_file(self):
         """Test inspecting examples/test_agent_decorators.nx — decorator extraction"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_agent_decorators.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_agent_decorators.nx")
         result = inspect_nexa_file(file_path)
 
         agents = result["agents"]
@@ -250,7 +250,7 @@ flow main {
 
     def test_inspect_semantic_types(self):
         """Test inspecting examples/test_semantic_types.nx — type extraction"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_semantic_types.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_semantic_types.nx")
         if not os.path.exists(file_path):
             pytest.skip("test_semantic_types.nx not found")
 
@@ -266,7 +266,7 @@ flow main {
 
     def test_inspect_summary_statistics(self):
         """Test that summary statistics are correct"""
-        file_path = os.path.join(EXAMPLES_DIR, "02_pipeline_and_routing.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v0.1/02_pipeline_and_routing.nx")
         result = inspect_nexa_file(file_path)
 
         summary = result["summary"]
@@ -286,7 +286,7 @@ flow main {
 
     def test_inspect_imports(self):
         """Test import/include extraction"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_include_module.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_include_module.nx")
         if not os.path.exists(file_path):
             pytest.skip("test_include_module.nx not found")
 
@@ -420,7 +420,7 @@ class TestValidateNexaFile:
 
     def test_validate_valid_file(self):
         """Test that a valid .nx file returns valid: true"""
-        file_path = os.path.join(EXAMPLES_DIR, "02_pipeline_and_routing.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v0.1/02_pipeline_and_routing.nx")
         result = validate_nexa_file(file_path)
 
         # The file should parse successfully
@@ -599,7 +599,7 @@ flow main {
 
     def test_validate_summary(self):
         """Test that validation summary contains correct counts"""
-        file_path = os.path.join(EXAMPLES_DIR, "02_pipeline_and_routing.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v0.1/02_pipeline_and_routing.nx")
         result = validate_nexa_file(file_path)
 
         summary = result["summary"]
@@ -804,7 +804,7 @@ class TestCLIIntegration:
 
     def test_inspect_cli_json_output(self):
         """Test that nexa inspect produces valid JSON"""
-        file_path = os.path.join(EXAMPLES_DIR, "02_pipeline_and_routing.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v0.1/02_pipeline_and_routing.nx")
         result = inspect_nexa_file(file_path)
         json_str = format_inspect_json(result)
         parsed = json.loads(json_str)
@@ -813,7 +813,7 @@ class TestCLIIntegration:
 
     def test_validate_cli_json_output(self):
         """Test that nexa validate --json produces valid JSON"""
-        file_path = os.path.join(EXAMPLES_DIR, "02_pipeline_and_routing.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v0.1/02_pipeline_and_routing.nx")
         result = validate_nexa_file(file_path)
         json_str = format_error_json(result)
         parsed = json.loads(json_str)
@@ -824,7 +824,7 @@ class TestCLIIntegration:
 
     def test_inspect_and_validate_consistency(self):
         """Test that inspect and validate produce consistent results for the same file"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_contract.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_contract.nx")
 
         inspect_result = inspect_nexa_file(file_path)
         validate_result = validate_nexa_file(file_path)
@@ -837,7 +837,7 @@ class TestCLIIntegration:
 
     def test_full_workflow_inspect_then_validate(self):
         """Test the full Agent workflow: inspect first, then validate"""
-        file_path = os.path.join(EXAMPLES_DIR, "test_protocol_implements.nx")
+        file_path = os.path.join(EXAMPLES_DIR, "v1.2/test_protocol_implements.nx")
 
         # Step 1: Inspect to understand the code structure
         inspect_result = inspect_nexa_file(file_path)

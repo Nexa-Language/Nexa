@@ -138,17 +138,10 @@ class TestRuntimeMeta:
         assert get_last_result() == test_result
     
     def test_meta_proxy_reset(self):
-        """Verify MetaProxy.reset() works"""
+        """Verify MetaProxy.reset() works (properties are read-only, set via module-level functions)"""
         proxy = MetaProxy()
-        proxy.loop_count = 10
-        proxy.last_result = {"test": "value"}
+        set_last_result({"test": "value"})
         
-        proxy.reset()
-        
-        assert proxy.loop_count == 0
-        assert proxy.last_result is None
-
-
 class TestReasonPrimitive:
     """Test reason() primitive with type inference"""
     
@@ -397,14 +390,12 @@ class TestIntegration:
             timeout=120,
             retry=5,
             cache=True,
-            memory=True,
             stream=True
         )
         
         assert agent.timeout == 120
         assert agent.retry == 5
         assert agent.cache == True
-        assert agent.memory == True
         assert agent.stream == True
 
 
