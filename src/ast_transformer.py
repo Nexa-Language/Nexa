@@ -387,6 +387,239 @@ class NexaTemplateParser:
         return parts[0], parts[1]
 
 
+# ═══════════════════════════════════════════════════════════════════════
+#  v2.0: Harness Native AST Data Classes
+#  六元组 H = (E, T, C, S, L, V) 的 AST 节点定义
+# ═══════════════════════════════════════════════════════════════════════
+
+@dataclass
+class ToolAnnotation:
+    """@tool 注解式工具声明 — Harness T"""
+    description: str
+    fn_name: str
+    params: List[Tuple[str, str, Any]]  # (name, type, default)
+    return_type: Optional[str] = None
+    body: List[Any] = field(default_factory=list)
+    python_code: Optional[str] = None  # python! block content
+    risk_level: str = "low"
+    requires_approval: bool = False
+    sandbox: bool = False
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "ToolAnnotation",
+            "description": self.description,
+            "fn_name": self.fn_name,
+            "params": [{"name": p[0], "type": p[1], "default": p[2]} for p in self.params],
+            "return_type": self.return_type,
+            "body": self.body,
+            "python_code": self.python_code,
+            "risk_level": self.risk_level,
+            "requires_approval": self.requires_approval,
+            "sandbox": self.sandbox,
+        }
+
+
+@dataclass
+class AutoLoopStmt:
+    """autoloop 自主执行循环 — Harness E"""
+    max_steps: Optional[int] = None
+    exit_when: Optional[str] = None
+    timeout: Optional[int] = None
+    body: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "AutoLoopStmt",
+            "max_steps": self.max_steps,
+            "exit_when": self.exit_when,
+            "timeout": self.timeout,
+            "body": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.body],
+        }
+
+
+@dataclass
+class WithContextStmt:
+    """with_context 上下文作用域 — Harness C"""
+    config: Dict[str, Any] = field(default_factory=dict)
+    body: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "WithContextStmt",
+            "config": self.config,
+            "body": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.body],
+        }
+
+
+@dataclass
+class TryAgentStmt:
+    """try_agent AI 专属容错 — Harness E+L"""
+    try_body: List[Any] = field(default_factory=list)
+    catch_branches: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "TryAgentStmt",
+            "try_body": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.try_body],
+            "catch_branches": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.catch_branches],
+        }
+
+
+@dataclass
+class CatchCorrectionBranch:
+    """catch_correction 分支"""
+    error_var: str = "e"
+    error_type: str = "ToolError"
+    correction_body: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "CatchCorrectionBranch",
+            "error_var": self.error_var,
+            "error_type": self.error_type,
+            "correction_body": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.correction_body],
+        }
+
+
+@dataclass
+class SnapshotStmt:
+    """snapshot 状态快照 — Harness S"""
+    var_name: Optional[str] = None
+
+    def to_dict(self) -> Dict:
+        return {"type": "SnapshotStmt", "var_name": self.var_name}
+
+
+@dataclass
+class RestoreStmt:
+    """restore 状态回溯 — Harness S"""
+    target_var: str = ""
+    condition: Optional[Any] = None
+
+    def to_dict(self) -> Dict:
+        return {"type": "RestoreStmt", "target_var": self.target_var, "condition": self.condition}
+
+
+@dataclass
+class ForkStmt:
+    """fork 并行探索 — Harness S"""
+    branches: List[Tuple[Optional[str], Any]] = field(default_factory=list)
+    merge_strategy: str = "best"
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "ForkStmt",
+            "branches": [{"var": b[0], "expr": b[1] if isinstance(b[1], dict) else str(b[1])} for b in self.branches],
+            "merge_strategy": self.merge_strategy,
+        }
+
+
+@dataclass
+class VerifyStmt:
+    """verify Harness 验收 — Harness V"""
+    target: Any = None
+    check_type: str = "satisfies"  # "satisfies" | "method" | "semantic"
+    check_value: Any = None
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "VerifyStmt",
+            "check_type": self.check_type,
+            "target": self.target if isinstance(self.target, dict) else str(self.target),
+            "check_value": self.check_value if isinstance(self.check_value, dict) else str(self.check_value),
+        }
+
+
+@dataclass
+class ReflectStmt:
+    """reflect 反思注入 — Harness L"""
+    text: str = ""
+
+    def to_dict(self) -> Dict:
+        return {"type": "ReflectStmt", "text": self.text}
+
+
+@dataclass
+class UnharnessedStmt:
+    """unharnessed 显式约束绕过"""
+    reason: Optional[str] = None
+    body: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {
+            "type": "UnharnessedStmt",
+            "reason": self.reason,
+            "body": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.body],
+        }
+
+
+@dataclass
+class ContextPolicyDecl:
+    """context_policy 上下文策略声明 — Harness C"""
+    params: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict:
+        return {"type": "ContextPolicyDecl", "params": self.params}
+
+
+@dataclass
+class LifecycleHook:
+    """生命周期钩子 — Harness L"""
+    hook_type: str = "before_step"  # before_step | after_step | on_error | before_tool | after_tool
+    tool_name: Optional[str] = None  # for before_tool/after_tool
+    error_binding: Optional[Tuple[str, str]] = None  # for on_error: (var, type)
+    body: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        d = {"type": "LifecycleHook", "hook_type": self.hook_type, "body": [b if isinstance(b, dict) else (b.to_dict() if hasattr(b, 'to_dict') else str(b)) for b in self.body]}
+        if self.tool_name:
+            d["tool_name"] = self.tool_name
+        if self.error_binding:
+            d["error_var"] = self.error_binding[0]
+            d["error_type"] = self.error_binding[1]
+        return d
+
+
+@dataclass
+class SpawnStmt:
+    """spawn Actor 创建"""
+    var_name: Optional[str] = None
+    agent_name: str = ""
+    args: List[Any] = field(default_factory=list)
+
+    def to_dict(self) -> Dict:
+        return {"type": "SpawnStmt", "var_name": self.var_name, "agent_name": self.agent_name, "args": self.args}
+
+
+@dataclass
+class PassStmt:
+    """pass Actor 消息发送"""
+    message: Any = None
+    target_actor: str = ""
+
+    def to_dict(self) -> Dict:
+        return {"type": "PassStmt", "message": self.message, "target_actor": self.target_actor}
+
+
+@dataclass
+class AwaitStmt:
+    """await Actor 结果等待"""
+    actor_var: str = ""
+
+    def to_dict(self) -> Dict:
+        return {"type": "AwaitStmt", "actor_var": self.actor_var}
+
+
+@dataclass
+class ReceiveStmt:
+    """receive Actor 消息接收"""
+    type_expr: Optional[str] = None
+
+    def to_dict(self) -> Dict:
+        return {"type": "ReceiveStmt", "type_expr": self.type_expr}
+
+
 class NexaTransformer(Transformer):
     """
     负责将 Lark 解析后生成的树结构（Tree）转化为
@@ -414,6 +647,9 @@ class NexaTransformer(Transformer):
     @staticmethod
     def _score_ast_node(node):
         'Score an AST node for _ambig resolution. Higher score = preferred alternative.'
+        # Handle dataclass objects via to_dict()
+        if hasattr(node, 'to_dict') and not isinstance(node, dict):
+            node = node.to_dict()
         if not isinstance(node, dict):
             return 0
         node_type = node.get('type', '')
@@ -497,6 +733,42 @@ class NexaTransformer(Transformer):
         if node_type == 'FieldInitExpression':
             return 45
 
+        # ═══ v2.0: Harness Native node scoring ═══
+        if node_type == 'AutoLoopStmt':
+            return 70  # Highest priority — Harness core primitive
+        if node_type == 'TryAgentStmt':
+            return 65  # High priority — AI error recovery
+        if node_type == 'WithContextStmt':
+            return 60  # High priority — context management
+        if node_type == 'ToolAnnotation':
+            return 55  # Medium-high — @tool
+        if node_type == 'ForkStmt':
+            return 50  # Medium — parallel exploration
+        if node_type == 'VerifyStmt':
+            return 48  # Medium — verification
+        if node_type == 'SnapshotStmt':
+            return 45  # Medium — snapshot
+        if node_type == 'RestoreStmt':
+            return 45  # Medium — restore
+        if node_type == 'ReflectStmt':
+            return 40  # Medium-low — reflection
+        if node_type == 'SpawnStmt':
+            return 42  # Medium-low — Actor
+        if node_type == 'PassStmt':
+            return 38  # Low — Actor message
+        if node_type == 'AwaitStmt':
+            return 38  # Low — Actor wait
+        if node_type == 'UnharnessedStmt':
+            return 35  # Low — constraint bypass
+        if node_type == 'LifecycleHook':
+            return 30  # Low — hooks
+        if node_type == 'ContextPolicyDecl':
+            return 30  # Low — config
+        if node_type == 'CatchCorrectionBranch':
+            return 60  # High — part of try_agent
+        if node_type == 'ReceiveStmt':
+            return 38  # Low — Actor receive
+
         return 1
 
     def _ambig(self, args):
@@ -526,15 +798,39 @@ class NexaTransformer(Transformer):
         preferred_rules = ['defer_stmt', 'pipe_chain_expr', 'null_coalesce_expr',
                            'traditional_if_stmt', 'foreach_stmt', 'while_stmt',
                            'try_catch_stmt', 'assignment_stmt',
+                           'autoloop_stmt', 'with_context_stmt', 'try_agent_stmt',
+                           'catch_correction_branch', 'reflect_stmt', 'snapshot_stmt',
+                           'restore_stmt', 'fork_stmt', 'verify_satisfies',
+                           'verify_method', 'verify_semantic', 'unharnessed_stmt',
+                           'before_step_hook', 'after_step_hook', 'on_error_hook',
+                           'before_tool_hook', 'after_tool_hook',
+                           'spawn_stmt', 'pass_stmt', 'await_stmt', 'receive_stmt',
+                           'context_policy_decl', 'lifecycle_hook',
+                           'input_stmt', 'exit_stmt',
+                           'try_catch_stmt', 'assignment_stmt',
                            'match_expr', 'wildcard_pat',
                            'literal_true_pat', 'literal_false_pat',
                            'literal_int_pat', 'literal_float_pat', 'literal_str_pat',
                            'variable_pat',
                            'tuple_pat', 'array_pat', 'array_pat_rest', 'map_pat', 'map_pat_rest', 'variant_pat',
-                           'let_pattern_stmt', 'for_pattern_stmt']
+                           'let_pattern_stmt', 'for_pattern_stmt',
+                           # v2.0: Harness Native preferred rules
+                           'autoloop_stmt', 'with_context_stmt', 'try_agent_stmt',
+                           'catch_correction_branch', 'reflect_stmt', 'snapshot_stmt',
+                           'restore_stmt', 'fork_stmt', 'verify_satisfies',
+                           'verify_method', 'verify_semantic', 'unharnessed_stmt',
+                           'context_policy_decl', 'before_step_hook', 'after_step_hook',
+                           'on_error_hook', 'before_tool_hook', 'after_tool_hook',
+                           'spawn_stmt', 'pass_stmt', 'await_stmt', 'receive_stmt',
+                           'tool_annotation']
         for child in args:
             if hasattr(child, 'data') and child.data in preferred_rules:
                 return getattr(self, child.data)(child.children)
+            # Also check nested children for preferred rules (e.g., autoloop_body containing verify_satisfies)
+            if hasattr(child, 'data') and hasattr(child, 'children'):
+                for subchild in child.children:
+                    if hasattr(subchild, 'data') and subchild.data in preferred_rules:
+                        return getattr(self, child.data)(child.children)
 
         # 4. Default: first alternative
         first = args[0]
@@ -545,6 +841,583 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def import_stmt(self, args):
         return {"type": "IncludeStatement", "path": str(args[0]).strip('"')}
+
+    # ═══════════════════════════════════════════════════════════════════════
+    #  v2.0: Harness Native Handler Methods
+    #  六元组 H = (E, T, C, S, L, V) 的 AST 转换
+    # ═══════════════════════════════════════════════════════════════════════
+
+    @v_args(inline=False)
+    def tool_annotation(self, args):
+        """@tool 注解 → ToolAnnotation AST 节点"""
+        description = str(args[0]).strip('"')
+        config = {}
+        fn_def = None
+
+        # Parse args: description, optional config, fn_def
+        for arg in args[1:]:
+            if isinstance(arg, dict) and arg.get("_type") == "tool_config":
+                config = arg
+            elif isinstance(arg, dict) and arg.get("type") == "tool_fn_def":
+                fn_def = arg
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, dict):
+                    if transformed.get("_type") == "tool_config":
+                        config = transformed
+                    elif transformed.get("type") == "tool_fn_def":
+                        fn_def = transformed
+
+        # If fn_def not found, try to extract from remaining args
+        if fn_def is None and len(args) >= 2:
+            fn_def = args[-1] if isinstance(args[-1], dict) else {"fn_name": "unknown", "params": [], "return_type": None, "body": []}
+
+        fn_name = fn_def.get("fn_name", "unknown") if isinstance(fn_def, dict) else "unknown"
+        params_raw = fn_def.get("params", []) if isinstance(fn_def, dict) else []
+        return_type = fn_def.get("return_type") if isinstance(fn_def, dict) else None
+        body = fn_def.get("body", []) if isinstance(fn_def, dict) else []
+        python_code = fn_def.get("python_code") if isinstance(fn_def, dict) else None
+
+        # Convert params to tuples
+        params = []
+        for p in params_raw:
+            if isinstance(p, dict):
+                params.append((p.get("name", ""), p.get("type", ""), p.get("default")))
+            elif isinstance(p, tuple):
+                params.append(p)
+
+        risk_level = config.get("risk_level", "low")
+        requires_approval = config.get("requires_approval", False)
+        sandbox = config.get("sandbox", False)
+
+        return ToolAnnotation(
+            description=description, fn_name=fn_name, params=params,
+            return_type=return_type, body=body, python_code=python_code,
+            risk_level=risk_level, requires_approval=requires_approval, sandbox=sandbox,
+        )
+
+    @v_args(inline=False)
+    def tool_config_list(self, args):
+        """Parse @tool config items into a dict"""
+        config = {}
+        for item in args:
+            if isinstance(item, dict) and "key" in item:
+                config[item["key"]] = item["value"]
+        return {"_type": "tool_config", **config}
+
+    @v_args(inline=False)
+    def tool_config_item(self, args):
+        key = str(args[0])
+        value = args[1] if len(args) > 1 else None
+        if isinstance(value, str):
+            value = value.strip('"')
+        return {"key": key, "value": value}
+
+    @v_args(inline=False)
+    def tool_config_string(self, args):
+        return str(args[0]).strip('"')
+
+    @v_args(inline=False)
+    def tool_config_id(self, args):
+        return str(args[0])
+
+    @v_args(inline=False)
+    def tool_config_bool_true(self, args):
+        return True
+
+    @v_args(inline=False)
+    def tool_config_bool_false(self, args):
+        return False
+
+    @v_args(inline=False)
+    def tool_fn_def(self, args):
+        """Parse @tool fn definition"""
+        fn_name = str(args[0])
+        params = []
+        return_type = None
+        body = []
+        python_code = None
+
+        for arg in args[1:]:
+            if isinstance(arg, dict):
+                if arg.get("_type") == "param_list":
+                    params = arg.get("params", [])
+                elif arg.get("type") == "type_expr":
+                    return_type = arg
+                elif arg.get("type") == "PythonEscapeStatement":
+                    python_code = arg.get("code", "")
+                    body = [arg]
+            elif isinstance(arg, list):
+                # block returns a list of statements
+                body = arg
+                # Check for PythonEscapeStatement inside the list
+                for item in arg:
+                    if isinstance(item, dict) and item.get("type") == "PythonEscapeStatement":
+                        python_code = item.get("code", "")
+                        break
+            elif hasattr(arg, 'data'):
+                # Transform Lark Tree nodes
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, dict):
+                    if transformed.get("_type") == "param_list":
+                        params = transformed.get("params", [])
+                    elif transformed.get("type") == "type_expr":
+                        return_type = transformed
+                    elif transformed.get("type") == "PythonEscapeStatement":
+                        python_code = transformed.get("code", "")
+                        body = [transformed]
+                elif isinstance(transformed, list):
+                    body = transformed
+                    for item in transformed:
+                        if isinstance(item, dict) and item.get("type") == "PythonEscapeStatement":
+                            python_code = item.get("code", "")
+                            break
+
+        return {"type": "tool_fn_def", "fn_name": fn_name, "params": params, "return_type": return_type, "body": body, "python_code": python_code}
+
+    @v_args(inline=False)
+    def tool_param_list(self, args):
+        params = []
+        for arg in args:
+            if isinstance(arg, dict) and "name" in arg:
+                params.append(arg)
+        return {"_type": "param_list", "params": params}
+
+    @v_args(inline=False)
+    def tool_param(self, args):
+        name = str(args[0])
+        type_str = str(args[1]) if len(args) > 1 else "string"
+        default = args[2] if len(args) > 2 else None
+        return {"name": name, "type": type_str, "default": default}
+
+    @v_args(inline=False)
+    def default_string(self, args):
+        return str(args[0]).strip('"')
+
+    @v_args(inline=False)
+    def default_int(self, args):
+        return int(args[0])
+
+    @v_args(inline=False)
+    def default_float(self, args):
+        return float(args[0])
+
+    @v_args(inline=False)
+    def autoloop_stmt(self, args):
+        """autoloop → AutoLoopStmt AST 节点"""
+        max_steps = None
+        exit_when = None
+        timeout = None
+        body = []
+
+        for arg in args:
+            if isinstance(arg, dict):
+                if arg.get("_type") == "autoloop_config":
+                    max_steps = arg.get("max_steps")
+                    exit_when = arg.get("exit_when")
+                    timeout = arg.get("timeout")
+                else:
+                    body.append(arg)
+            elif isinstance(arg, list):
+                # autoloop_body returns list(args) — extend body with all statements
+                body.extend(arg)
+            elif hasattr(arg, 'data'):
+                if arg.data == '_ambig':
+                    # Handle Earley parser ambiguity: score alternatives and pick best
+                    best_alt = None
+                    best_score = -1
+                    for alt in arg.children:
+                        if hasattr(alt, 'data'):
+                            transformed = getattr(self, alt.data)(alt.children)
+                            # Score this alternative
+                            if isinstance(transformed, list):
+                                score = sum(NexaTransformer._score_ast_node(item) for item in transformed)
+                            elif isinstance(transformed, dict):
+                                score = NexaTransformer._score_ast_node(transformed)
+                            else:
+                                score = 0
+                            if score > best_score:
+                                best_score = score
+                                best_alt = transformed
+                    if best_alt is not None:
+                        if isinstance(best_alt, list):
+                            body.extend(best_alt)
+                        elif isinstance(best_alt, dict):
+                            if best_alt.get("_type") == "autoloop_config":
+                                max_steps = best_alt.get("max_steps")
+                                exit_when = best_alt.get("exit_when")
+                                timeout = best_alt.get("timeout")
+                            else:
+                                body.append(best_alt)
+                        else:
+                            body.append(best_alt)
+                else:
+                    transformed = getattr(self, arg.data)(arg.children)
+                    if isinstance(transformed, dict) and transformed.get("_type") == "autoloop_config":
+                        max_steps = transformed.get("max_steps")
+                        exit_when = transformed.get("exit_when")
+                        timeout = transformed.get("timeout")
+                    elif isinstance(transformed, list):
+                        body.extend(transformed)
+                    else:
+                        body.append(transformed)
+
+        return AutoLoopStmt(max_steps=max_steps, exit_when=exit_when, timeout=timeout, body=body)
+
+    @v_args(inline=False)
+    def autoloop_config(self, args):
+        config = {}
+        for arg in args:
+            if isinstance(arg, dict):
+                config.update(arg)
+        return {"_type": "autoloop_config", **config}
+
+    @v_args(inline=False)
+    def autoloop_max_steps(self, args):
+        return {"max_steps": int(args[0])}
+
+    @v_args(inline=False)
+    def autoloop_exit_when(self, args):
+        return {"exit_when": str(args[0]).strip('"')}
+
+    @v_args(inline=False)
+    def autoloop_timeout(self, args):
+        return {"timeout": int(args[0])}
+
+    @v_args(inline=False)
+    def autoloop_body(self, args):
+        """Transform children before returning, so _ambig scoring works correctly."""
+        transformed = []
+        for arg in args:
+            if hasattr(arg, 'data'):
+                # Transform Lark Tree node to dict/dataclass
+                result = getattr(self, arg.data)(arg.children)
+                transformed.append(result)
+            elif isinstance(arg, dict):
+                transformed.append(arg)
+            elif isinstance(arg, list):
+                transformed.extend(arg)
+            else:
+                transformed.append(arg)
+        return transformed
+
+    @v_args(inline=False)
+    def with_context_stmt(self, args):
+        """with_context → WithContextStmt AST 节点"""
+        config = {}
+        body = []
+
+        for arg in args:
+            if isinstance(arg, dict):
+                if arg.get("_type") == "context_config":
+                    config = arg
+                else:
+                    body.append(arg)
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, dict) and transformed.get("_type") == "context_config":
+                    config = transformed
+                else:
+                    body.append(transformed)
+
+        return WithContextStmt(config=config, body=body)
+
+    @v_args(inline=False)
+    def context_config(self, args):
+        config = {}
+        for arg in args:
+            if isinstance(arg, dict) and "key" in arg:
+                config[arg["key"]] = arg["value"]
+        return {"_type": "context_config", **config}
+
+    @v_args(inline=False)
+    def context_param(self, args):
+        key = str(args[0])
+        value = args[1] if len(args) > 1 else None
+        # Try to convert numeric values
+        if isinstance(value, str) and value.isdigit():
+            value = int(value)
+        elif isinstance(value, str):
+            value = value.strip('"')
+        return {"key": key, "value": value}
+
+    @v_args(inline=False)
+    def context_policy_decl(self, args):
+        """context_policy → ContextPolicyDecl AST 节点"""
+        params = {}
+        for arg in args:
+            if isinstance(arg, dict) and "key" in arg:
+                params[arg["key"]] = arg["value"]
+        return ContextPolicyDecl(params=params)
+
+    @v_args(inline=False)
+    def try_agent_stmt(self, args):
+        """try_agent → TryAgentStmt AST 节点"""
+        try_body = []
+        catch_branches = []
+
+        for arg in args:
+            if isinstance(arg, CatchCorrectionBranch):
+                catch_branches.append(arg)
+            elif isinstance(arg, dict):
+                if arg.get("type") == "CatchCorrectionBranch":
+                    catch_branches.append(arg)
+                else:
+                    try_body.append(arg)
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, CatchCorrectionBranch):
+                    catch_branches.append(transformed)
+                else:
+                    try_body.append(transformed)
+            elif isinstance(arg, list):
+                try_body.extend(arg)
+
+        return TryAgentStmt(try_body=try_body, catch_branches=catch_branches)
+
+    @v_args(inline=False)
+    def catch_correction_branch(self, args):
+        """catch_correction_branch → CatchCorrectionBranch"""
+        error_var = "e"
+        error_type = "ToolError"
+        correction_body = []
+
+        for arg in args:
+            if isinstance(arg, dict):
+                if arg.get("_type") == "error_binding":
+                    error_var = arg.get("var", "e")
+                    error_type = arg.get("type", "ToolError")
+                else:
+                    correction_body.append(arg)
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, dict) and transformed.get("_type") == "error_binding":
+                    error_var = transformed.get("var", "e")
+                    error_type = transformed.get("type", "ToolError")
+                else:
+                    correction_body.append(transformed)
+
+        return CatchCorrectionBranch(error_var=error_var, error_type=error_type, correction_body=correction_body)
+
+    @v_args(inline=False)
+    def error_binding(self, args):
+        var = str(args[0])
+        type_name = str(args[1])
+        return {"_type": "error_binding", "var": var, "type": type_name}
+
+    @v_args(inline=False)
+    def correction_body(self, args):
+        return list(args)
+
+    @v_args(inline=False)
+    def reflect_stmt(self, args):
+        """reflect → ReflectStmt"""
+        text = str(args[0]).strip('"')
+        return ReflectStmt(text=text)
+
+    @v_args(inline=False)
+    def snapshot_stmt(self, args):
+        """snapshot → SnapshotStmt"""
+        var_name = None
+        for arg in args:
+            s = str(arg).strip()
+            if s and s != "snapshot" and s != "(" and s != ")" and s != ";":
+                var_name = s
+        return SnapshotStmt(var_name=var_name)
+
+    @v_args(inline=False)
+    def restore_stmt(self, args):
+        """restore → RestoreStmt"""
+        target_var = ""
+        condition = None
+        for arg in args:
+            s = str(arg).strip()
+            if s and s != "restore" and s != "(" and s != ")" and s != ";" and s != "if":
+                if not target_var:
+                    target_var = s
+                else:
+                    condition = s
+        return RestoreStmt(target_var=target_var, condition=condition)
+
+    @v_args(inline=False)
+    def fork_stmt(self, args):
+        """fork → ForkStmt"""
+        branches = []
+        merge_strategy = "best"
+
+        for arg in args:
+            if isinstance(arg, dict):
+                if arg.get("_type") == "fork_branch":
+                    branches.append((arg.get("var"), arg.get("expr")))
+                elif arg.get("_type") == "merge_strategy":
+                    merge_strategy = arg.get("strategy", "best")
+                else:
+                    branches.append((None, arg))
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, dict):
+                    if transformed.get("_type") == "fork_branch":
+                        branches.append((transformed.get("var"), transformed.get("expr")))
+                    elif transformed.get("_type") == "merge_strategy":
+                        merge_strategy = transformed.get("strategy", "best")
+
+        return ForkStmt(branches=branches, merge_strategy=merge_strategy)
+
+    @v_args(inline=False)
+    def fork_branch(self, args):
+        var_name = None
+        expr = args[-1] if args else None
+        if len(args) > 1:
+            var_name = str(args[0])
+        return {"_type": "fork_branch", "var": var_name, "expr": expr}
+
+    @v_args(inline=False)
+    def merge_strategy(self, args):
+        return {"_type": "merge_strategy", "strategy": str(args[0])}
+
+    @v_args(inline=False)
+    def verify_satisfies(self, args):
+        """verify result satisfies Type → VerifyStmt"""
+        target = args[0] if args else None
+        check_value = args[1] if len(args) > 1 else None
+        return VerifyStmt(target=target, check_type="satisfies", check_value=check_value)
+
+    @v_args(inline=False)
+    def verify_method(self, args):
+        """verify result.method() → VerifyStmt"""
+        target = args[0] if args else None
+        check_value = args[1] if len(args) > 1 else None
+        return VerifyStmt(target=target, check_type="method", check_value=check_value)
+
+    @v_args(inline=False)
+    def verify_semantic(self, args):
+        """verify "condition" against result → VerifyStmt"""
+        check_value = str(args[0]).strip('"') if args else ""
+        target = args[1] if len(args) > 1 else None
+        return VerifyStmt(target=target, check_type="semantic", check_value=check_value)
+
+    @v_args(inline=False)
+    def unharnessed_stmt(self, args):
+        """unharnessed → UnharnessedStmt"""
+        reason = None
+        body = []
+
+        for arg in args:
+            if isinstance(arg, str) and arg.startswith('"') and arg.endswith('"'):
+                reason = arg.strip('"')
+            elif isinstance(arg, dict):
+                body.append(arg)
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                body.append(transformed)
+            elif isinstance(arg, list):
+                body.extend(arg)
+
+        return UnharnessedStmt(reason=reason, body=body)
+
+    @v_args(inline=False)
+    def before_step_hook(self, args):
+        """before_step → LifecycleHook"""
+        body = [a for a in args if isinstance(a, dict) or (hasattr(a, 'data') and getattr(self, a.data)(a.children))]
+        return LifecycleHook(hook_type="before_step", body=body)
+
+    @v_args(inline=False)
+    def after_step_hook(self, args):
+        """after_step → LifecycleHook"""
+        body = [a for a in args if isinstance(a, dict) or (hasattr(a, 'data') and getattr(self, a.data)(a.children))]
+        return LifecycleHook(hook_type="after_step", body=body)
+
+    @v_args(inline=False)
+    def on_error_hook(self, args):
+        """on_error → LifecycleHook"""
+        error_var = "e"
+        error_type = "ToolError"
+        body = []
+
+        for arg in args:
+            if isinstance(arg, dict) and arg.get("_type") == "error_binding":
+                error_var = arg.get("var", "e")
+                error_type = arg.get("type", "ToolError")
+            elif isinstance(arg, dict):
+                body.append(arg)
+            elif hasattr(arg, 'data'):
+                transformed = getattr(self, arg.data)(arg.children)
+                if isinstance(transformed, dict) and transformed.get("_type") == "error_binding":
+                    error_var = transformed.get("var", "e")
+                    error_type = transformed.get("type", "ToolError")
+                else:
+                    body.append(transformed)
+
+        return LifecycleHook(hook_type="on_error", error_binding=(error_var, error_type), body=body)
+
+    @v_args(inline=False)
+    def before_tool_hook(self, args):
+        """before_tool → LifecycleHook"""
+        tool_name = str(args[0]) if args else ""
+        body = [a for a in args[1:] if isinstance(a, dict)]
+        return LifecycleHook(hook_type="before_tool", tool_name=tool_name, body=body)
+
+    @v_args(inline=False)
+    def after_tool_hook(self, args):
+        """after_tool → LifecycleHook"""
+        tool_name = str(args[0]) if args else ""
+        body = [a for a in args[1:] if isinstance(a, dict)]
+        return LifecycleHook(hook_type="after_tool", tool_name=tool_name, body=body)
+
+    @v_args(inline=False)
+    def spawn_stmt(self, args):
+        """spawn → SpawnStmt"""
+        var_name = None
+        agent_name = ""
+        spawn_args = []
+
+        for arg in args:
+            s = str(arg).strip()
+            if s == "spawn" or s == "(" or s == ")" or s == ";":
+                continue
+            elif s == "=":
+                continue
+            elif not var_name and not agent_name:
+                # First identifier could be var_name or agent_name
+                # If next arg is "spawn", this is var_name
+                var_name = s
+            elif not agent_name:
+                agent_name = s
+            else:
+                spawn_args.append(arg)
+
+        # If only one meaningful identifier, it's the agent_name
+        if var_name and not agent_name:
+            agent_name = var_name
+            var_name = None
+
+        return SpawnStmt(var_name=var_name, agent_name=agent_name, args=spawn_args)
+
+    @v_args(inline=False)
+    def pass_stmt(self, args):
+        """pass → PassStmt"""
+        message = args[0] if args else None
+        target_actor = str(args[-1]).strip() if len(args) > 1 else ""
+        return PassStmt(message=message, target_actor=target_actor)
+
+    @v_args(inline=False)
+    def await_stmt(self, args):
+        """await → AwaitStmt"""
+        actor_var = str(args[0]).strip() if args else ""
+        return AwaitStmt(actor_var=actor_var)
+
+    @v_args(inline=False)
+    def receive_stmt(self, args):
+        """receive → ReceiveStmt"""
+        type_expr = None
+        for arg in args:
+            if isinstance(arg, dict) and arg.get("type") == "type_expr":
+                type_expr = arg
+        return ReceiveStmt(type_expr=type_expr)
+
+    # ═══════════════════════════════════════════════════════════════════════
+    #  v1.x handlers (保留)
+    # ═══════════════════════════════════════════════════════════════════════
 
     @v_args(inline=False)
     def fallback_expr(self, args):
@@ -2062,6 +2935,29 @@ class NexaTransformer(Transformer):
         """continue 语句 - v1.0.1-beta"""
         return {
             "type": "ContinueStatement"
+        }
+
+    @v_args(inline=False)
+    def input_stmt(self, args):
+        """input() — v2.0: read from stdin with optional prompt"""
+        prompt = ""
+        if args and isinstance(args[0], str):
+            # Strip quotes from STRING_LITERAL
+            prompt = args[0].strip('"').strip("'")
+        return {
+            "type": "InputStatement",
+            "prompt": prompt
+        }
+
+    @v_args(inline=False)
+    def exit_stmt(self, args):
+        """exit() — v2.0: terminate program with optional exit code"""
+        exit_code = 0
+        if args and isinstance(args[0], int):
+            exit_code = args[0]
+        return {
+            "type": "ExitStatement",
+            "exit_code": exit_code
         }
 
     @v_args(inline=False)
