@@ -26,7 +26,7 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! - 确定性契约：传统逻辑条件（如 amount > 0）
 //! - 语义契约：自然语言条件（如 "input contains financial data"），用 LLM 判断
 
-use crate::compiler::ast::{ContractClause, ContractSpec};
+use crate::compiler::ast::ContractSpec;
 use crate::utils::error::{AvmError, AvmResult};
 use crate::vm::stack::Value;
 use std::collections::HashMap;

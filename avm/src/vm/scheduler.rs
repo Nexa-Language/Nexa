@@ -23,7 +23,6 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! 提供基于优先级的调度、负载均衡和动态资源分配
 
 use std::collections::{HashMap, HashSet, VecDeque, BinaryHeap};
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 use std::cmp::Ordering;
 use serde::{Deserialize, Serialize};

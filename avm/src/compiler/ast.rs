@@ -26,6 +26,7 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! - FlowDeclaration 新增返回类型和参数类型
 //! - AgentDeclaration 新增输入输出类型信息
 
+#[allow(unused_imports)]
 use serde::{Deserialize, Serialize};
 
 /// 程序

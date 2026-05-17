@@ -22,7 +22,7 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //!
 //! 提供 Python 调用 AVM 的完整接口
 
-use crate::utils::error::{AvmError, AvmResult};
+use crate::utils::error::AvmResult;
 use crate::compiler::parser::Parser;
 use crate::bytecode::compiler::BytecodeCompiler;
 use crate::bytecode::instructions::BytecodeModule;

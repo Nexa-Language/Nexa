@@ -21,7 +21,6 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! Agent 运行时
 
 use crate::utils::error::{AvmError, AvmResult};
-use crate::vm::stack::Value;
 use std::collections::HashMap;
 
 /// Agent 配置
