@@ -1,0 +1,22 @@
+/* 
+  Nexa v2.0 — spawn/pass/await Actor 系统示例
+  演示 Harness Actor Model: 多 Agent 编排
+  Grammar: worker = spawn Agent(args);  pass expr to worker;  await worker;
+*/
+
+agent WorkerAgent {
+    prompt: "You are a worker agent that processes tasks."
+}
+
+flow main {
+    print "=== v2.0 Actor System Demo ===";
+    
+    worker = spawn WorkerAgent("process data");
+    print "Worker spawned.";
+    
+    pass "analyze this" to worker;
+    print "Message passed to worker.";
+    
+    result = await worker;
+    print "Worker result received.";
+}

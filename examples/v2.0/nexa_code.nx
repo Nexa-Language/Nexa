@@ -1,0 +1,172 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Nexa Code v2.0 — Harness Native AI Programming Assistant
+// ═══════════════════════════════════════════════════════════════════════
+// The first interactive AI coding assistant written in Nexa syntax,
+// compiled via `nexa build`, and executed as generated Python.
+//
+// Harness Dimensions Used:
+//   E: autoloop — autonomous ReAct loop
+//   T: @tool — file read/write/search/exec tools
+//   C: with_context — conversation management
+//   S: snapshot/restore — state snapshots for error recovery
+//   L: before_step/after_step/reflect — lifecycle hooks
+//   V: verify — output quality verification
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Agent Definitions ───
+
+agent CodeAssistant {
+    prompt: "You are Nexa Code, an expert AI programming assistant built on the Harness Runtime. Available tools: read_file, write_file, search_files, list_directory, shell_exec. When asked to modify code: first read files, then propose changes, then write changes, then verify. Be concise, technical, and precise."
+    model: "glm-5"
+}
+
+// ─── Tool Definitions (T-dimension) ───
+
+@tool("Read a file and return its contents with line numbers")
+fn read_file(path: string): string {
+    python! """
+import os
+target = os.path.join(os.getcwd(), path)
+if not os.path.exists(target):
+    return f"Error: File '{path}' does not exist."
+try:
+    content = open(target, 'r', encoding='utf-8', errors='replace').read()
+    lines = content.splitlines()
+    numbered = "\\n".join(f"{i+1:4d} | {line}" for i, line in enumerate(lines[:200]))
+    if len(lines) > 200:
+        numbered += f"\\n... ({len(lines) - 200} more lines)"
+    return f"File: {path} ({len(lines)} lines)\\n{numbered}"
+except Exception as e:
+    return f"Error reading '{path}': {e}"
+"""
+}
+
+@tool("Write content to a file, creating directories if needed")
+fn write_file(path: string, content: string): string {
+    python! """
+import os
+target = os.path.join(os.getcwd(), path)
+try:
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    open(target, 'w', encoding='utf-8').write(content)
+    lines = content.splitlines()
+    return f"Written {len(lines)} lines to {path}"
+except Exception as e:
+    return f"Error writing '{path}': {e}"
+"""
+}
+
+@tool("Search for a pattern in code files")
+fn search_files(pattern: string, directory: string): string {
+    python! """
+import subprocess, os
+target_dir = os.path.join(os.getcwd(), directory) if directory != "." else os.getcwd()
+try:
+    result = subprocess.run(["grep", "-rn", pattern], cwd=target_dir, capture_output=True, text=True, timeout=10)
+    if not result.stdout:
+        return f"No matches found for '{pattern}'"
+    lines = result.stdout.splitlines()[:30]
+    return "\\n".join(lines)
+except Exception as e:
+    return f"Error searching: {e}"
+"""
+}
+
+@tool("List files in a directory")
+fn list_directory(path: string): string {
+    python! """
+import os
+target = os.path.join(os.getcwd(), path) if path != "." else os.getcwd()
+try:
+    entries = sorted(os.listdir(target))
+    output = []
+    for entry in entries:
+        full = os.path.join(target, entry)
+        if os.path.isdir(full):
+            output.append(f"  DIR  {entry}/")
+        else:
+            size = os.path.getsize(full)
+            output.append(f"  FILE {entry} ({size} bytes)")
+    return f"Directory: {path}\\n" + "\\n".join(output[:50])
+except Exception as e:
+    return f"Error listing '{path}': {e}"
+"""
+}
+
+@tool("Execute a shell command safely (dangerous commands blocked)")
+fn shell_exec(command: string): string {
+    python! """
+import subprocess
+dangerous = ["rm -rf", "drop database", "chmod 777", "dd", "mkfs"]
+for d in dangerous:
+    if d in command.lower():
+        return f"Blocked dangerous command: '{command}'"
+try:
+    result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+    output = result.stdout[:2000] if result.stdout else ""
+    if result.stderr:
+        output += f"\\nstderr: {result.stderr[:500]}"
+    if result.returncode != 0:
+        output += f"\\nExit code: {result.returncode}"
+    return output if output else "(no output)"
+except subprocess.TimeoutExpired:
+    return f"Command timed out: '{command}'"
+except Exception as e:
+    return f"Error executing: {e}"
+"""
+}
+
+// ─── Main Interactive REPL Flow ───
+
+flow nexa_code_repl {
+    // Print banner
+    print("╔════════════════════════════════════════════════╗");
+    print("║          Nexa Code v2.0.0                     ║");
+    print("║   The First Harness Native AI Coding Agent    ║");
+    print("╚════════════════════════════════════════════════╝");
+    print("Type your request, or /exit to quit.");
+
+    // E-dimension: autoloop — interactive REPL
+    autoloop max_steps: 100, exit_when: "user typed /exit" {
+        // Read user input
+        user_input = input("nexa-code> ");
+
+        // Check for exit command
+        if (user_input == "/exit") {
+            print("Goodbye!");
+            exit(0);
+        }
+
+        // Check for /help
+        if (user_input == "/help") {
+            print("Commands: /help /exit /clear /tools /snap /restore");
+            break;
+        }
+
+        // C-dimension: with_context — send to agent
+        with_context max_tokens: 50000 {
+            // Call the CodeAssistant agent
+            result = CodeAssistant.run(user_input);
+            print(result);
+        }
+
+        // V-dimension: verify — check response quality
+        verify result satisfies string;
+    }
+}
+
+// ─── One-shot mode (non-interactive) ───
+
+flow nexa_code_oneshot(task: string) {
+    print("Task: " + task);
+
+    // C-dimension: with_context
+    with_context max_tokens: 50000 {
+        result = CodeAssistant.run(task);
+    }
+
+    // V-dimension: verify
+    verify result satisfies string;
+
+    print(result);
+}

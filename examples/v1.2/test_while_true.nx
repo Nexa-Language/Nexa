@@ -1,0 +1,8 @@
+// Test: while(true) + break + input
+flow test_while_true {
+    while(true) {
+        print("looping");
+        break;
+    }
+    print("done");
+}

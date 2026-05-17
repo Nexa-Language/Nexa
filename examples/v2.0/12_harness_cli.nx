@@ -1,0 +1,155 @@
+/*
+  Nexa v2.0 — Harness Agent CLI Framework
+  
+  类似 Claude Code 的交互式 AI 编程助手框架。
+  使用全部 Harness 六元组 H=(E,T,C,S,L,V) 特性：
+  
+  E: autoloop — 自主 ReAct 循环
+  T: @tool — 零成本工具绑定 (文件读写、搜索、执行)
+  C: with_context — 上下文自动管理
+  S: snapshot/restore — 状态快照与回溯
+  L: lifecycle hooks + reflect — 生命周期拦截 + 反思注入
+  V: verify — 输出验证
+  
+  Actor: spawn/pass/await — 多 Agent 编排
+*/
+
+// ═══════════════════════════════════════════════════════════════
+//  @tool: 文件操作工具集 (T-dimension)
+// ═══════════════════════════════════════════════════════════════
+
+@tool("Read a file and return its contents")
+fn read_file(path: string): string {
+    print "Reading file: #{path}";
+    return "File contents of #{path}";
+}
+
+@tool("Write content to a file")
+fn write_file(path: string, content: string): string {
+    print "Writing to file: #{path}";
+    return "File written successfully";
+}
+
+@tool("Search for a pattern in files")
+fn search_files(pattern: string, directory: string): string {
+    print "Searching for '#{pattern}' in #{directory}";
+    return "Search results for #{pattern}";
+}
+
+@tool("Execute a shell command safely")
+fn shell_exec(command: string): string {
+    print "Executing: #{command}";
+    return "Command output";
+}
+
+@tool("List files in a directory")
+fn list_directory(path: string): string {
+    print "Listing directory: #{path}";
+    return "Directory listing";
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  Agent 定义
+// ═══════════════════════════════════════════════════════════════
+
+agent CodeAssistant {
+    prompt: "You are an expert AI programming assistant. You help users write, debug, and refactor code. You can read files, write files, search code, and execute commands."
+}
+
+agent CodeReviewer {
+    prompt: "You are a code reviewer that checks for bugs, security issues, and code quality problems."
+}
+
+agent TestGenerator {
+    prompt: "You are a test generator that creates comprehensive test cases for given code."
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  主流程: Harness Agent CLI
+// ═══════════════════════════════════════════════════════════════
+
+flow main {
+    print "=== Nexa Harness Agent CLI v2.0 ===";
+    print "Interactive AI Programming Assistant";
+    print "";
+    
+    // ─── L-dimension: Lifecycle Hooks ───
+    before_step {
+        print "[Hook] Step starting...";
+    }
+    
+    after_step {
+        print "[Hook] Step completed.";
+    }
+    
+    // ─── E-dimension: autoloop 自主执行循环 ───
+    autoloop max_steps: 10, exit_when: "task_completed", timeout: 300 {
+        
+        // ─── C-dimension: with_context 上下文管理 ───
+        with_context max_tokens: 100000, strategy: importance_weighted {
+            
+            // ─── S-dimension: snapshot 状态快照 ───
+            snap = snapshot();
+            print "State snapshot created.";
+            
+            // ─── E+L: try_agent 容错执行 ───
+            try_agent {
+                // Step 1: 理解用户需求
+                print "Step 1: Understanding user request...";
+                analysis = CodeAssistant.run("Analyze the user's programming task");
+                print "Analysis: #{analysis}";
+                
+                // Step 2: 搜索相关代码
+                print "Step 2: Searching relevant code...";
+                search_result = search_files("pattern", "src/");
+                print "Found: #{search_result}";
+                
+                // Step 3: 读取关键文件
+                print "Step 3: Reading key files...";
+                file_content = read_file("src/main.py");
+                print "Content loaded.";
+                
+                // Step 4: 生成代码修改
+                print "Step 4: Generating code modifications...";
+                modification = CodeAssistant.run("Generate code changes based on analysis");
+                print "Modification plan ready.";
+                
+                // Step 5: 写入修改
+                print "Step 5: Writing modifications...";
+                write_result = write_file("src/main.py", "modified content");
+                print "Write result: #{write_result}";
+                
+                // ─── V-dimension: verify 输出验证 ───
+                verify modification satisfies string;
+                print "Output verified.";
+                
+                // ─── Actor: spawn 多 Agent 编排 ───
+                reviewer = spawn CodeReviewer("Review the code changes");
+                print "Code reviewer spawned.";
+                
+                pass "review these changes" to reviewer;
+                print "Review request sent.";
+                
+                review_result = await reviewer;
+                print "Review result received.";
+                
+                // ─── L-dimension: reflect 反思注入 ───
+                reflect "Consider: Are the changes minimal and focused? Could there be unintended side effects?";
+                print "Reflection injected.";
+                
+            } catch_correction(e: ToolError) {
+                // ─── S-dimension: restore 状态回溯 ───
+                restore(snap);
+                print "State restored after error.";
+                
+                // ─── L-dimension: reflect 反思 ───
+                reflect "Error occurred. Adjusting approach and retrying with simpler strategy.";
+                print "Error correction applied.";
+            }
+        }
+    }
+    
+    print "";
+    print "=== Harness Agent CLI Session Complete ===";
+    print "All Harness dimensions utilized: E, T, C, S, L, V";
+}

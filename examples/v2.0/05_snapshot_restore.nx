@@ -1,0 +1,22 @@
+/* 
+  Nexa v2.0 — snapshot/restore 状态快照示例
+  演示 Harness S-dimension: COW 状态分支
+  Grammar: snap = snapshot();  restore(snap);
+*/
+
+agent StateAgent {
+    prompt: "You are an agent that manages state transitions."
+}
+
+flow main {
+    print "=== v2.0 snapshot/restore Demo ===";
+    
+    snap = snapshot();
+    print "Snapshot created.";
+    
+    result = StateAgent.run("Modify state");
+    print result;
+    
+    restore(snap);
+    print "State restored to snapshot.";
+}

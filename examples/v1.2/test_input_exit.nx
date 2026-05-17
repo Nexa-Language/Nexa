@@ -1,0 +1,11 @@
+// Test: input + exit + while(true) + break
+flow test_input_exit {
+    while(true) {
+        user_input = input("Enter command: ");
+        print(user_input);
+        if (user_input == "exit") {
+            exit(0);
+        }
+        break;
+    }
+}

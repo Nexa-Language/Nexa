@@ -1,0 +1,62 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Nexa Code — Flow Definitions
+// ═══════════════════════════════════════════════════════════════════════
+// Two entry points:
+//   nexa_code_repl  — Interactive REPL (E-dimension: autoloop)
+//   nexa_code_oneshot — Single task execution (non-interactive)
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Main Interactive REPL Flow ───
+
+flow nexa_code_repl {
+    // Print banner
+    print("╔════════════════════════════════════════════════╗");
+    print("║          Nexa Code v2.0.0                     ║");
+    print("║   The First Harness Native AI Coding Agent    ║");
+    print("╚════════════════════════════════════════════════╝");
+    print("Type your request, or /exit to quit.");
+
+    // E-dimension: autoloop — interactive REPL
+    autoloop max_steps: 100, exit_when: "user typed /exit" {
+        // Read user input
+        user_input = input("nexa-code> ");
+
+        // Check for exit command
+        if (user_input == "/exit") {
+            print("Goodbye!");
+            exit(0);
+        }
+
+        // Check for /help
+        if (user_input == "/help") {
+            print("Commands: /help /exit /clear /tools /snap /restore");
+            break;
+        }
+
+        // C-dimension: with_context — send to agent
+        with_context max_tokens: 50000 {
+            // Call the CodeAssistant agent
+            result = CodeAssistant.run(user_input);
+            print(result);
+        }
+
+        // V-dimension: verify — check response quality
+        verify result satisfies string;
+    }
+}
+
+// ─── One-shot mode (non-interactive) ───
+
+flow nexa_code_oneshot(task: string) {
+    print("Task: " + task);
+
+    // C-dimension: with_context
+    with_context max_tokens: 50000 {
+        result = CodeAssistant.run(task);
+    }
+
+    // V-dimension: verify
+    verify result satisfies string;
+
+    print(result);
+}

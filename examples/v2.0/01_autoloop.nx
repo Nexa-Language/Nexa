@@ -1,0 +1,20 @@
+/* 
+  Nexa v2.0 — autoloop 自主执行循环示例
+  演示 Harness E-dimension: Agent 通过 autoloop 进行自主 ReAct 循环
+*/
+
+agent AutoAgent {
+    prompt: "You are an autonomous agent that solves tasks step by step."
+}
+
+flow main {
+    print "=== v2.0 autoloop Demo ===";
+    
+    autoloop max_steps: 5, exit_when: "resolved", timeout: 300 {
+        print "Step: reasoning about the task...";
+        result = AutoAgent.run("Analyze the current state");
+        print result;
+    }
+    
+    print "autoloop completed.";
+}

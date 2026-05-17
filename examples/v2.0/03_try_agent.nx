@@ -1,0 +1,23 @@
+/* 
+  Nexa v2.0 — try_agent/catch_correction 错误自纠错示例
+  演示 Harness E+L-dimension: AI 专属容错
+*/
+
+agent ResilientAgent {
+    prompt: "You are a resilient agent that handles errors gracefully."
+}
+
+flow main {
+    print "=== v2.0 try_agent/catch_correction Demo ===";
+    
+    try_agent {
+        print "Attempting operation...";
+        result = ResilientAgent.run("Execute critical task");
+        print result;
+    } catch_correction(e: ToolError) {
+        print "Error caught, applying correction...";
+        print "Retrying with alternative approach.";
+    }
+    
+    print "Error correction completed.";
+}

@@ -1,7 +1,5 @@
 # 此文件由 Nexa Code Generator 自动生成
 import os
-import sys
-import time
 import json
 import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
@@ -41,18 +39,6 @@ from src.runtime.kv_store import NexaKVStore, KVHandle, kv_open, kv_get, kv_get_
 from src.runtime.concurrent import NexaChannel, NexaTask, NexaSchedule, NexaConcurrencyRuntime, RUNTIME, channel, send, recv, recv_timeout, try_recv, close, select, spawn, await_task, try_await, cancel_task, parallel, race, after, schedule, cancel_schedule, sleep_ms, thread_count, parse_interval
 # P2-4: Template System (模板系统)
 from src.runtime.template import NexaTemplateRenderer, TemplateContentParser, _nexa_tpl_escape, _nexa_tpl_join, _nexa_tpl_safe_str, FILTER_REGISTRY, render_string, template, compile_template, render, agent_template_prompt, agent_template_slot_fill, agent_template_register, agent_template_list, agent_template_unregister
-# v2.0: Harness Native Runtime
-from src.runtime.harness_kernel import HarnessKernel, HarnessRuntimeMode, AutoLoopConfig, StepResult, AutoLoopResult, ContextScope, get_kernel, reset_kernel
-from src.runtime.execution_engine import ExecutionEngine
-from src.runtime.context_manager import ContextManager, estimate_tokens
-from src.runtime.tool_output_store import ToolOutputStore, get_tool_output_store
-from src.runtime.tool_registry import ToolRegistry, ToolSchema, get_tool_registry
-from src.runtime.lifecycle_hooks import LifecycleHookManager
-from src.runtime.state_store import StateStore
-from src.runtime.trace_system import TraceSystem
-from src.runtime.evaluation_interface import EvaluationInterface, VerifyResult, BehavioralTrace
-from src.runtime.llm_router import LLMRouter, ModelRequirement, ModelInfo
-from src.runtime.actor_system import ActorSystem, ActorHandle, ActorMessage, ActorConfig
 
 # P2-4: Template filter function aliases (for generated template code)
 _nexa_tpl_filter_upper = FILTER_REGISTRY.get('upper')
@@ -145,49 +131,37 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-class WeatherReport(pydantic.BaseModel):
-    city: str
-    temperature: str
-    conditions: str
-    forecast: str
-
-# Type: Register protocol "WeatherReport" fields in type checker
-__type_checker.register_protocol_field("WeatherReport", "city", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "temperature", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "conditions", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "forecast", AliasTypeExpr("Any"))
-
-__tool_WeatherAPI_schema = {
-    "name": "WeatherAPI",
-    "description": "Fetch weather data for a city",
+__tool_web_search_schema = {
+    "name": "web_search",
+    "description": "Search the web for a given query string.",
     "parameters": {
         "type": "object",
         "properties": {
-            "city": {"type": "string"}
+            "query": {"type": "string"}
         },
-        "required": ["city"]
+        "required": ["query"]
     }
 }
 
-# @implements: feature.weather_bot
-WeatherBot = NexaAgent(
-    name="WeatherBot",
-    prompt="Provide weather information for cities. When asked about weather, include temperature, conditions, and forecast.",
+Researcher = NexaAgent(
+    name="Researcher",
+    prompt="You are a brilliant researcher. Answer the query context based on the web search results.",
     model="minimax-m2.5",
-    role="Weather Assistant",
+    role="",
     memory_scope="local",
     stream=False,
     cache=False,
-    protocol=WeatherReport,
     timeout=30,
     retry=3,
-    tools=[__tool_WeatherAPI_schema]
+    tools=[__tool_web_search_schema]
 )
 
 def flow_main():
-    result = WeatherBot.run("What is the weather in Beijing?")
-    print(result)
-    return result
+    result = Researcher.run("Search the latest news about the new 'Nexa' programming language.")
+    if nexa_semantic_eval("The result explicitly mentions 'agent-native' or 'transpiler'", result):
+        Researcher.run("Provide a 50-word technical summary based on the result.", result)
+    else:
+        Researcher.run("Just reply: 'No relevant Nexa logic found in search results.'")
 
 if __name__ == "__main__":
     flow_main()

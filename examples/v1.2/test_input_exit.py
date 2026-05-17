@@ -1,7 +1,6 @@
 # 此文件由 Nexa Code Generator 自动生成
 import os
 import sys
-import time
 import json
 import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
@@ -145,49 +144,14 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-class WeatherReport(pydantic.BaseModel):
-    city: str
-    temperature: str
-    conditions: str
-    forecast: str
-
-# Type: Register protocol "WeatherReport" fields in type checker
-__type_checker.register_protocol_field("WeatherReport", "city", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "temperature", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "conditions", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "forecast", AliasTypeExpr("Any"))
-
-__tool_WeatherAPI_schema = {
-    "name": "WeatherAPI",
-    "description": "Fetch weather data for a city",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "city": {"type": "string"}
-        },
-        "required": ["city"]
-    }
-}
-
-# @implements: feature.weather_bot
-WeatherBot = NexaAgent(
-    name="WeatherBot",
-    prompt="Provide weather information for cities. When asked about weather, include temperature, conditions, and forecast.",
-    model="minimax-m2.5",
-    role="Weather Assistant",
-    memory_scope="local",
-    stream=False,
-    cache=False,
-    protocol=WeatherReport,
-    timeout=30,
-    retry=3,
-    tools=[__tool_WeatherAPI_schema]
-)
-
-def flow_main():
-    result = WeatherBot.run("What is the weather in Beijing?")
-    print(result)
-    return result
+def flow_test_input_exit():
+    while True:
+        user_input = input("Enter command: ")
+        print(user_input)
+        if user_input == "exit":
+            exit(0)
+        break
 
 if __name__ == "__main__":
-    flow_main()
+    print("\n=== Running flow: test_input_exit ===")
+    flow_test_input_exit()

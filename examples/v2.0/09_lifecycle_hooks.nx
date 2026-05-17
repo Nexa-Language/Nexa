@@ -1,0 +1,24 @@
+/* 
+  Nexa v2.0 — lifecycle hooks 生命周期钩子示例
+  演示 Harness L-dimension: step/tool 执行前后拦截
+  Grammar: before_step { ... }  after_step { ... }
+*/
+
+agent HookAgent {
+    prompt: "You are an agent with lifecycle monitoring."
+}
+
+flow main {
+    print "=== v2.0 Lifecycle Hooks Demo ===";
+    
+    before_step {
+        print "[Hook] Before step execution";
+    }
+    
+    after_step {
+        print "[Hook] After step execution";
+    }
+    
+    result = HookAgent.run("Execute monitored task");
+    print result;
+}

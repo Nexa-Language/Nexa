@@ -1,0 +1,19 @@
+/* 
+  Nexa v2.0 — verify 验证语句示例
+  演示 Harness V-dimension: 编译期+运行期双层验证
+  Grammar: verify expr satisfies type_expr;
+*/
+
+agent VerifyAgent {
+    prompt: "You are an agent that produces verifiable outputs."
+}
+
+flow main {
+    print "=== v2.0 verify Demo ===";
+    
+    result = VerifyAgent.run("Generate structured output");
+    print result;
+    
+    verify result satisfies string;
+    print "Verification passed.";
+}

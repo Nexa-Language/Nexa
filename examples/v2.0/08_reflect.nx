@@ -1,0 +1,19 @@
+/* 
+  Nexa v2.0 — reflect 反思注入示例
+  演示 Harness L-dimension: 自我反思
+  Grammar: reflect "text";
+*/
+
+agent ReflectAgent {
+    prompt: "You are a self-reflective agent that learns from experience."
+}
+
+flow main {
+    print "=== v2.0 reflect Demo ===";
+    
+    result = ReflectAgent.run("Analyze the situation");
+    print result;
+    
+    reflect "Consider: was the approach optimal? What could be improved?";
+    print "Reflection injected.";
+}

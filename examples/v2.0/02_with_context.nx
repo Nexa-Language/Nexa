@@ -1,0 +1,20 @@
+/* 
+  Nexa v2.0 — with_context 上下文作用域示例
+  演示 Harness C-dimension: 上下文自动管理
+*/
+
+agent ContextAgent {
+    prompt: "You are an agent that processes information efficiently."
+}
+
+flow main {
+    print "=== v2.0 with_context Demo ===";
+    
+    with_context max_tokens: 50000, strategy: sliding_window {
+        print "Inside context scope with 50K token limit";
+        result = ContextAgent.run("Process this data");
+        print result;
+    }
+    
+    print "Context scope exited.";
+}

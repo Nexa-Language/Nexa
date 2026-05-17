@@ -1,0 +1,41 @@
+/* 
+  Nexa v2.0 — 完整 Harness Agent 示例
+  演示六元组 H=(E,T,C,S,L,V) 全部维度
+*/
+
+@tool("Execute a shell command safely")
+fn shell_exec(command: string): string {
+    print "Executing command";
+    return "Command executed successfully";
+}
+
+agent WellHarnessedAgent {
+    prompt: "You are a well-harnessed autonomous agent"
+}
+
+flow main {
+    print "=== v2.0 Well-Harnessed Agent Demo ===";
+    
+    // E: autoloop — 自主执行循环
+    autoloop max_steps: 10, exit_when: "resolved", timeout: 300 {
+        // C: with_context — 上下文作用域
+        with_context max_tokens: 50000, strategy: sliding_window {
+            // S: snapshot — 状态快照
+            snap = snapshot();
+            
+            // E+L: try_agent — 容错执行
+            try_agent {
+                result = WellHarnessedAgent.run("Analyze and respond");
+                print result;
+            } catch_correction(e: ToolError) {
+                // L: reflect — 反思注入
+                reflect "Error occurred. Adjusting strategy.";
+            }
+            
+            // V: verify — 验证输出
+            verify result satisfies string;
+        }
+    }
+    
+    print "Well-Harnessed Agent execution completed.";
+}

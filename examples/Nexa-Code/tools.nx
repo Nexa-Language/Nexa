@@ -1,0 +1,101 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Nexa Code — Tool Definitions (T-dimension)
+// ═══════════════════════════════════════════════════════════════════════
+// File system and shell tools for autonomous code manipulation.
+// These @tool fn declarations compile to OpenAI function calling schemas
+// + Python implementations registered in LOCAL_TOOLS.
+// ═══════════════════════════════════════════════════════════════════════
+
+@tool("Read a file and return its contents with line numbers")
+fn read_file(path: string): string {
+    python! """
+import os
+target = os.path.join(os.getcwd(), path)
+if not os.path.exists(target):
+    return f"Error: File '{path}' does not exist."
+try:
+    content = open(target, 'r', encoding='utf-8', errors='replace').read()
+    lines = content.splitlines()
+    numbered = "\\n".join(f"{i+1:4d} | {line}" for i, line in enumerate(lines[:200]))
+    if len(lines) > 200:
+        numbered += f"\\n... ({len(lines) - 200} more lines)"
+    return f"File: {path} ({len(lines)} lines)\\n{numbered}"
+except Exception as e:
+    return f"Error reading '{path}': {e}"
+"""
+}
+
+@tool("Write content to a file, creating directories if needed")
+fn write_file(path: string, content: string): string {
+    python! """
+import os
+target = os.path.join(os.getcwd(), path)
+try:
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    open(target, 'w', encoding='utf-8').write(content)
+    lines = content.splitlines()
+    return f"Written {len(lines)} lines to {path}"
+except Exception as e:
+    return f"Error writing '{path}': {e}"
+"""
+}
+
+@tool("Search for a pattern in code files")
+fn search_files(pattern: string, directory: string): string {
+    python! """
+import subprocess, os
+target_dir = os.path.join(os.getcwd(), directory) if directory != "." else os.getcwd()
+try:
+    result = subprocess.run(["grep", "-rn", pattern], cwd=target_dir, capture_output=True, text=True, timeout=10)
+    if not result.stdout:
+        return f"No matches found for '{pattern}'"
+    lines = result.stdout.splitlines()[:30]
+    return "\\n".join(lines)
+except Exception as e:
+    return f"Error searching: {e}"
+"""
+}
+
+@tool("List files in a directory")
+fn list_directory(path: string): string {
+    python! """
+import os
+target = os.path.join(os.getcwd(), path) if path != "." else os.getcwd()
+try:
+    entries = sorted(os.listdir(target))
+    output = []
+    for entry in entries:
+        full = os.path.join(target, entry)
+        if os.path.isdir(full):
+            output.append(f"  DIR  {entry}/")
+        else:
+            size = os.path.getsize(full)
+            output.append(f"  FILE {entry} ({size} bytes)")
+    return f"Directory: {path}\\n" + "\\n".join(output[:50])
+except Exception as e:
+    return f"Error listing '{path}': {e}"
+"""
+}
+
+@tool("Execute a shell command safely (dangerous commands blocked)")
+fn shell_exec(command: string): string {
+    python! """
+import subprocess
+dangerous = ["rm -rf", "drop database", "chmod 777", "dd", "mkfs"]
+for d in dangerous:
+    if d in command.lower():
+        return f"Blocked dangerous command: '{command}'"
+try:
+    result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+    output = result.stdout[:2000] if result.stdout else ""
+    if result.stderr:
+        output += f"\\nstderr: {result.stderr[:500]}"
+    if result.returncode != 0:
+        output += f"\\nExit code: {result.returncode}"
+    return output if output else "(no output)"
+except subprocess.TimeoutExpired:
+    return f"Command timed out: '{command}'"
+except Exception as e:
+    return f"Error executing: {e}"
+"""
+}

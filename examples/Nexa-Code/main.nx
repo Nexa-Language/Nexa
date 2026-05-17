@@ -1,0 +1,22 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Nexa Code v2.0 — Harness Native AI Programming Assistant
+// ═══════════════════════════════════════════════════════════════════════
+// The first interactive AI coding assistant written in Nexa syntax,
+// compiled via `nexa build`, and executed as generated Python.
+//
+// This is the main entry point that includes all modules:
+//   tools.nx  — @tool fn definitions (T-dimension)
+//   agent.nx  — CodeAssistant agent definition
+//   flows.nx  — REPL and oneshot flows (E, C, V dimensions)
+//
+// Harness Dimensions Used:
+//   E: autoloop — autonomous ReAct loop
+//   T: @tool — file read/write/search/exec tools
+//   C: with_context — conversation management
+//   V: verify — output quality verification
+// ═══════════════════════════════════════════════════════════════════════
+
+include "secrets.nxs";
+include "tools.nx";
+include "agent.nx";
+include "flows.nx";
