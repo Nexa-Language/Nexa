@@ -32,14 +32,16 @@ from src._version import NEXA_VERSION
 from nexa_parser import parse
 from ast_transformer import NexaTransformer
 from code_generator import CodeGenerator
+from harness_validator import HarnessValidator, HarnessMode
 from runtime.inspector import inspect_nexa_file, format_inspect_json, format_inspect_text
 from runtime.validator import validate_nexa_file, format_error_json, format_error_human
 # P1-4: Built-In HTTP Server
 from runtime.http_server import parse_server_block, format_routes_text, format_routes_json
 
-def build_file(nx_file_path: str) -> str:
+def build_file(nx_file_path: str, harness_mode: str = "warn") -> str:
     """
     Build a .nx file and return the path to the generated .py file.
+    harness_mode: "strict" | "warn" | "off" — controls Harness validation behavior
     """
     input_path = Path(nx_file_path)
     if not input_path.exists():
@@ -67,6 +69,11 @@ def build_file(nx_file_path: str) -> str:
             for include_stmt in ast["includes"]:
                 inc_rel_path = include_stmt["path"]
                 inc_full_path = input_path.parent / inc_rel_path
+                
+                # Skip .nxs files — they are secrets config, handled by runtime
+                if inc_rel_path.endswith(".nxs"):
+                    continue
+                
                 if not inc_full_path.exists():
                     print(f"❌ Error: Included file '{inc_rel_path}' does not exist at '{inc_full_path}'.")
                     sys.exit(1)
@@ -79,6 +86,25 @@ def build_file(nx_file_path: str) -> str:
                 
                 # Merge included bodies to the top of AST
                 ast["body"] = inc_ast["body"] + ast["body"]
+
+        # v2.0: Harness Validation (compile-time)
+        if harness_mode != "off":
+            mode_map = {"strict": HarnessMode.STRICT, "warn": HarnessMode.WARN}
+            hv = HarnessValidator(mode=mode_map.get(harness_mode, HarnessMode.WARN))
+            report = hv.validate(ast)
+            if report.has_errors():
+                if harness_mode == "strict":
+                    print(f"❌ Harness validation failed (strict mode):")
+                    for err in report.errors:
+                        print(f"  • {err}")
+                    sys.exit(1)
+                else:
+                    print(f"⚠️ Harness validation warnings:")
+                    for err in report.errors:
+                        print(f"  • {err}")
+            if report.has_warnings():
+                for warn in report.warnings:
+                    print(f"  ⚡ {warn}")
 
         # Generate Code
         generator = CodeGenerator(ast)
@@ -95,11 +121,11 @@ def build_file(nx_file_path: str) -> str:
         print(f"❌ Compilation failed: {e}")
         sys.exit(1)
 
-def run_file(nx_file_path: str):
+def run_file(nx_file_path: str, harness_mode: str = "warn"):
     """
     Build and execute a .nx file.
     """
-    generated_py_path = build_file(nx_file_path)
+    generated_py_path = build_file(nx_file_path, harness_mode=harness_mode)
     
     print(f"🚀 Running {generated_py_path} ...\n" + "="*50)
     
@@ -322,6 +348,61 @@ def inspect_file(nx_file_path: str, format_type: str = "json"):
         print(format_inspect_json(result))
     else:
         print(format_inspect_text(result))
+
+def harness_check_file(nx_file_path: str, harness_mode: str = "strict", json_output: bool = False):
+    """
+    Run Harness validation on a .nx file (v2.0).
+
+    Validates the six-tuple H = (E, T, C, S, L, V) constraints at compile time.
+
+    Usage:
+        nexa harness-check app.nx                  # strict mode: errors = non-zero exit
+        nexa harness-check app.nx --harness warn   # warn mode: errors = warnings only
+        nexa harness-check app.nx --harness off    # skip validation
+        nexa harness-check app.nx --json           # JSON output
+    """
+    input_path = Path(nx_file_path)
+    if not input_path.exists():
+        print(f"❌ Error: File '{nx_file_path}' does not exist.")
+        sys.exit(1)
+
+    try:
+        with open(input_path, 'r', encoding='utf-8') as f:
+            source_code = f.read()
+
+        tree = parse(source_code)
+        transformer = NexaTransformer()
+        ast = transformer.transform(tree)
+
+        mode_map = {"strict": HarnessMode.STRICT, "warn": HarnessMode.WARN, "off": HarnessMode.OFF}
+        hv = HarnessValidator(mode=mode_map.get(harness_mode, HarnessMode.STRICT))
+        report = hv.validate(ast)
+
+        if json_output:
+            import json
+            print(json.dumps(report.to_dict(), indent=2))
+        else:
+            print(f"🔍 Harness Validation Report for {nx_file_path}")
+            print(f"   Mode: {harness_mode}")
+            print(f"   ────────────────────────────────")
+            if report.has_errors():
+                print(f"   ❌ Errors ({len(report.errors)}):")
+                for err in report.errors:
+                    print(f"      • {err}")
+            if report.has_warnings():
+                print(f"   ⚡ Warnings ({len(report.warnings)}):")
+                for warn in report.warnings:
+                    print(f"      • {warn}")
+            if not report.has_errors() and not report.has_warnings():
+                print(f"   ✅ All Harness constraints satisfied.")
+
+        # Exit with error code if strict mode and errors found
+        if harness_mode == "strict" and report.has_errors():
+            sys.exit(1)
+
+    except Exception as e:
+        print(f"❌ Harness validation failed: {e}")
+        sys.exit(1)
 
 def validate_file(nx_file_path: str, json_output: bool = False, quiet: bool = False):
     """
@@ -550,10 +631,14 @@ def main():
     # Build command
     build_parser = subparsers.add_parser("build", help="Compile a .nx file to .py")
     build_parser.add_argument("file", help="Path to the .nx source file")
+    build_parser.add_argument("--harness", choices=["strict", "warn", "off"], default="warn",
+                              help="Harness validation mode (default: warn)")
     
     # Run command
     run_parser = subparsers.add_parser("run", help="Compile and execute a .nx file")
     run_parser.add_argument("file", help="Path to the .nx source file")
+    run_parser.add_argument("--harness", choices=["strict", "warn", "off"], default="warn",
+                              help="Harness validation mode (default: warn)")
     
     # Test command
     test_parser = subparsers.add_parser("test", help="Compile and run tests in a .nx file")
@@ -625,6 +710,13 @@ def main():
     routes_parser.add_argument("file", help="Path to the .nx source file")
     routes_parser.add_argument("--json", action="store_true", help="Output routes as JSON")
 
+    # v2.0: Harness-check command (Harness Native compile-time validation)
+    harness_check_parser = subparsers.add_parser("harness-check", help="Run Harness validation on a .nx file (v2.0)")
+    harness_check_parser.add_argument("file", help="Path to the .nx source file")
+    harness_check_parser.add_argument("--harness", choices=["strict", "warn", "off"], default="strict",
+                                      help="Harness validation mode (default: strict)")
+    harness_check_parser.add_argument("--json", action="store_true", help="Output report as JSON")
+
     # P1-3: Workers command
     workers_parser = subparsers.add_parser("workers", help="Job Worker commands")
     workers_subparsers = workers_parser.add_subparsers(dest="workers_command", help="Workers commands")
@@ -651,9 +743,11 @@ def main():
         return
     
     if args.command == "build":
-        build_file(args.file)
+        harness_mode = getattr(args, 'harness', 'warn')
+        build_file(args.file, harness_mode=harness_mode)
     elif args.command == "run":
-        run_file(args.file)
+        harness_mode = getattr(args, 'harness', 'warn')
+        run_file(args.file, harness_mode=harness_mode)
     elif args.command == "test":
         test_file(args.file)
     elif args.command == "inspect":
@@ -673,6 +767,8 @@ def main():
         serve_file(args.file, port=args.port)
     elif args.command == "routes":
         routes_file(args.file, json_output=args.json)
+    elif args.command == "harness-check":
+        harness_check_file(args.file, harness_mode=args.harness, json_output=args.json)
     elif args.command == "jobs":
         handle_jobs_command(args)
     elif args.command == "workers":

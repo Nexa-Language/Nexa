@@ -27,7 +27,7 @@ import_stmt: "include" STRING_LITERAL ";"
 // v1.0.2: 添加语义类型声明支持
 // v1.1: 渐进式类型系统 (Gradual Type System)
 // P1-4: 内置 HTTP 服务器 (Built-In HTTP Server)
-?script_stmt: tool_decl | agent_decl | flow_decl | protocol_decl | test_decl | type_decl | job_decl | server_decl | db_decl | auth_decl | kv_decl | concurrent_decl | defer_stmt | match_expr | struct_decl | enum_decl | trait_decl | impl_decl
+?script_stmt: tool_decl | tool_annotation | agent_decl | flow_decl | protocol_decl | test_decl | type_decl | job_decl | server_decl | db_decl | auth_decl | kv_decl | concurrent_decl | defer_stmt | match_expr | struct_decl | enum_decl | trait_decl | impl_decl
 
 // 语义类型定义: type Name = base_type @ "constraint"
 type_decl: "type" IDENTIFIER "=" semantic_type
@@ -243,6 +243,22 @@ semantic_if_case: STRING_LITERAL "=>" expression ","?
            | continue_stmt          // 新增: continue
            | python_escape_stmt     // 新增: Python 逃生舱
            | defer_stmt             // P3-5: defer 延迟执行
+           // ═══ v2.0: Harness Native 原语 ═══
+           | autoloop_stmt          // v2.0: Harness E — 自主执行循环
+           | with_context_stmt      // v2.0: Harness C — 上下文作用域
+           | try_agent_stmt         // v2.0: Harness E+L — AI 专属容错
+           | snapshot_stmt          // v2.0: Harness S — 状态快照
+           | restore_stmt           // v2.0: Harness S — 状态回溯
+           | fork_stmt              // v2.0: Harness S — 并行探索
+           | verify_stmt            // v2.0: Harness V — 验收
+           | reflect_stmt           // v2.0: Harness L — 反思注入
+           | unharnessed_stmt       // v2.0: 显式约束绕过
+           | context_policy_decl    // v2.0: Harness C — 上下文策略声明
+           | lifecycle_hook         // v2.0: Harness L — 生命周期钩子
+           | spawn_stmt             // v2.0: Actor 创建
+           | pass_stmt              // v2.0: Actor 消息发送
+           | await_stmt             // v2.0: Actor 结果等待
+           | receive_stmt           // v2.0: Actor 消息接收
 
 // break 语句 - 用于循环中断
 break_stmt: "break" ";"
@@ -490,14 +506,123 @@ binary_expr: base_expr BINARY_OP base_expr
 CMP_OP: ">=" | "<=" | "==" | "!=" | ">" | "<"
 BINARY_OP: "+" | "-" | "*" | "/" | "%"
 
+// ═══════════════════════════════════════════════════════════════════════
+//  v2.0: Harness Native Grammar Rules
+//  六元组 H = (E, T, C, S, L, V) 的语言级原语
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── T: @tool — 零成本工具绑定 ───
+// @tool("description") fn name(params): type { body }
+// @tool("description", risk_level: "high", requires_approval: true) fn name(params): type { body }
+tool_annotation: "@tool" "(" STRING_LITERAL ["," tool_config_list] ")" tool_fn_def
+
+tool_config_list: tool_config_item ("," tool_config_item)*
+tool_config_item: IDENTIFIER ":" tool_config_value
+tool_config_value: STRING_LITERAL -> tool_config_string
+                 | IDENTIFIER -> tool_config_id
+                 | "true" -> tool_config_bool_true
+                 | "false" -> tool_config_bool_false
+
+tool_fn_def: "fn" IDENTIFIER "(" [tool_param_list] ")" [":" type_expr] block
+tool_param_list: tool_param ("," tool_param)*
+tool_param: IDENTIFIER ":" type_expr ["=" default_value]
+default_value: STRING_LITERAL -> default_string
+             | INT -> default_int
+             | FLOAT -> default_float
+
+// ─── E: autoloop — 自主执行循环 ───
+// autoloop max_steps: 50 exit_when: "resolved" timeout: 300 { body }
+autoloop_stmt: "autoloop" autoloop_config "{" autoloop_body "}"
+autoloop_config: [autoloop_param ("," autoloop_param)*]
+autoloop_param: "max_steps" ":" INT -> autoloop_max_steps
+              | "exit_when" ":" STRING_LITERAL -> autoloop_exit_when
+              | "timeout" ":" INT -> autoloop_timeout
+autoloop_body: flow_stmt*
+
+// ─── C: with_context — 上下文作用域 ───
+// with_context max_tokens: 100000 strategy: sliding_window { body }
+with_context_stmt: "with_context" context_config "{" flow_stmt* "}"
+context_config: context_param ("," context_param)*
+context_param: IDENTIFIER ":" (INT | IDENTIFIER | STRING_LITERAL)
+
+// ─── C: context_policy — Agent 级上下文策略声明 ───
+// context_policy { max_tokens: 100000, strategy: importance_weighted }
+context_policy_decl: "context_policy" "{" context_param* "}"
+
+// ─── E+L: try_agent / catch_correction — AI 专属容错 ───
+// try_agent { step(); } catch_correction(e: ToolError) { reflect `...`; }
+try_agent_stmt: "try_agent" "{" flow_stmt* "}" catch_correction_branch+
+
+catch_correction_branch: "catch_correction" "(" error_binding ")" "{" correction_body "}"
+error_binding: IDENTIFIER ":" IDENTIFIER
+correction_body: flow_stmt*
+
+// ─── L: reflect — 反思注入 ───
+// reflect `Error: #{e}. Retry.`
+reflect_stmt: "reflect" STRING_LITERAL ";"
+
+// ─── S: snapshot / restore / fork — 状态分支与回溯 ───
+// snap = snapshot();
+// restore(snap) if result.failed;
+// fork [A.run(x), B.run(x)] merge best;
+snapshot_stmt: [IDENTIFIER "="] "snapshot" "(" ")" ";"
+restore_stmt: "restore" "(" IDENTIFIER ")" ["if" expression] ";"
+fork_stmt: "fork" "[" fork_branch ("," fork_branch)* "]" "merge" merge_strategy ";"
+fork_branch: [IDENTIFIER "="] expression
+merge_strategy: IDENTIFIER
+
+// ─── V: verify — Harness 验收 ───
+// verify result satisfies Protocol;
+// verify result.code_compiles();
+// verify "condition" against result;
+verify_stmt: "verify" expression "satisfies" type_expr ";" -> verify_satisfies
+            | "verify" expression "." IDENTIFIER "(" ")" ";" -> verify_method
+            | "verify" STRING_LITERAL "against" expression ";" -> verify_semantic
+
+// ─── U: unharnessed — 显式约束绕过 ───
+// unharnessed("reason") { dangerous_code; }
+unharnessed_stmt: "unharnessed" ["(" STRING_LITERAL ")"] "{" flow_stmt* "}"
+
+// ─── L: lifecycle hooks — 生命周期钩子 ───
+// before_step { trace.log("starting"); }
+// after_step { trace.log("completed"); }
+// on_error(e) { trace.capture(e); }
+// before_tool(shell_exec) { trace.log("about to exec"); }
+lifecycle_hook: "before_step" "{" flow_stmt* "}" -> before_step_hook
+              | "after_step" "{" flow_stmt* "}" -> after_step_hook
+              | "on_error" "(" error_binding ")" "{" flow_stmt* "}" -> on_error_hook
+              | "before_tool" "(" IDENTIFIER ")" "{" flow_stmt* "}" -> before_tool_hook
+              | "after_tool" "(" IDENTIFIER ")" "{" flow_stmt* "}" -> after_tool_hook
+
+// ─── Actor: spawn / pass / await / receive ───
+// code_reader = spawn CodeReader("Read codebase");
+// pass "focus on auth" to code_reader;
+// result = await code_reader;
+// msg = receive(): string;
+spawn_stmt: [IDENTIFIER "="] "spawn" IDENTIFIER "(" [argument_list] ")" ";"
+pass_stmt: "pass" expression "to" IDENTIFIER ";"
+await_stmt: "await" IDENTIFIER ";"
+receive_stmt: "receive" "(" ")" [":" type_expr] ";"
+
+// ═══════════════════════════════════════════════════════════════════════
+//  Terminal Definitions
+// ═══════════════════════════════════════════════════════════════════════
 
 // v1.0.1-beta: 声明关键字优先级
 %declare ELSE
 
+// v2.0: Harness Native exclusion keywords
+%declare AUTOLOOP WITH_CONTEXT TRY_AGENT CATCH_CORRECTION STEP
+%declare REFLECT SNAPSHOT RESTORE FORK MERGE VERIFY UNHARNESSED
+%declare SPAWN PASS AWAIT RECEIVE BEFORE_STEP AFTER_STEP ON_ERROR
+%declare BEFORE_TOOL AFTER_TOOL CONTEXT_POLICY
+%declare OPTION RESULT ACTOR SOME_OK ERR
+%declare SATISFIES
+
 // v1.0.1-beta: IDENTIFIER 定义
 // 使用负向断言确保关键字不会被当作标识符匹配
 // 注意：使用 \b 边界确保只排除完整关键字，不排除前缀匹配如 test_xxx
-IDENTIFIER: /(?!if\b|else\b|for\b|each\b|in\b|while\b|break\b|continue\b|agent\b|tool\b|flow\b|protocol\b|test\b|match\b|loop\b|until\b|print\b|try\b|catch\b|assert\b|true\b|false\b|join\b|std\b|img\b|requires\b|ensures\b|invariant\b|type\b|unit\b|otherwise\b|job\b|on\b|perform\b|on_failure\b|server\b|group\b|route\b|serve\b|static\b|cors\b|semantic\b|GET\b|POST\b|PUT\b|DELETE\b|PATCH\b|HEAD\b|OPTIONS\b|db\b|connect\b|query\b|execute\b|auth\b|require_auth\b|enable_auth\b|oauth\b|kv\b|open\b|spawn\b|parallel\b|race\b|channel\b|after\b|schedule\b|await\b|select\b|recv\b|send\b|close\b|sleep_ms\b|template\b|defer\b|struct\b|enum\b|trait\b|impl\b|fn\b|let\b)[a-zA-Z_][a-zA-Z0-9_]*/
+IDENTIFIER: /(?!if\b|else\b|for\b|each\b|in\b|while\b|break\b|continue\b|agent\b|tool\b|flow\b|protocol\b|test\b|match\b|loop\b|until\b|print\b|try\b|catch\b|assert\b|true\b|false\b|join\b|std\b|img\b|requires\b|ensures\b|invariant\b|type\b|unit\b|otherwise\b|job\b|on\b|perform\b|on_failure\b|server\b|group\b|route\b|serve\b|static\b|cors\b|semantic\b|GET\b|POST\b|PUT\b|DELETE\b|PATCH\b|HEAD\b|OPTIONS\b|db\b|connect\b|query\b|execute\b|auth\b|require_auth\b|enable_auth\b|oauth\b|kv\b|open\b|spawn\b|parallel\b|race\b|channel\b|after\b|schedule\b|await\b|select\b|recv\b|send\b|close\b|sleep_ms\b|template\b|defer\b|struct\b|enum\b|trait\b|impl\b|fn\b|let\b|autoloop\b|with_context\b|try_agent\b|catch_correction\b|step\b|reflect\b|snapshot\b|restore\b|fork\b|merge\b|verify\b|satisfies\b|unharnessed\b|pass\b|receive\b|before_step\b|after_step\b|on_error\b|before_tool\b|after_tool\b|context_policy\b|Option\b|Result\b|Actor\b|Some\b|Ok\b|Err\b)[a-zA-Z_][a-zA-Z0-9_]*/
 STRING_LITERAL: /"[^"]*"/
 MULTILINE_STRING: /\"\"\"([^\""]|\"{1,2}([^\""]|$))*?\"\"\"/
 // P2-4: Template string token (same regex as MULTILINE_STRING, but used with "template" prefix)

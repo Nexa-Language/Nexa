@@ -23,6 +23,8 @@ from src.runtime.stdlib import STD_NAMESPACE_MAP
 
 BOILERPLATE = """# 此文件由 Nexa Code Generator 自动生成
 import os
+import sys
+import time
 import json
 import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
@@ -62,6 +64,18 @@ from src.runtime.kv_store import NexaKVStore, KVHandle, kv_open, kv_get, kv_get_
 from src.runtime.concurrent import NexaChannel, NexaTask, NexaSchedule, NexaConcurrencyRuntime, RUNTIME, channel, send, recv, recv_timeout, try_recv, close, select, spawn, await_task, try_await, cancel_task, parallel, race, after, schedule, cancel_schedule, sleep_ms, thread_count, parse_interval
 # P2-4: Template System (模板系统)
 from src.runtime.template import NexaTemplateRenderer, TemplateContentParser, _nexa_tpl_escape, _nexa_tpl_join, _nexa_tpl_safe_str, FILTER_REGISTRY, render_string, template, compile_template, render, agent_template_prompt, agent_template_slot_fill, agent_template_register, agent_template_list, agent_template_unregister
+# v2.0: Harness Native Runtime
+from src.runtime.harness_kernel import HarnessKernel, HarnessRuntimeMode, AutoLoopConfig, StepResult, AutoLoopResult, ContextScope, get_kernel, reset_kernel
+from src.runtime.execution_engine import ExecutionEngine
+from src.runtime.context_manager import ContextManager, estimate_tokens
+from src.runtime.tool_output_store import ToolOutputStore, get_tool_output_store
+from src.runtime.tool_registry import ToolRegistry, ToolSchema, get_tool_registry
+from src.runtime.lifecycle_hooks import LifecycleHookManager
+from src.runtime.state_store import StateStore
+from src.runtime.trace_system import TraceSystem
+from src.runtime.evaluation_interface import EvaluationInterface, VerifyResult, BehavioralTrace
+from src.runtime.llm_router import LLMRouter, ModelRequirement, ModelInfo
+from src.runtime.actor_system import ActorSystem, ActorHandle, ActorMessage, ActorConfig
 
 # P2-4: Template filter function aliases (for generated template code)
 _nexa_tpl_filter_upper = FILTER_REGISTRY.get('upper')
@@ -187,9 +201,12 @@ class CodeGenerator:
         
     def generate(self):
         for node in self.ast.get("body", []):
+            node = self._ensure_dict(node)
             if node["type"] == "ProtocolDeclaration":
                 self.protocols.append(node)
             elif node["type"] == "ToolDeclaration":
+                self.tools.append(node)
+            elif node["type"] == "ToolAnnotation":
                 self.tools.append(node)
             elif node["type"] == "AgentDeclaration":
                 self.agents.append(node)
@@ -772,6 +789,11 @@ class CodeGenerator:
 
     def _generate_tools(self):
         for tool in self.tools:
+            # Handle ToolAnnotation (@tool fn) — v2.0 Harness T-dimension
+            if tool.get("type") == "ToolAnnotation":
+                self._generate_tool_annotation_as_schema(tool)
+                continue
+            
             name = tool["name"]
             
             # Handle MCP tools
@@ -818,11 +840,74 @@ class CodeGenerator:
 """
             self.code.append(tool_code)
 
+    def _generate_tool_annotation_as_schema(self, tool):
+        """Generate OpenAI function schema + Python function + LOCAL_TOOLS registration for @tool fn."""
+        fn_name = tool.get("fn_name", "")
+        description = tool.get("description", "")
+        params = tool.get("params", [])
+        body = tool.get("body", [])
+        python_code = tool.get("python_code", None)
+        risk_level = tool.get("risk_level", "low")
+        requires_approval = tool.get("requires_approval", False)
+        
+        # 1. Generate OpenAI function calling schema
+        properties = {}
+        required = []
+        for p in params:
+            p_name = p.get("name", "")
+            p_type_raw = p.get("type", "string")
+            # Map Nexa types to JSON schema types
+            type_map = {"string": "string", "int": "integer", "float": "number", "bool": "boolean", "list": "array", "dict": "object"}
+            # Handle dict type expressions like {'type': 'CustomType', 'name': 'string'}
+            if isinstance(p_type_raw, dict):
+                p_type = type_map.get(p_type_raw.get("name", "string"), "string")
+            else:
+                p_type = type_map.get(str(p_type_raw).lower(), "string")
+            properties[p_name] = {"type": p_type, "description": f"Parameter {p_name}"}
+            required.append(p_name)
+        
+        schema_code = f"""__tool_{fn_name}_schema = {{
+    "name": "{fn_name}",
+    "description": "{description}",
+    "parameters": {{
+        "type": "object",
+        "properties": {json.dumps(properties, indent=8, ensure_ascii=False)},
+        "required": {json.dumps(required)}
+    }}
+}}"""
+        self.code.append(schema_code)
+        
+        # 2. Generate Python function implementation
+        param_str = ", ".join(p.get("name", "") for p in params)
+        self.code.append(f"")
+        self.code.append(f"def {fn_name}({param_str}):")
+        self.indent_level += 1
+        self.code.append(f'{self._indent()}"""{description}"""')
+        # If python! block exists, emit it directly as the function body
+        if python_code:
+            for line in python_code.split('\n'):
+                self.code.append(f"{self._indent()}{line}")
+        else:
+            for b in body:
+                self._generate_statement(b)
+        self.indent_level -= 1
+        
+        # 3. Register in LOCAL_TOOLS so execute_tool can find it
+        self.code.append(f"from src.runtime.tools_registry import LOCAL_TOOLS")
+        self.code.append(f"LOCAL_TOOLS['{fn_name}'] = {fn_name}")
+        self.code.append(f"")
+
     def _generate_agents(self):
         for agent in self.agents:
             name = agent["name"]
             prompt = agent.get("prompt", "")
             uses = agent.get("uses", [])
+            # Auto-add all @tool functions to agent's uses list
+            for tool in self.tools:
+                if tool.get("type") == "ToolAnnotation":
+                    fn_name = tool.get("fn_name", "")
+                    if fn_name and fn_name not in uses:
+                        uses.append(fn_name)
             properties = agent.get("properties", {})
             model_raw = properties.get("model", '"minimax-m2.5"')
             if isinstance(model_raw, dict) and model_raw.get("type") == "fallback_list":
@@ -1277,7 +1362,17 @@ class CodeGenerator:
                 expr_code = self._generate_expr_code(expr)
                 return f"print({expr_code})"
             return f"print({expr})"
-        
+
+        elif stmt_type == "InputStatement":
+            prompt = stmt.get("prompt", "")
+            if prompt:
+                return f"input({repr(prompt)})"
+            return f"input()"
+
+        elif stmt_type == "ExitStatement":
+            exit_code = stmt.get("exit_code", 0)
+            return f"sys.exit({exit_code})"
+
         elif stmt_type == "method_call":
             obj = stmt.get("object", stmt.get("agent", ""))
             method = stmt.get("method", "")
@@ -1687,6 +1782,9 @@ class CodeGenerator:
                 self.code.append(f'{self._indent()}raise ContractViolation(__ens_violation.args[0], clause_type=__ens_violation.clause_type, clause=__ens_violation.clause, context=__ens_violation.context, is_semantic=__ens_violation.is_semantic)')
                 self.indent_level -= 1
             
+            # Auto-add return result at end of flow (Nexa flows implicitly return last result)
+            self.code.append(f'{self._indent()}return result')
+            
             self.indent_level -= 1
             self.code.append("")
     
@@ -1954,7 +2052,16 @@ class CodeGenerator:
             self.indent_level -= 1
             self.code.append("")
 
+    def _ensure_dict(self, node):
+        """Convert dataclass AST nodes to dict for code generation."""
+        if isinstance(node, dict):
+            return node
+        if hasattr(node, 'to_dict'):
+            return node.to_dict()
+        return node
+
     def _generate_statement(self, stmt):
+        stmt = self._ensure_dict(stmt)
         st_type = stmt.get("type")
         
         # ===== P3-4: ADT — Struct/Enum/Trait/Impl (代数数据类型) =====
@@ -2034,6 +2141,40 @@ class CodeGenerator:
             expr_str = self._resolve_expression(stmt["expression"])
             self.code.append(f"{self._indent()}_nexa_defer_stack.append(lambda: {expr_str})")
         
+        # ===== v2.0: Harness Native Primitives =====
+        elif st_type == "AutoLoopStmt":
+            self._generate_autoloop(stmt)
+        elif st_type == "WithContextStmt":
+            self._generate_with_context(stmt)
+        elif st_type == "TryAgentStmt":
+            self._generate_try_agent(stmt)
+        elif st_type == "SnapshotStmt":
+            self._generate_snapshot(stmt)
+        elif st_type == "RestoreStmt":
+            self._generate_restore(stmt)
+        elif st_type == "ForkStmt":
+            self._generate_fork(stmt)
+        elif st_type == "VerifyStmt":
+            self._generate_verify(stmt)
+        elif st_type == "ReflectStmt":
+            self._generate_reflect(stmt)
+        elif st_type == "UnharnessedStmt":
+            self._generate_unharnessed(stmt)
+        elif st_type == "LifecycleHook":
+            self._generate_lifecycle_hook(stmt)
+        elif st_type == "ContextPolicyDecl":
+            self._generate_context_policy(stmt)
+        elif st_type == "SpawnStmt":
+            self._generate_spawn(stmt)
+        elif st_type == "PassStmt":
+            self._generate_pass(stmt)
+        elif st_type == "AwaitStmt":
+            self._generate_await(stmt)
+        elif st_type == "ReceiveStmt":
+            self._generate_receive(stmt)
+        elif st_type == "ToolAnnotation":
+            self._generate_tool_annotation(stmt)
+        
         # ===== v1.2: Error Propagation (? 操作符 + otherwise 内联错误处理) =====
         elif st_type == "TryAssignmentStatement":
             # x = expr?  ->  错误传播赋值
@@ -2071,8 +2212,18 @@ class CodeGenerator:
                 self.code.append(f"{self._indent()}{target} = {val_str}")
             
         elif st_type == "ExpressionStatement":
-            val_str = self._resolve_expression(stmt["expression"])
-            self.code.append(f"{self._indent()}{val_str}")
+            expr = stmt.get("expression", stmt)
+            # Handle 'return' as a Python return statement (Nexa doesn't have return keyword)
+            if isinstance(expr, dict) and expr.get("type") == "FunctionCallExpression" and expr.get("function") == "return":
+                args = expr.get("arguments", [])
+                if args:
+                    ret_val = self._resolve_expression(args[0])
+                    self.code.append(f"{self._indent()}return {ret_val}")
+                else:
+                    self.code.append(f"{self._indent()}return")
+            else:
+                val_str = self._resolve_expression(expr)
+                self.code.append(f"{self._indent()}{val_str}")
 
         elif st_type == "AssertStatement":
             val_str = self._resolve_expression(stmt["expression"])
@@ -2080,7 +2231,18 @@ class CodeGenerator:
             
         elif st_type == "BreakStatement":
             self.code.append(f"{self._indent()}break")
-            
+
+        elif st_type == "InputStatement":
+            prompt = stmt.get("prompt", "")
+            if prompt:
+                self.code.append(f"{self._indent()}input({repr(prompt)})")
+            else:
+                self.code.append(f"{self._indent()}input()")
+
+        elif st_type == "ExitStatement":
+            exit_code = stmt.get("exit_code", 0)
+            self.code.append(f"{self._indent()}sys.exit({exit_code})")
+
         elif st_type == "SemanticIfStatement":
             cond = stmt["condition"]
             fast_match = stmt.get("fast_match")
@@ -2334,6 +2496,9 @@ class CodeGenerator:
             elif func == "print":
                 # print 保持原样
                 pass
+            elif func == "exit":
+                # exit(code) -> sys.exit(code)
+                func = "sys.exit"
             else:
                 # 检查是否是 flow 调用 - flow 名称需要添加 flow_ 前缀
                 flow_names = [f["name"] for f in self.flows]
@@ -2622,6 +2787,235 @@ class CodeGenerator:
                          "BooleanLiteral", "MethodCallExpression", "FunctionCallExpression"):
             return self._resolve_expression(stmt)
         return str(stmt)
+
+    # ═══════════════════════════════════════════════════════════════════
+    #  v2.0: Harness Native Code Generation
+    # ═══════════════════════════════════════════════════════════════════
+
+    def _generate_autoloop(self, stmt):
+        """Generate autoloop ReAct cycle code.
+
+        v2.0 redesign: Generate a real while loop instead of kernel.run_autoloop()
+        so that interactive primitives (input, break, if) work naturally inside the loop.
+        The HarnessKernel config is still used for max_steps and exit_when tracking.
+        """
+        max_steps = stmt.get("max_steps", 50)
+        exit_when = stmt.get("exit_when", None)
+        timeout = stmt.get("timeout", None)
+        body = stmt.get("body", [])
+
+        self.code.append(f"{self._indent()}# v2.0 autoloop: ReAct cycle (E-dimension)")
+        self.code.append(f"{self._indent()}_kernel = get_kernel()")
+        # Build AutoLoopConfig as a single line
+        config_parts = [f"max_steps={max_steps}"]
+        if exit_when:
+            config_parts.append(f"exit_when=\"{exit_when}\"")
+        if timeout:
+            config_parts.append(f"timeout={timeout}")
+        config_str = ", ".join(config_parts)
+        self.code.append(f"{self._indent()}_config = AutoLoopConfig({config_str})")
+        self.code.append(f"{self._indent()}_step_count = 0")
+        self.code.append(f"{self._indent()}_start_time = time.time() if _config.timeout else 0")
+        self.code.append(f"{self._indent()}while _step_count < _config.max_steps:")
+        self.indent_level += 1
+        self.code.append(f"{self._indent()}_step_count += 1")
+        # Timeout check
+        if timeout:
+            self.code.append(f"{self._indent()}if _config.timeout and (time.time() - _start_time) > _config.timeout:")
+            self.indent_level += 1
+            self.code.append(f"{self._indent()}print(f'autoloop timeout after {_config.timeout}s')")
+            self.code.append(f"{self._indent()}break")
+            self.indent_level -= 1
+        # Generate body statements
+        for b in body:
+            self._generate_statement(b)
+        self.indent_level -= 1
+        self.code.append(f"{self._indent()}# autoloop completed")
+
+    def _generate_with_context(self, stmt):
+        """Generate with_context scope code."""
+        max_tokens = stmt.get("max_tokens", 100000)
+        strategy = stmt.get("strategy", "sliding_window")
+        body = stmt.get("body", [])
+
+        self.code.append(f"{self._indent()}# v2.0 with_context: context scope")
+        self.code.append(f"{self._indent()}_cm = ContextManager(kernel=get_kernel())")
+        self.code.append(f"{self._indent()}_cm.enter_scope('scope', {{'max_tokens': {max_tokens}, 'strategy': '{strategy}'}})")
+        for b in body:
+            self._generate_statement(b)
+        self.code.append(f"{self._indent()}_cm.exit_scope('scope')")
+
+    def _generate_try_agent(self, stmt):
+        """Generate try_agent/catch_correction code."""
+        try_body = stmt.get("try_body", [])
+        catch_branches = stmt.get("catch_branches", [])
+
+        self.code.append(f"{self._indent()}# v2.0 try_agent: error correction")
+        self.code.append(f"{self._indent()}try:")
+        self.indent_level += 1
+        for b in try_body:
+            self._generate_statement(b)
+        self.indent_level -= 1
+        for cb in catch_branches:
+            error_var = cb.get("error_var", "e")
+            error_type = cb.get("error_type", "Exception")
+            correction_body = cb.get("correction_body", [])
+            self.code.append(f"{self._indent()}except {error_type} as {error_var}:")
+            self.indent_level += 1
+            self.code.append(f"{self._indent()}# catch_correction: reflect and retry")
+            for b in correction_body:
+                self._generate_statement(b)
+            self.indent_level -= 1
+
+    def _generate_snapshot(self, stmt):
+        """Generate snapshot code."""
+        var_name = stmt.get("var_name", "_snap_id")
+        label = stmt.get("label", "")
+        self.code.append(f"{self._indent()}# v2.0 snapshot")
+        self.code.append(f"{self._indent()}_store = StateStore()")
+        self.code.append(f"{self._indent()}{var_name} = _store.snapshot(label='{label}')")
+
+    def _generate_restore(self, stmt):
+        """Generate restore code."""
+        target_var = stmt.get("target_var", "_snap_id")
+        self.code.append(f"{self._indent()}# v2.0 restore")
+        self.code.append(f"{self._indent()}_store.restore({target_var})")
+
+    def _generate_fork(self, stmt):
+        """Generate fork code."""
+        branches = stmt.get("branches", [])
+        merge_strategy = stmt.get("merge_strategy", "best_of")
+        branch_names = [b.get("name", f"branch_{i}") for i, b in enumerate(branches)]
+        names_list = "[" + ", ".join(f'"{n}"' for n in branch_names) + "]"
+
+        self.code.append(f"{self._indent()}# v2.0 fork: parallel exploration")
+        self.code.append(f"{self._indent()}_store = StateStore()")
+        self.code.append(f"{self._indent()}_branches = _store.fork({names_list})")
+        for i, branch in enumerate(branches):
+            name = branch_names[i]
+            body = branch.get("body", [])
+            self.code.append(f"{self._indent()}# Branch: {name}")
+            self.code.append(f"{self._indent()}_bid = _branches['{name}']")
+            for b in body:
+                self._generate_statement(b)
+            self.code.append(f"{self._indent()}_store.complete_branch(_bid, 'result')")
+        self.code.append(f"{self._indent()}_merge_result = _store.merge(strategy='{merge_strategy}')")
+
+    def _generate_verify(self, stmt):
+        """Generate verify code."""
+        check_type = stmt.get("check_type", "satisfies")
+        target = stmt.get("target", "")
+        check_value = stmt.get("check_value", "")
+        target_str = self._resolve_expression(target) if isinstance(target, dict) else str(target)
+        # For type expressions like CustomType("string"), extract the type name
+        if isinstance(check_value, dict) and check_value.get("type") in ("CustomType", "BaseType", "GenericType"):
+            condition_str = f'"{check_value.get("name", "string")}"'
+        elif isinstance(check_value, dict):
+            condition_str = self._resolve_expression(check_value)
+        else:
+            condition_str = f'"{check_value}"'
+
+        self.code.append(f"{self._indent()}# v2.0 verify")
+        self.code.append(f"{self._indent()}_ei = EvaluationInterface()")
+        if check_type == "satisfies":
+            self.code.append(f"{self._indent()}_vr = _ei.verify_satisfies({target_str}, {condition_str})")
+        elif check_type == "semantic":
+            self.code.append(f"{self._indent()}_vr = _ei.verify_semantic({condition_str}, {target_str})")
+        else:
+            self.code.append(f"{self._indent()}_vr = _ei.verify_satisfies({target_str}, {condition_str})")
+        self.code.append(f"{self._indent()}if not _vr.passed and _vr.correction_hint:")
+        self.code.append(f"{self._indent()}    print(f'[verify] FAIL: {{_vr.correction_hint}}')")
+
+    def _generate_reflect(self, stmt):
+        """Generate reflect code."""
+        text = stmt.get("text", "")
+        self.code.append(f"{self._indent()}# v2.0 reflect: self-reflection injection")
+        self.code.append(f"{self._indent()}print(f'[reflect] {text}')")
+
+    def _generate_unharnessed(self, stmt):
+        """Generate unharnessed code (passthrough)."""
+        body = stmt.get("body", [])
+        self.code.append(f"{self._indent()}# v2.0 unharnessed: passthrough block")
+        for b in body:
+            self._generate_statement(b)
+
+    def _generate_lifecycle_hook(self, stmt):
+        """Generate lifecycle hook code."""
+        hook_type = stmt.get("hook_type", "before_step")
+        body = stmt.get("body", [])
+        self.code.append(f"{self._indent()}# v2.0 lifecycle hook: {hook_type}")
+        self.code.append(f"{self._indent()}_hooks = LifecycleHookManager()")
+        self.code.append(f"{self._indent()}def _hook_fn():")
+        self.indent_level += 1
+        for b in body:
+            self._generate_statement(b)
+        self.indent_level -= 1
+        self.code.append(f"{self._indent()}_hooks.register('{hook_type}', _hook_fn)")
+
+    def _generate_context_policy(self, stmt):
+        """Generate context_policy code."""
+        max_tokens = stmt.get("max_tokens", 100000)
+        strategy = stmt.get("strategy", "sliding_window")
+        self.code.append(f"{self._indent()}# v2.0 context_policy: agent-level context declaration")
+        self.code.append(f"{self._indent()}_ctx_policy = {{'max_tokens': {max_tokens}, 'strategy': '{strategy}'}}")
+
+    def _generate_spawn(self, stmt):
+        """Generate spawn code."""
+        var_name = stmt.get("var_name", "")
+        agent_name = stmt.get("agent_name", "")
+        args = stmt.get("args", [])
+        args_str = ", ".join(self._resolve_expression(a) if isinstance(a, dict) else str(a) for a in args)
+
+        self.code.append(f"{self._indent()}# v2.0 spawn: create actor")
+        self.code.append(f"{self._indent()}_actor_sys = ActorSystem()")
+        if var_name:
+            self.code.append(f"{self._indent()}{var_name} = _actor_sys.spawn('{agent_name}', lambda actor_id, actor_name, mailbox, **kw: {agent_name}({args_str}))")
+        else:
+            self.code.append(f"{self._indent()}_actor_sys.spawn('{agent_name}', lambda actor_id, actor_name, mailbox, **kw: {agent_name}({args_str}))")
+
+    def _generate_pass(self, stmt):
+        """Generate pass code."""
+        target = stmt.get("target", "")
+        message = stmt.get("message", "")
+        target_str = self._resolve_expression(target) if isinstance(target, dict) else str(target)
+        msg_str = self._resolve_expression(message) if isinstance(message, dict) else f'"{message}"'
+        self.code.append(f"{self._indent()}# v2.0 pass: send message")
+        self.code.append(f"{self._indent()}_actor_sys.pass_message({target_str}, {msg_str})")
+
+    def _generate_await(self, stmt):
+        """Generate await code."""
+        actor_var = stmt.get("actor_var", "")
+        self.code.append(f"{self._indent()}# v2.0 await: wait for actor")
+        self.code.append(f"{self._indent()}_result = _actor_sys.await_result({actor_var})")
+
+    def _generate_receive(self, stmt):
+        """Generate receive code."""
+        type_expr = stmt.get("type_expr", None)
+        self.code.append(f"{self._indent()}# v2.0 receive: get message")
+        self.code.append(f"{self._indent()}_msg = _actor_sys.receive(actor_id)")
+
+    def _generate_tool_annotation(self, stmt):
+        """Generate @tool annotation code."""
+        fn_name = stmt.get("fn_name", "")
+        description = stmt.get("description", "")
+        risk_level = stmt.get("risk_level", "low")
+        requires_approval = stmt.get("requires_approval", False)
+        params = stmt.get("params", [])
+        body = stmt.get("body", [])
+
+        self.code.append(f"{self._indent()}# v2.0 @tool: auto-register tool")
+        self.code.append(f"{self._indent()}def {fn_name}({', '.join(p.get('name', '') for p in params)}):")
+        self.indent_level += 1
+        for b in body:
+            self._generate_statement(b)
+        self.indent_level -= 1
+        self.code.append(f"{self._indent()}_registry = get_tool_registry()")
+        self.code.append(f"{self._indent()}_registry.register_from_annotation(")
+        self.code.append(f"{self._indent()}    fn={fn_name},")
+        self.code.append(f"{self._indent()}    description=\"{description}\",")
+        self.code.append(f"{self._indent()}    risk_level=\"{risk_level}\",")
+        self.code.append(f"{self._indent()}    requires_approval={requires_approval},")
+        self.code.append(f"{self._indent()})")
 
 if __name__ == "__main__":
     import sys
