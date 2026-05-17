@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa v2.0.0 is officially launched — the first Harness Native Agent Language with compiler-enforced safety. 1800+ tests, 12 examples, and Nexa Code CLI.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa v2.0.0 is Here — The First Harness Native Agent Language">
+  <meta property="og:description" content="1800+ tests, 12 v2.0 examples, AVM Rust 0 errors, and Nexa Code — the first Harness Native AI coding assistant.">
+  <title>Nexa v2.0.0 is Here — Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+  <canvas id="particles-canvas"></canvas>
+
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo"><img src="../assets/nexa-logo.svg" alt="Nexa"> Nexa</a>
+      <ul class="nav-links">
+        <li class="nav-item"><a href="../index.html">Home <span class="chevron">▾</span></a><div class="nav-dropdown"><a href="../index.html#features">Features</a><a href="../index.html#code">Code</a><a href="../index.html#architecture">Architecture</a></div></li>
+        <li class="nav-item"><a href="index.html">Blog</a></li>
+        <li class="nav-item"><a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">Paper</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li class="nav-item"><a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">Docs</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <div class="blog-post-inner">
+      <div class="blog-post-header">
+        <span class="blog-post-date">May 17, 2026</span>
+        <span class="blog-post-tag">v2.0.0</span>
+        <span class="blog-post-tag">Release</span>
+        <span class="blog-post-tag">Launch 🚀</span>
+      </div>
+
+      <h1>Nexa v2.0.0 is Here — The First Harness Native Agent Language</h1>
+
+      <p>After months of research, design, and engineering, <strong>Nexa v2.0.0</strong> is officially released and available on GitHub. This isn't just another framework update — it's the realization of a fundamentally new approach to agent programming: <strong>Harness Native</strong>.</p>
+
+      <h2>The Big Idea: Safety is a Language Property</h2>
+
+      <p>Every AI agent today — from Claude Code to Codex CLI — manages its execution loop, tool binding, context paging, state persistence, lifecycle hooks, and output verification as <strong>runtime conventions</strong>. That is: code that <em>could</em> be skipped, bypassed, or simply forgotten by the LLM.</p>
+
+      <p>Nexa v2.0 changes this at the <strong>programming language level</strong>. The Harness six-tuple H=(E,T,C,S,L,V) is not a framework. It's not middleware. It's <strong>syntax</strong> — enforced by the compiler before a single line of agent code ever runs:</p>
+
+      <table style="width:100%; border-collapse: collapse; margin: 24px 0;">
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Dimension</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Primitive</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">What it Does</th>
+          <th style="text-align:left; padding: 12px 16px; color: var(--text-primary);">Tests</th>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">E</td>
+          <td style="padding: 10px 16px;"><code>autoloop</code></td>
+          <td style="padding: 10px 16px;">Autonomous ReAct loop with max_steps, exit_when, timeout</td>
+          <td style="padding: 10px 16px;">52</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">T</td>
+          <td style="padding: 10px 16px;"><code>@tool</code></td>
+          <td style="padding: 10px 16px;">Zero-cost tool binding → OpenAI function calling schema</td>
+          <td style="padding: 10px 16px;">53</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">C</td>
+          <td style="padding: 10px 16px;"><code>with_context</code></td>
+          <td style="padding: 10px 16px;">Importance-weighted context paging with token budgets</td>
+          <td style="padding: 10px 16px;">52</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">S</td>
+          <td style="padding: 10px 16px;"><code>snapshot/restore</code></td>
+          <td style="padding: 10px 16px;">COW state snapshots, fork/merge for Tree-of-Thoughts</td>
+          <td style="padding: 10px 16px;">45</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">L</td>
+          <td style="padding: 10px 16px;"><code>before_step/reflect</code></td>
+          <td style="padding: 10px 16px;">Lifecycle hooks + self-reflection injection</td>
+          <td style="padding: 10px 16px;">53</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">V</td>
+          <td style="padding: 10px 16px;"><code>verify</code></td>
+          <td style="padding: 10px 16px;">Compile-time + runtime output verification</td>
+          <td style="padding: 10px 16px;">59</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border-subtle);">
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">Actor</td>
+          <td style="padding: 10px 16px;"><code>spawn/pass/await</code></td>
+          <td style="padding: 10px 16px;">Multi-agent orchestration as language primitives</td>
+          <td style="padding: 10px 16px;">18</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 16px; color: var(--accent-primary); font-weight: 600;">WASM</td>
+          <td style="padding: 10px 16px;">sandbox</td>
+          <td style="padding: 10px 16px;">Full Harness inside WASM sandbox with permission model</td>
+          <td style="padding: 10px 16px;">15</td>
+        </tr>
+      </table>
+
+      <p><strong>296 new tests</strong> for v2.0 alone, plus 1500+ from v1.x = <strong>1800+ total</strong>.</p>
+
+      <h2>Get Started in 30 Seconds</h2>
+
+      <pre><code>git clone https://github.com/Nexa-Language/Nexa.git
+cd Nexa
+pip install -e .
+export OPENAI_API_KEY="sk-your-key"
+
+# Your first Harness Native agent
+nexa run examples/v2.0/01_autoloop.nx --harness=warn</code></pre>
+
+      <h2>A Complete Agent in One File</h2>
+
+      <p>Here's a Harness Agent using all six dimensions — E, T, C, S, L, V — in a single flow:</p>
+
+      <pre><code>@tool("Execute a shell command safely")
+fn shell_exec(command: string): string {
+    python! """return "Command executed safely""""
+}
+
+agent WellHarnessedAgent {
+    prompt: "You are a well-harnessed autonomous agent"
+}
+
+flow main {
+    autoloop max_steps: 10, exit_when: "resolved", timeout: 300 {
+        with_context max_tokens: 50000 {
+            snap = snapshot();
+
+            try_agent {
+                result = WellHarnessedAgent.run("Analyze and respond");
+                verify result satisfies string;
+            } catch_correction(e: ToolError) {
+                restore(snap);
+                reflect "Error occurred. Adjusting strategy.";
+            }
+        }
+    }
+}</code></pre>
+
+      <h2>Nexa Code — The First Harness Native AI Assistant</h2>
+
+      <p>Alongside v2.0, we're releasing <strong>Nexa Code</strong> — an interactive AI programming assistant written entirely in Nexa syntax. It uses all six Harness dimensions and features a multi-agent architecture (Planner → Coder → Reviewer → Tester) with 15+ tools.</p>
+
+      <pre><code>nexa run examples/Nexa-Code/main.nx --harness=warn
+
+╔════════════════════════════════════════════════╗
+║          Nexa Code v2.0.0                     ║
+║   The First Harness Native AI Coding Agent    ║
+╚════════════════════════════════════════════════╝
+nexa-code> Read VERSION and tell me the version
+> [CodeAssistant]: This project is version 2.0.0.</code></pre>
+
+      <p>Read more in our companion post: <a href="2026-05-nexa-code.html">Introducing Nexa Code</a>.</p>
+
+      <h2>AVM Rust: Clean Build</h2>
+
+      <p>The Rust-based Agent Virtual Machine (AVM) backend is now <strong>0 errors, 0 warnings</strong>:</p>
+
+      <ul>
+        <li>17 compilation errors fixed in <code>avm/src/runtime/jobs.rs</code></li>
+        <li>21 warnings eliminated across 8 files</li>
+        <li>Security: wasmtime v20→v21 (9 CVEs), pyo3 v0.21→v0.24 (1 CVE)</li>
+      </ul>
+
+      <h2>v1.x Compatibility</h2>
+
+      <p>All v1.x code runs unchanged. v2.0 Harness features are opt-in via the <code>--harness=warn</code> flag. You can add Harness primitives incrementally to existing agents.</p>
+
+      <h2>What's Next: v2.1</h2>
+
+      <p>The v2.1 milestone (in development) focuses on <strong>Production Hardening for Nexa Code</strong>:</p>
+
+      <ul>
+        <li><strong>Streaming</strong>: Agent-level <code>stream: true</code> for real-time output</li>
+        <li><strong>Structured Output</strong>: <code>output_format: "json"</code> with schema constraint</li>
+        <li><strong>Tool Call Control</strong>: <code>max_tool_calls</code> and <code>tool_call_strategy</code></li>
+        <li><strong>Spawn Pipeline</strong>: <code>task |>> spawn [Agent1, Agent2]</code></li>
+      </ul>
+
+      <p>These features will enable Nexa Code to run without any <code>python!</code> escape hatches — pure Nexa syntax, compiler-enforced safety.</p>
+
+      <div style="margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border-subtle);">
+        <p>
+          <a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">⭐ Star on GitHub</a> &nbsp;·&nbsp;
+          <a href="https://docs.nexa-lang.com/en/" target="_blank" rel="noopener">📚 Documentation</a> &nbsp;·&nbsp;
+          <a href="https://doi.org/10.5281/zenodo.19994263" target="_blank" rel="noopener">📄 Paper (DOI)</a>
+        </p>
+      </div>
+    </div>
+  </article>
+
+  <script src="../js/main.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>
