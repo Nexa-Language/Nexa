@@ -45,7 +45,8 @@ class NexaAgent:
                  model: str = STRONG_MODEL, role: str = "", memory_scope: str = "local",
                  protocol=None, max_tokens=None, stream=False, cache=False,
                  max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3,
-                 contracts=None):
+                 contracts=None, output_format: str = "", output_schema=None,
+                 max_tool_calls: int = 10, tool_call_strategy: str = "auto"):
         self.name = name
         self.system_prompt = prompt
         if role:
@@ -87,6 +88,13 @@ class NexaAgent:
         # 新增: timeout 和 retry 属性
         self.timeout = timeout  # 请求超时时间（秒）
         self.retry = retry      # 最大重试次数
+
+        # v2.1: output_format / output_schema / max_tool_calls / tool_call_strategy
+        self.output_format = output_format  # "" | "json"
+        self.output_schema = output_schema  # Pydantic model or None
+        self.max_tool_calls = max_tool_calls  # max tool call rounds per request
+        self.tool_call_strategy = tool_call_strategy  # "auto" | "required" | "none"
+        self._tool_call_count = 0  # counter for current request
         
         # Design by Contract: 契约规格
         self.contracts = contracts  # ContractSpec 或 None
@@ -398,11 +406,27 @@ class NexaAgent:
         
         self._compact_context()
         
+        # v2.1: Reset tool call counter for this request
+        self._tool_call_count = 0
+
         kwargs = {
             "model": self.model,
         }
         if self.max_tokens:
             kwargs["max_tokens"] = self.max_tokens
+
+        # v2.1: Structured output (response_format)
+        if self.output_format == "json":
+            if self.output_schema:
+                kwargs["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": f"{self.name}_schema",
+                        "schema": self.output_schema.model_json_schema() if hasattr(self.output_schema, 'model_json_schema') else {"type": "object"}
+                    }
+                }
+            else:
+                kwargs["response_format"] = {"type": "json_object"}
             
         if self.tools:
             kwargs["tools"] = [{"type": "function", "function": t} for t in self.tools]
@@ -412,6 +436,21 @@ class NexaAgent:
         
         # Tool Execution Loop
         while True:
+            # v2.1: Tool call strategy enforcement
+            if self.tool_call_strategy == "none" and self.tools:
+                self.tools = []
+                if "tools" in kwargs:
+                    del kwargs["tools"]
+            elif self.tool_call_strategy == "required" and self._tool_call_count == 0 and self.tools:
+                kwargs["tool_choice"] = "required"
+
+            # v2.1: Max tool calls enforcement
+            if self._tool_call_count >= self.max_tool_calls:
+                print(f"[{self.name}] Max tool calls ({self.max_tool_calls}) reached, forcing final answer")
+                if "tools" in kwargs:
+                    del kwargs["tools"]
+                if "tool_choice" in kwargs:
+                    del kwargs["tool_choice"]
             kwargs["messages"] = self.messages
             
             cached_result = self._check_cache(kwargs)
@@ -449,6 +488,7 @@ class NexaAgent:
                     msg = response.choices[0].message
                     
                     if msg.tool_calls:
+                        self._tool_call_count += 1  # v2.1: increment tool call counter
                         msg_dict = msg.dict(exclude_none=True) if hasattr(msg, "dict") else dict(msg)
                         self.messages.append(msg_dict)
                         for tc in msg.tool_calls:

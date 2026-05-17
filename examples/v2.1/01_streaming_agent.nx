@@ -1,0 +1,16 @@
+/* 
+  Nexa v2.1 — streaming 流式输出示例
+  agent 声明中添加 stream: true 启用逐 token 输出
+*/
+agent StreamBot {
+    role: "流式助手",
+    model: "gpt-4o-mini",
+    prompt: "You are a streaming bot. Answer briefly.",
+    stream: true
+}
+
+flow main {
+    print "=== v2.1 streaming Demo ===";
+    result = StreamBot.run("Say hello in 3 words");
+    print result;
+}

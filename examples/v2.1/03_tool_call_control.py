@@ -145,50 +145,49 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-class WeatherReport(pydantic.BaseModel):
-    city: str
-    temperature: str
-    conditions: str
-    forecast: str
-
-# Type: Register protocol "WeatherReport" fields in type checker
-__type_checker.register_protocol_field("WeatherReport", "city", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "temperature", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "conditions", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "forecast", AliasTypeExpr("Any"))
-
-__tool_WeatherAPI_schema = {
-    "name": "WeatherAPI",
-    "description": "Fetch weather data for a city",
+__tool_web_search_schema = {
+    "name": "web_search",
+    "description": "Search the web for information",
     "parameters": {
         "type": "object",
         "properties": {
-            "city": {"type": "string"}
-        },
-        "required": ["city"]
+        "query": {
+                "type": "string",
+                "description": "Parameter query"
+        }
+},
+        "required": ["query"]
     }
 }
 
-# @implements: feature.weather_bot
-WeatherBot = NexaAgent(
-    name="WeatherBot",
-    prompt="Provide weather information for cities. When asked about weather, include temperature, conditions, and forecast.",
-    model="minimax-m2.5",
-    role="Weather Assistant",
+def web_search(query):
+    """Search the web for information"""
+    return
+    'Search results for: ' + _nexa_interp_str(query)
+from src.runtime.tools_registry import LOCAL_TOOLS
+LOCAL_TOOLS['web_search'] = web_search
+
+ControlledBot = NexaAgent(
+    name="ControlledBot",
+    prompt="You are an assistant with controlled tool access.",
+    model="gpt-4o-mini",
+    role="受控助手",
     memory_scope="local",
     stream=False,
     cache=False,
-    protocol=WeatherReport,
     timeout=30,
     retry=3,
-    max_tool_calls=10,
+    max_tool_calls=3,
     tool_call_strategy="auto",
-    tools=[__tool_WeatherAPI_schema]
+    tools=[__tool_web_search_schema]
 )
 
 def flow_main():
-    result = WeatherBot.run("What is the weather in Beijing?")
-    print(result)
+    print
+    "=== v2.1 Tool Call Control Demo ==="
+    result = ControlledBot.run("Search for latest AI news and summarize")
+    print
+    result
     return result
 
 if __name__ == "__main__":

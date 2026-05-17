@@ -145,50 +145,57 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-class WeatherReport(pydantic.BaseModel):
-    city: str
-    temperature: str
-    conditions: str
-    forecast: str
-
-# Type: Register protocol "WeatherReport" fields in type checker
-__type_checker.register_protocol_field("WeatherReport", "city", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "temperature", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "conditions", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "forecast", AliasTypeExpr("Any"))
-
-__tool_WeatherAPI_schema = {
-    "name": "WeatherAPI",
-    "description": "Fetch weather data for a city",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "city": {"type": "string"}
-        },
-        "required": ["city"]
-    }
-}
-
-# @implements: feature.weather_bot
-WeatherBot = NexaAgent(
-    name="WeatherBot",
-    prompt="Provide weather information for cities. When asked about weather, include temperature, conditions, and forecast.",
-    model="minimax-m2.5",
-    role="Weather Assistant",
+Planner = NexaAgent(
+    name="Planner",
+    prompt="You are a planner that outputs structured plans.",
+    model="gpt-4o-mini",
+    role="计划制定者",
     memory_scope="local",
     stream=False,
     cache=False,
-    protocol=WeatherReport,
     timeout=30,
     retry=3,
+    output_format="json",
+    output_schema=_generate_output_schema_Planner(),
+
+def _generate_output_schema_Planner():
+    import json
+    try:
+        schema_dict = json.loads('''{'steps': 'string', 'estimated_time': 'string'}''')
+        from pydantic import BaseModel, Field
+        from typing import List, Optional
+        # 动态生成 field definitions
+        fields = {}
+        for key, type_str in schema_dict.items():
+            if isinstance(type_str, list) and len(type_str) > 0 and isinstance(type_str[0], dict):
+                # 嵌套对象列表
+                nested_fields = {k: _get_pydantic_type(v) for k, v in type_str[0].items()}
+                NestedModel = type(f"{key.title()}Model", (BaseModel,), {"__annotations__": nested_fields})
+                fields[key] = (List[NestedModel], Field(default_factory=list))
+            elif isinstance(type_str, list):
+                fields[key] = (List[str], Field(default_factory=list))
+            else:
+                fields[key] = (_get_pydantic_type(type_str), Field(...))
+        DynamicModel = type(f"PlannerSchema", (BaseModel,), {"__annotations__": fields})
+        return DynamicModel
+    except Exception:
+        return None
+
+def _get_pydantic_type(type_str: str):
+    mapping = {"string": str, "number": float, "integer": int, "boolean": bool}
+    return mapping.get(type_str, str)
+
     max_tool_calls=10,
     tool_call_strategy="auto",
-    tools=[__tool_WeatherAPI_schema]
+    tools=[]
 )
 
 def flow_main():
-    result = WeatherBot.run("What is the weather in Beijing?")
-    print(result)
+    print
+    "=== v2.1 Structured Output Demo ==="
+    result = Planner.run("Plan a birthday party")
+    print
+    result
     return result
 
 if __name__ == "__main__":

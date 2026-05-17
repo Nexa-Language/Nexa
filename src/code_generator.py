@@ -897,6 +897,37 @@ class CodeGenerator:
         self.code.append(f"LOCAL_TOOLS['{fn_name}'] = {fn_name}")
         self.code.append(f"")
 
+    def _generate_output_schema_function(self, agent_name: str, schema_json: str):
+        """v2.1: 为 output_schema 生成 Pydantic 模型创建函数"""
+        self.code.append(f"""
+def _generate_output_schema_{agent_name}():
+    import json
+    try:
+        schema_dict = json.loads('''{schema_json}''')
+        from pydantic import BaseModel, Field
+        from typing import List, Optional
+        # 动态生成 field definitions
+        fields = {{}}
+        for key, type_str in schema_dict.items():
+            if isinstance(type_str, list) and len(type_str) > 0 and isinstance(type_str[0], dict):
+                # 嵌套对象列表
+                nested_fields = {{k: _get_pydantic_type(v) for k, v in type_str[0].items()}}
+                NestedModel = type(f"{{key.title()}}Model", (BaseModel,), {{"__annotations__": nested_fields}})
+                fields[key] = (List[NestedModel], Field(default_factory=list))
+            elif isinstance(type_str, list):
+                fields[key] = (List[str], Field(default_factory=list))
+            else:
+                fields[key] = (_get_pydantic_type(type_str), Field(...))
+        DynamicModel = type(f"{agent_name}Schema", (BaseModel,), {{"__annotations__": fields}})
+        return DynamicModel
+    except Exception:
+        return None
+
+def _get_pydantic_type(type_str: str):
+    mapping = {{"string": str, "number": float, "integer": int, "boolean": bool}}
+    return mapping.get(type_str, str)
+""")
+
     def _generate_agents(self):
         for agent in self.agents:
             name = agent["name"]
@@ -1030,6 +1061,21 @@ class CodeGenerator:
             # 新增: timeout 和 retry 参数
             self.code.append(f'    timeout={timeout},')
             self.code.append(f'    retry={retry},')
+            # v2.1: output_format / output_schema / max_tool_calls / tool_call_strategy
+            output_format_str = properties.get("output_format", "").strip('"')
+            if output_format_str:
+                self.code.append(f'    output_format="{output_format_str}",')
+            output_schema_raw = properties.get("output_schema", None)
+            if output_schema_raw and isinstance(output_schema_raw, dict) and output_schema_raw.get("type") == "json_object":
+                # Generate Pydantic model from schema
+                self.code.append(f'    output_schema=_generate_output_schema_{name}(),')
+                self._generate_output_schema_function(name, output_schema_raw.get("value", "{}"))
+            max_tool_calls_val = properties.get("max_tool_calls", "10")
+            if isinstance(max_tool_calls_val, str):
+                max_tool_calls_val = max_tool_calls_val.strip('"')
+            self.code.append(f'    max_tool_calls={max_tool_calls_val},')
+            tool_call_strategy = properties.get("tool_call_strategy", '"auto"').strip('"')
+            self.code.append(f'    tool_call_strategy="{tool_call_strategy}",')
             # Design by Contract: 将契约规格传递给 NexaAgent
             if contract_code:
                 self.code.append(f'    contracts={contract_code},')

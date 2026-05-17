@@ -173,6 +173,7 @@ json_pair: STRING_LITERAL ":" STRING_LITERAL
 
 // Agent 修饰器支持: @limit, @timeout, @retry, @temperature
 // Design by Contract: requires/ensures 契约条款放在签名后、函数体前
+// v2.1: 新增 output_format, output_schema, max_tool_calls, tool_call_strategy 属性
 agent_decl: agent_decorator* "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] requires_clause* ensures_clause* "{" agent_property* "}"
 agent_decorator: "@" agent_decorator_name "(" agent_decorator_params ")"
 agent_decorator_name: "limit" | "timeout" | "retry" | "temperature"
@@ -189,6 +190,7 @@ agent_property: IDENTIFIER ":" agent_property_value ","?
                       | INT -> int_val
                       | "true" -> true_val
                       | "false" -> false_val
+                      | json_object -> json_object_val
 
 fallback_list: fallback_item ("," fallback_item)*
 fallback_item: STRING_LITERAL -> primary_model
