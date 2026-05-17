@@ -77,3 +77,6 @@ examples/Nexa-Code/*.py
 examples/today_news.md
 examples/secrets.nxs
 examples/out_*.py
+
+# 实验课 / 内部课件
+/Labs

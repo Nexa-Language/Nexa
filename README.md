@@ -5,9 +5,9 @@
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.0.0-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.1.0-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1800+-orange.svg" alt="Tests"/>
+    <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
   </p>
   
   **中文版** | **[English](README_EN.md)**
@@ -25,41 +25,54 @@
 
 ---
 
-## 🔥 v2.0: Harness Native Runtime
+## 🔥 v2.1: Production Hardening + v2.0: Harness Native Runtime
 
-Nexa v2.0 引入了 **Harness Native Runtime** — 将 Harness 六元组 H=(E,T,C,S,L,V) 从编译期验证下沉为运行时一等公民：
+Nexa v2.0 将 Harness 六元组 H=(E,T,C,S,L,V) 从编译期验证下沉为**运行时一等公民**。v2.1 在此基础上为 Nexa Code（首个 Harness Native AI 编程助手）新增了 Agent 级别属性，让它能用纯 Nexa 语法运行，不再依赖 `python!` escape hatch。
+
+### v2.1 新增 Agent 属性
+
+这些属性不是框架层面的配置，而是**语言原语**——编译器解析、运行时执行、Harness Validator 检查：
+
+```nexa
+agent Coder {
+    prompt: "You are a coding assistant.",
+    stream: true,                    // 流式输出，逐 token 实时返回
+    max_tool_calls: 5,              // 单次请求最多 5 轮工具调用
+    tool_call_strategy: "auto"      // auto: 模型自行决定 | required: 强制调用 | none: 禁用工具
+}
+
+agent Planner {
+    output_format: "json",          // 强制 OpenAI response_format JSON
+    output_schema: {                // JSON Schema → 编译器自动生成 Pydantic 模型
+        "steps": "string",
+        "estimated_time": "string"
+    }
+}
+```
+
+**向后兼容**: 所有 v1.x-v2.0 代码无需修改即可在 v2.1 上运行。
+
+### v2.0 Harness 六元组
 
 | 维度 | 原语 | 运行时组件 | 测试数 |
 |------|------|-----------|--------|
-| **E** (Execution) | `autoloop` | HarnessKernel + AutoLoopConfig | 52 |
+| **E** (Execution) | `autoloop`/`try_agent` | HarnessKernel + AutoLoopConfig | 52 |
 | **T** (Tool) | `@tool` | ToolRegistry + ToolSchema | 53 |
 | **C** (Context) | `with_context` | ContextManager + importance_weighted | 52 |
 | **S** (State) | `snapshot/restore` | StateStore + fork/merge | 45 |
-| **L** (Lifecycle) | `before_step/after_step/reflect` | LifecycleHookManager | 53 |
+| **L** (Lifecycle) | `before_step`/`reflect` | LifecycleHookManager | 53 |
 | **V** (Verify) | `verify ... satisfies` | EvaluationInterface + LLMRouter | 59 |
 | **Actor** | `spawn/pass/await` | ActorSystem | 18 |
 | **WASM** | sandbox integration | WASM Sandbox + full harness | 15 |
 
-**总计 296 新测试**，加上 v1.x 的 1500+ 测试，共 **1800+ 测试**。
-
-### v2.0 示例
-
-12 个完整示例覆盖所有 Harness 维度：
+### 完整示例目录
 
 ```
-examples/v2.0/
-  01_autoloop.nx          — E-dimension: 自主 ReAct 循环
-  02_with_context.nx      — C-dimension: 上下文自动管理
-  03_try_agent.nx         — E+L: 容错执行 + 反思注入
-  04_tool_annotation.nx   — T-dimension: 零成本工具绑定
-  05_snapshot_restore.nx  — S-dimension: 状态快照与回溯
-  06_fork_merge.nx        — S-dimension: 分支探索与合并
-  07_verify.nx            — V-dimension: 输出验证
-  08_reflect.nx           — L-dimension: 反思注入
-  09_lifecycle_hooks.nx   — L-dimension: 生命周期拦截
-  10_actor_system.nx      — Actor: 多 Agent 编排
-  11_well_harnessed.nx    — 全维度综合示例
-  12_harness_cli.nx       — 类 Claude Code 的 CLI 框架
+examples/v2.0/                     examples/v2.1/
+  01_autoloop.nx    (E)              01_streaming_agent.nx     流式输出
+  02_with_context.nx (C)             02_structured_output.nx   JSON 结构化
+  03_try_agent.nx   (E+L)            03_tool_call_control.nx   工具调用控制
+  ... (共12个)                       04_spawn_pipeline.nx      DAG |>> 并行
 ```
 
 ---
@@ -213,9 +226,9 @@ match result {
 
 ## ✅ 文档与测试验证
 
-- **Python 测试**: 1800+ 测试通过 (v1.x 16 特性 + v2.0 Harness Runtime)
-- **Rust AVM**: 0 errors, 0 warnings 编译通过
-- **v2.0 示例**: 12/12 编译通过 (Harness Validator + `--harness=warn`)
+- **Python 测试**: 1935 tests 全部通过 (v1.x 16 特性 + v2.0 Harness Runtime + v2.1 Agent Properties)
+- **Rust AVM**: 0 errors, 0 warnings — `cargo check` clean build
+- **v2.0+2.1 示例**: 16/16 全部编译通过 (Harness Validator + `--harness=warn`)
 
 ---
 

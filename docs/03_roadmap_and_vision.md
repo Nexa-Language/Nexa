@@ -2,6 +2,17 @@
 
 Nexa 语言的演进路线严格遵循 "Think Big, Start Small" 的原则。我们的终极目标是创建一个原生且安全的智能体执行引擎。
 
+## 阶段 8: v2.1.0 Production Hardening (已完成 ✅)
+
+Nexa v2.1.0 聚焦于让 Nexa Code 纯 Nexa 语法运行：
+
+- [x] **Streaming**: `stream: true` 流式输出
+- [x] **Structured Output**: `output_format: "json"` + `output_schema`
+- [x] **Tool Call Control**: `max_tool_calls` + `tool_call_strategy`
+- [x] **DAG Pipeline 确认**: 已有 `|>>`/`>>` 语法天然支持并行
+
+---
+
 ## 阶段 7: v2.0 Harness Native Runtime (已完成 ✅)
 
 Nexa v2.0 将 Harness 六元组 H=(E,T,C,S,L,V) 从编译期验证下沉为运行时一等公民：

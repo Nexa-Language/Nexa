@@ -1,4 +1,4 @@
-# Nexa v2.0 Agent 快速指南
+# Nexa v2.1 Agent 快速指南
 
 > **给 AI Agent 的指令**: 这是一个专门为你设计的文档。阅读此文档后，你将能够使用 Nexa 语言创建、修改和运行 Harness Native 智能体应用。将此文档作为你的 skill 加载，以便后续使用 Nexa 语言。
 
@@ -9,7 +9,7 @@
 ### 什么是 Nexa？
 Nexa 是 **the first Harness Native Agent Language** — 一门为大语言模型与智能体系统量身定制的编程语言，将 Agent 安全从运行时框架下沉为语言级原语。
 
-当前版本：**v2.0.0**，累计 **1800+ 测试**。
+当前版本：**v2.1.0**，累计 **1935+ 测试**。
 
 ### Harness 六元组 H=(E,T,C,S,L,V)
 Nexa v2.0 将 Harness 六维度作为语言一等公民：
@@ -59,6 +59,35 @@ fn web_search(query: string): string {
 tool WebSearch {
     description: "搜索网络信息",
     parameters: {"query": "string"}
+}
+```
+
+### 2.1 v2.1 Agent 属性 (新增)
+
+v2.1 为 Agent 新增了 3 种编译器解析、运行时执行的**语言原语级属性**：
+
+```nexa
+// 流式输出 — stream: true
+agent StreamBot {
+    model: "gpt-4o-mini",
+    stream: true  // 逐 token 实时输出
+}
+
+// 结构化输出 — output_format + output_schema
+agent Planner {
+    model: "gpt-4o-mini",
+    output_format: "json",       // 强制 OpenAI response_format JSON
+    output_schema: {             // JSON Schema → 编译器自动生成 Pydantic
+        "steps": "string",
+        "estimated_time": "string"
+    }
+}
+
+// 工具调用控制 — max_tool_calls + tool_call_strategy
+agent Coder {
+    model: "gpt-4o",
+    max_tool_calls: 5,           // 单次请求最多 5 轮工具调用
+    tool_call_strategy: "auto"   // auto: 模型决定 | required: 强制调用 | none: 禁用
 }
 ```
 
@@ -575,7 +604,7 @@ nexa run examples/Nexa-Code/main.nx --harness=warn
 - [路线图与愿景](../docs/03_roadmap_and_vision.md)
 - [极速上手指南](../docs/06_quick_start_guide.md)
 - [Harness Agent 设计文档](../docs/others/Harness_Agent.md)
-- [v2.0.0 Release Notes](../docs/release_notes/v2.0.0.md)
+- [v2.1.0 Release Notes](../docs/release_notes/v2.1.0.md)
 - [Feature Changelog v1.1-v1.3.x](../docs/others/changelog_v1.1.0-v1.3.x_features.md)
 
 ---

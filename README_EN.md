@@ -5,9 +5,9 @@
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.0.0-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.1.0-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1800+-orange.svg" alt="Tests"/>
+    <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
   </p>
   
   **[中文版](README.md)** | **English**
@@ -22,6 +22,31 @@
 **Nexa** is **the first Harness Native Agent Language** — a programming language designed specifically for Large Language Models (LLMs) and Agentic Systems, where agent safety is a language property, not a runtime convention.
 
 Modern AI application development is plagued by massive Prompt concatenation, bloated JSON parsing suites, unreliable regex belts, and complex frameworks. Nexa elevates high-level intent routing, multi-agent concurrent assembly, pipeline streaming, and tool execution sandboxing as first-class syntax citizens. Through the underlying `Transpiler`, it transforms into stable, reliable Python Runtime, allowing you to define the most hardcore LLM computation graphs (DAGs) with the most elegant syntax.
+
+---
+
+## 🔥 v2.1: Production Hardening for Nexa Code
+
+Nexa v2.1 adds **agent-level properties** parsed by the compiler and enforced at runtime — not framework configurations, but **language primitives**:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `stream` | `true` / `false` | `false` | Stream output token-by-token |
+| `output_format` | `"json"` / `""` | `""` | Force OpenAI response_format JSON |
+| `output_schema` | `{...}` | — | JSON Schema; compiler auto-generates Pydantic |
+| `max_tool_calls` | `int` | `10` | Max tool call rounds per request |
+| `tool_call_strategy` | `"auto"` / `"required"` / `"none"` | `"auto"` | Control tool call behavior |
+
+```nexa
+agent Coder {
+    prompt: "You are a coding assistant.",
+    stream: true,
+    max_tool_calls: 5,
+    tool_call_strategy: "auto"
+}
+```
+
+**Backward compatible**: all v1.x and v2.0 code runs unchanged.
 
 ---
 
@@ -40,7 +65,7 @@ Nexa v2.0 introduces the **Harness Native Runtime** — transforming the Harness
 | **Actor** | `spawn/pass/await` | ActorSystem | 18 |
 | **WASM** | sandbox integration | WASM Sandbox + full harness | 15 |
 
-**Total 296 new tests**, plus v1.x 1500+ tests = **1800+ tests**.
+**Total 296 new tests**, plus v1.x 1500+ tests = **1935+ tests**.
 
 ### v2.0 Examples
 
@@ -213,9 +238,9 @@ match result {
 
 ## ✅ Documentation & Test Validation
 
-- **Python Tests**: 1800+ tests passed (v1.x 16 features + v2.0 Harness Runtime)
-- **Rust AVM**: 0 errors, 0 warnings — clean build
-- **v2.0 Examples**: 12/12 compile passed (Harness Validator + `--harness=warn`)
+- **Python Tests**: 1935 tests passed (v1.x 16 features + v2.0 Harness Runtime + v2.1 Agent Properties)
+- **Rust AVM**: 0 errors, 0 warnings — `cargo check` clean build
+- **v2.0+2.1 Examples**: 16/16 all compile with `nexa build --harness=warn`
 
 ---
 
