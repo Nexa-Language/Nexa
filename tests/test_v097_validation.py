@@ -31,7 +31,7 @@ class TestCLIFeatures:
         """Verify NEXA_VERSION constant is defined"""
         assert NEXA_VERSION is not None
         assert isinstance(NEXA_VERSION, str)
-        assert NEXA_VERSION.startswith("v1.")
+        assert NEXA_VERSION.startswith("v2.") or NEXA_VERSION.startswith("v1.")
     
     def test_show_version_function(self):
         """Verify show_version() function works"""
@@ -152,64 +152,85 @@ class TestRuntimeMeta:
 class TestReasonPrimitive:
     """Test reason() primitive with type inference"""
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_basic(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_basic(self, mock_secrets, mock_openai):
         """Verify reason() function exists and is callable"""
-        mock_llm.return_value = "Test response"
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': 'Test response'})()})()]
         
         result = reason("What is the capital of France?")
         assert result is not None
         assert isinstance(result, str)
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_with_context(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_with_context(self, mock_secrets, mock_openai):
         """Verify reason() accepts context parameter"""
-        mock_llm.return_value = "Paris"
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': 'Paris'})()})()]
         
         context = {"country": "France", "type": "capital"}
         result = reason("What is the capital?", context=context)
         assert result == "Paris"
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_float(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_float(self, mock_secrets, mock_openai):
         """Verify reason_float() returns float"""
-        mock_llm.return_value = "3.14159"
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': '3.14159'})()})()]
         
         result = reason_float("What is pi?")
         assert isinstance(result, float)
         assert result == 3.14159
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_int(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_int(self, mock_secrets, mock_openai):
         """Verify reason_int() returns int"""
-        mock_llm.return_value = "42"
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': '42'})()})()]
         
         result = reason_int("What is 6 times 7?")
         assert isinstance(result, int)
         assert result == 42
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_bool(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_bool(self, mock_secrets, mock_openai):
         """Verify reason_bool() returns bool"""
-        mock_llm.return_value = "true"
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': 'true'})()})()]
         
         result = reason_bool("Is the sky blue?")
         assert isinstance(result, bool)
         assert result == True
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_dict(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_dict(self, mock_secrets, mock_openai):
         """Verify reason_dict() returns dict"""
-        mock_llm.return_value = '{"name": "test", "value": 123}'
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': '{"name": "test", "value": 123}'})()})()]
         
         result = reason_dict("Generate a test object")
         assert isinstance(result, dict)
         assert result["name"] == "test"
     
-    @patch('src.runtime.reason._call_llm')
-    def test_reason_list(self, mock_llm):
+    @patch('src.runtime.reason.OpenAI')
+    @patch('src.runtime.reason.nexa_secrets')
+    def test_reason_list(self, mock_secrets, mock_openai):
         """Verify reason_list() returns list"""
-        mock_llm.return_value = '[1, 2, 3, 4, 5]'
+        mock_secrets.get_provider_config.return_value = ("test-key", "https://api.test.com/v1")
+        mock_client = mock_openai.return_value
+        mock_client.chat.completions.create.return_value.choices = [type('Choice', (), {'message': type('Msg', (), {'content': '[1, 2, 3, 4, 5]'})()})()]
         
         result = reason_list("Generate a list of 5 numbers")
         assert isinstance(result, list)
