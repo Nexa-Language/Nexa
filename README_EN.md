@@ -5,9 +5,9 @@
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v1.3.7-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.0.0-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1500+-orange.svg" alt="Tests"/>
+    <img src="https://img.shields.io/badge/Tests-1800+-orange.svg" alt="Tests"/>
   </p>
   
   **[中文版](README.md)** | **English**
@@ -22,6 +22,45 @@
 **Nexa** is **the first Harness Native Agent Language** — a programming language designed specifically for Large Language Models (LLMs) and Agentic Systems, where agent safety is a language property, not a runtime convention.
 
 Modern AI application development is plagued by massive Prompt concatenation, bloated JSON parsing suites, unreliable regex belts, and complex frameworks. Nexa elevates high-level intent routing, multi-agent concurrent assembly, pipeline streaming, and tool execution sandboxing as first-class syntax citizens. Through the underlying `Transpiler`, it transforms into stable, reliable Python Runtime, allowing you to define the most hardcore LLM computation graphs (DAGs) with the most elegant syntax.
+
+---
+
+## 🔥 v2.0: Harness Native Runtime
+
+Nexa v2.0 introduces the **Harness Native Runtime** — transforming the Harness six-tuple H=(E,T,C,S,L,V) from compile-time validation into runtime first-class primitives:
+
+| Dimension | Primitive | Runtime Component | Tests |
+|-----------|-----------|-------------------|-------|
+| **E** (Execution) | `autoloop` | HarnessKernel + AutoLoopConfig | 52 |
+| **T** (Tool) | `@tool` | ToolRegistry + ToolSchema | 53 |
+| **C** (Context) | `with_context` | ContextManager + importance_weighted | 52 |
+| **S** (State) | `snapshot/restore` | StateStore + fork/merge | 45 |
+| **L** (Lifecycle) | `before_step/after_step/reflect` | LifecycleHookManager | 53 |
+| **V** (Verify) | `verify ... satisfies` | EvaluationInterface + LLMRouter | 59 |
+| **Actor** | `spawn/pass/await` | ActorSystem | 18 |
+| **WASM** | sandbox integration | WASM Sandbox + full harness | 15 |
+
+**Total 296 new tests**, plus v1.x 1500+ tests = **1800+ tests**.
+
+### v2.0 Examples
+
+12 complete examples covering all Harness dimensions:
+
+```
+examples/v2.0/
+  01_autoloop.nx          — E-dimension: autonomous ReAct loop
+  02_with_context.nx      — C-dimension: context management
+  03_try_agent.nx         — E+L: fault-tolerant execution + reflection
+  04_tool_annotation.nx   — T-dimension: zero-cost tool binding
+  05_snapshot_restore.nx  — S-dimension: state snapshots
+  06_fork_merge.nx        — S-dimension: branch exploration
+  07_verify.nx            — V-dimension: output verification
+  08_reflect.nx           — L-dimension: reflection injection
+  09_lifecycle_hooks.nx   — L-dimension: lifecycle interception
+  10_actor_system.nx      — Actor: multi-agent orchestration
+  11_well_harnessed.nx    — full-dimension example
+  12_harness_cli.nx       — Claude Code-like CLI framework
+```
 
 ---
 
@@ -174,8 +213,9 @@ match result {
 
 ## ✅ Documentation & Test Validation
 
-- **Python Tests**: 1500+ tests passed (16 features fully covered)
-- **Rust AVM Tests**: 110+ tests passed (100%)
+- **Python Tests**: 1800+ tests passed (v1.x 16 features + v2.0 Harness Runtime)
+- **Rust AVM**: 0 errors, 0 warnings — clean build
+- **v2.0 Examples**: 12/12 compile passed (Harness Validator + `--harness=warn`)
 
 ---
 

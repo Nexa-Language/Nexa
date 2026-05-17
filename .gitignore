@@ -61,13 +61,17 @@ head
 .DS_Store
 Thumbs.db
 
-# ai相关
+# ai相关 / 开发内部文档（不进入开源仓库）
 plans/
 MEMORY_BANK.md
+ROADMAP.md
 scripts/
+AGENT_LEARN/
 
 # 生成的 Python 文件 (由 .nx 编译生成)
 examples/*.py
+examples/v2.0/*.py
+examples/Nexa-Code/*.py
 
 # 临时文件
 examples/today_news.md
