@@ -1,6 +1,22 @@
-# Nexa 路线图：从 MVP 到 AVM (Agent Virtual Machine)
+# Nexa 路线图：从 MVP 到 Harness Native Runtime
 
 Nexa 语言的演进路线严格遵循 "Think Big, Start Small" 的原则。我们的终极目标是创建一个原生且安全的智能体执行引擎。
+
+## 阶段 7: v2.0 Harness Native Runtime (已完成 ✅)
+
+Nexa v2.0 将 Harness 六元组 H=(E,T,C,S,L,V) 从编译期验证下沉为运行时一等公民：
+
+- [x] **M0: Harness Validator + Parser Extension** — `--harness=warn/error/off` CLI flag, 6-dimension validator (54 tests)
+- [x] **M1: ExecutionEngine + ContextManager** — AutoLoop ReAct cycle, importance-weighted context paging (52 tests)
+- [x] **M2: ToolRegistry + LifecycleHooks** — `@tool` annotation → ToolSchema, before/after/reflect hooks (53 tests)
+- [x] **M3: StateStore + TraceSystem** — `snapshot/restore/fork/merge`, behavioral tracing (45 tests)
+- [x] **M4: EvaluationInterface + LLMRouter** — `verify ... satisfies`, multi-model routing (59 tests)
+- [x] **M5: ActorSystem** — `spawn/pass/await` multi-agent orchestration (18 tests)
+- [x] **M6: WASM Sandbox + Integration** — Full harness in WASM sandbox (15 tests)
+- [x] **AVM Rust 全面修复** — 17 errors → 0, 21 warnings → 0, CVE 修复 (wasmtime v21, pyo3 v24)
+- [x] **12 个 v2.0 示例** — 全部编译通过，含类 Claude Code CLI 框架
+
+---
 
 ## 阶段 1-4: v0.1 到 v0.8.x (已完成 ✅)
 覆盖了 MVP 转译器、管道操作、架构重构、安全模块 (.nxs/.nxlib)、契约式编程 (Protocols)、多模型路由、持久化记忆及 Markdown 动态工具体系编排。

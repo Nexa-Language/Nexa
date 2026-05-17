@@ -5,9 +5,9 @@
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v1.3.7-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.0.0-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1500+-orange.svg" alt="Tests"/>
+    <img src="https://img.shields.io/badge/Tests-1800+-orange.svg" alt="Tests"/>
   </p>
   
   **中文版** | **[English](README_EN.md)**
@@ -22,6 +22,45 @@
 **Nexa** 是 **the first Harness Native Agent Language**——一门为大语言模型（LLM）与智能体系统（Agentic Systems）量身定制的编程语言，将 Agent 安全从运行时框架下沉为语言级原语。
 
 当代 AI 应用开发充斥着大量的 Prompt 拼接、臃肿的 JSON 解析套件、不可靠的正则皮带，以及复杂的框架。Nexa 将高层级的意图路由、多智能体并发组装、管道流传输以及工具执行沙盒提权为核心语法一等公民，直接通过底层的 `Transpiler` 转换为稳定可靠的 Python Runtime，让你能够用最优雅的语法定义最硬核的 LLM 计算图（DAG）。
+
+---
+
+## 🔥 v2.0: Harness Native Runtime
+
+Nexa v2.0 引入了 **Harness Native Runtime** — 将 Harness 六元组 H=(E,T,C,S,L,V) 从编译期验证下沉为运行时一等公民：
+
+| 维度 | 原语 | 运行时组件 | 测试数 |
+|------|------|-----------|--------|
+| **E** (Execution) | `autoloop` | HarnessKernel + AutoLoopConfig | 52 |
+| **T** (Tool) | `@tool` | ToolRegistry + ToolSchema | 53 |
+| **C** (Context) | `with_context` | ContextManager + importance_weighted | 52 |
+| **S** (State) | `snapshot/restore` | StateStore + fork/merge | 45 |
+| **L** (Lifecycle) | `before_step/after_step/reflect` | LifecycleHookManager | 53 |
+| **V** (Verify) | `verify ... satisfies` | EvaluationInterface + LLMRouter | 59 |
+| **Actor** | `spawn/pass/await` | ActorSystem | 18 |
+| **WASM** | sandbox integration | WASM Sandbox + full harness | 15 |
+
+**总计 296 新测试**，加上 v1.x 的 1500+ 测试，共 **1800+ 测试**。
+
+### v2.0 示例
+
+12 个完整示例覆盖所有 Harness 维度：
+
+```
+examples/v2.0/
+  01_autoloop.nx          — E-dimension: 自主 ReAct 循环
+  02_with_context.nx      — C-dimension: 上下文自动管理
+  03_try_agent.nx         — E+L: 容错执行 + 反思注入
+  04_tool_annotation.nx   — T-dimension: 零成本工具绑定
+  05_snapshot_restore.nx  — S-dimension: 状态快照与回溯
+  06_fork_merge.nx        — S-dimension: 分支探索与合并
+  07_verify.nx            — V-dimension: 输出验证
+  08_reflect.nx           — L-dimension: 反思注入
+  09_lifecycle_hooks.nx   — L-dimension: 生命周期拦截
+  10_actor_system.nx      — Actor: 多 Agent 编排
+  11_well_harnessed.nx    — 全维度综合示例
+  12_harness_cli.nx       — 类 Claude Code 的 CLI 框架
+```
 
 ---
 
@@ -174,8 +213,9 @@ match result {
 
 ## ✅ 文档与测试验证
 
-- **Python 测试**: 1500+ 测试通过 (16 特性全覆盖)
-- **Rust AVM 测试**: 110+ 测试通过 (100%)
+- **Python 测试**: 1800+ 测试通过 (v1.x 16 特性 + v2.0 Harness Runtime)
+- **Rust AVM**: 0 errors, 0 warnings 编译通过
+- **v2.0 示例**: 12/12 编译通过 (Harness Validator + `--harness=warn`)
 
 ---
 
@@ -183,11 +223,12 @@ match result {
 
 - [x] [Nexa 语法参考手册 v1.3.7](docs/01_nexa_syntax_reference.md) — 25 章节完整语法覆盖
 - [x] [编译器与运行时架构 v1.3](docs/02_compiler_architecture.md) — AST scoring、BOILERPLATE、handle-as-dict
-- [x] [路线图与愿景](docs/03_roadmap_and_vision.md) — v0.1 到 v1.3.7 完整里程碑
+- [x] [路线图与愿景](docs/03_roadmap_and_vision.md) — v0.1 到 v2.0 完整里程碑
 - [x] [架构演进规划](docs/05_architecture_evolution.md) — Rust AVM 设计蓝图
 - [x] [极速上手指南](docs/06_quick_start_guide.md) — 5 分钟入门
 - [x] [IDD 完整参考](docs/idd_reference.md) — Intent-Driven Development 详解
-- [x] [Feature Changelog v1.1-v1.3.x](docs/changelog_v1.1.0-v1.3.x_features.md) — 16 特性变更记录
+- [x] [Harness Agent 设计文档](docs/others/Harness_Agent.md) — Harness 六元组 H=(E,T,C,S,L,V) 详解
+- [x] [Feature Changelog v1.1-v1.3.x](docs/others/changelog_v1.1.0-v1.3.x_features.md) — 16 特性变更记录
 - [x] [Release Notes](docs/release_notes/) — 每版本独立发布说明
 
 <div align="center">
