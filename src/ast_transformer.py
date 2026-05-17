@@ -2474,6 +2474,11 @@ class NexaTransformer(Transformer):
     def false_val(self):
         return False
 
+    @v_args(inline=True)
+    def json_object_val(self, obj):
+        """v2.1: 处理 json_object 作为 agent 属性值"""
+        return {"type": "json_object", "value": str(obj)}
+
     @v_args(inline=False)
     def fallback_list_val(self, args):
         """处理 fallback_list_val 节点"""

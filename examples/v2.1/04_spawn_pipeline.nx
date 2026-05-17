@@ -1,0 +1,23 @@
+/* 
+  Nexa v2.1 — spawn pipeline 示例
+  使用已有 DAG |>> 语法进行并行多 Agent 调用 (v1.0+ 已支持)
+  v2.1 亮点: 配合 stream + output_format + tool_call_strategy 形成完整 Harness
+*/
+agent Researcher {
+    role: "研究员",
+    model: "gpt-4o-mini",
+    prompt: "Research the given topic concisely."
+}
+
+agent Writer {
+    role: "作者",
+    model: "gpt-4o-mini",
+    prompt: "Write a short article about the topic."
+}
+
+flow main {
+    print "=== v2.1 DAG Spawn Pipeline Demo ===";
+    // DAG fork: 并行分发给多个 Agent
+    results = "AI safety" |>> [Researcher, Writer];
+    print results;
+}

@@ -145,50 +145,27 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-class WeatherReport(pydantic.BaseModel):
-    city: str
-    temperature: str
-    conditions: str
-    forecast: str
-
-# Type: Register protocol "WeatherReport" fields in type checker
-__type_checker.register_protocol_field("WeatherReport", "city", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "temperature", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "conditions", AliasTypeExpr("Any"))
-__type_checker.register_protocol_field("WeatherReport", "forecast", AliasTypeExpr("Any"))
-
-__tool_WeatherAPI_schema = {
-    "name": "WeatherAPI",
-    "description": "Fetch weather data for a city",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "city": {"type": "string"}
-        },
-        "required": ["city"]
-    }
-}
-
-# @implements: feature.weather_bot
-WeatherBot = NexaAgent(
-    name="WeatherBot",
-    prompt="Provide weather information for cities. When asked about weather, include temperature, conditions, and forecast.",
-    model="minimax-m2.5",
-    role="Weather Assistant",
+StreamBot = NexaAgent(
+    name="StreamBot",
+    prompt="You are a streaming bot. Answer briefly.",
+    model="gpt-4o-mini",
+    role="流式助手",
     memory_scope="local",
-    stream=False,
+    stream=True,
     cache=False,
-    protocol=WeatherReport,
     timeout=30,
     retry=3,
     max_tool_calls=10,
     tool_call_strategy="auto",
-    tools=[__tool_WeatherAPI_schema]
+    tools=[]
 )
 
 def flow_main():
-    result = WeatherBot.run("What is the weather in Beijing?")
-    print(result)
+    print
+    "=== v2.1 streaming Demo ==="
+    result = StreamBot.run("Say hello in 3 words")
+    print
+    result
     return result
 
 if __name__ == "__main__":

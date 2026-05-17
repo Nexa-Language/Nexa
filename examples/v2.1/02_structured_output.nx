@@ -1,0 +1,20 @@
+/* 
+  Nexa v2.1 — structured output / JSON mode 示例
+  使用 output_format: "json" + output_schema 强制结构化输出
+*/
+agent Planner {
+    role: "计划制定者",
+    model: "gpt-4o-mini",
+    prompt: "You are a planner that outputs structured plans.",
+    output_format: "json",
+    output_schema: {
+        "steps": "string",
+        "estimated_time": "string"
+    }
+}
+
+flow main {
+    print "=== v2.1 Structured Output Demo ===";
+    result = Planner.run("Plan a birthday party");
+    print result;
+}

@@ -1,0 +1,22 @@
+/* 
+  Nexa v2.1 — tool call control 示例
+  max_tool_calls 限制工具调用次数, tool_call_strategy 控制调用策略
+*/
+@tool("Search the web for information")
+fn web_search(query: string): string {
+    return "Search results for: #{query}";
+}
+
+agent ControlledBot {
+    role: "受控助手",
+    model: "gpt-4o-mini",
+    prompt: "You are an assistant with controlled tool access.",
+    max_tool_calls: 3,
+    tool_call_strategy: "auto"
+}
+
+flow main {
+    print "=== v2.1 Tool Call Control Demo ===";
+    result = ControlledBot.run("Search for latest AI news and summarize");
+    print result;
+}
