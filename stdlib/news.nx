@@ -1,0 +1,84 @@
+/*
+  Nexa Standard Library — News Search Tool
+  
+  A reusable news search tool using the NewsAPI v2 protocol.
+  Include this file in your .nx program:
+  
+    include "stdlib/news.nx";
+  
+  Configuration:
+    Set NEWS_API_KEY in your secrets.nxs config block.
+    Optionally set NEWS_API_BASE to override the default API endpoint.
+  
+  Usage:
+    agent MyAgent {
+        prompt: "Search for news using the search_news tool."
+    }
+*/
+
+@tool("Search news articles by keyword query. Returns a list of recent articles with title, source, description, and URL.")
+fn search_news(query: string): string {
+    python! """
+import requests
+import os
+from datetime import datetime, timedelta
+
+# --- Configuration ---
+api_key = nexa_secrets.get("NEWS_API_KEY")
+if not api_key:
+    return "Error: NEWS_API_KEY not configured in secrets.nxs"
+
+base_url = nexa_secrets.get("NEWS_API_BASE") or "https://newsapi.org/v2"
+page_size = int(nexa_secrets.get("NEWS_PAGE_SIZE") or "5")
+days_back = int(nexa_secrets.get("NEWS_DAYS_BACK") or "7")
+
+# --- Date range ---
+to_date = datetime.now().strftime('%Y-%m-%d')
+from_date = (datetime.now() - timedelta(days=days_back)).strftime('%Y-%m-%d')
+
+# --- API call ---
+url = f"{base_url}/everything"
+params = {
+    'q': query,
+    'from': from_date,
+    'to': to_date,
+    'sortBy': 'popularity',
+    'apiKey': api_key,
+    'pageSize': page_size
+}
+
+# --- Proxy support ---
+proxies = {}
+for key in ('HTTP_PROXY', 'http_proxy', 'HTTPS_PROXY', 'https_proxy'):
+    val = os.environ.get(key)
+    if val:
+        proxies['http'] = val
+        proxies['https'] = val
+        break
+
+try:
+    response = requests.get(url, params=params, timeout=15, proxies=proxies or None)
+    data = response.json()
+    
+    if data.get('status') != 'ok':
+        return f"API Error: {data.get('message', 'Unknown error')}"
+    
+    articles = data.get('articles', [])
+    if not articles:
+        return f"No articles found for query: {query}"
+    
+    results = []
+    for i, article in enumerate(articles, 1):
+        title = article.get('title', 'No title')
+        source = article.get('source', {}).get('name', 'Unknown')
+        description = article.get('description', 'No description')
+        article_url = article.get('url', '')
+        published = article.get('publishedAt', '')[:10]
+        results.append(f"{i}. [{source}] {title} ({published})\\n   {description}\\n   URL: {article_url}")
+    
+    return f"Found {len(articles)} articles for '{query}':\\n\\n" + "\\n\\n".join(results)
+    
+except Exception as e:
+    return f"Error searching news: {str(e)}"
+    """
+}

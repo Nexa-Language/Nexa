@@ -1,20 +1,20 @@
 /* 
   Nexa v2.0 — @tool 注解示例
   演示 Harness T-dimension: 零成本工具绑定
+  使用 stdlib/news.nx 标准库实现真实的新闻搜索
 */
+// 引入标准库新闻搜索工具
+include "stdlib/news.nx";
 
-@tool("Search the web for information")
-fn web_search(query: string): string {
-    print "Searching for query";
-    return "Search results";
-}
+use config ali;
 
-agent SearchAgent {
-    prompt: "You are a search agent that finds information online."
+agent SearchAgent uses search_news {
+    model: "deepseek-v4-pro",
+    prompt: "You are a search agent that finds information online using the search_news tool."
 }
 
 flow main {
-    print "=== v2.0 @tool Demo ===";
+    print "=== v2.0 @tool Demo with stdlib/news.nx ===";
     result = SearchAgent.run("Find latest AI news");
     print result;
 }

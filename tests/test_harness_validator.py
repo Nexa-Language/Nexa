@@ -697,10 +697,11 @@ class TestCustomCheckerRegistration:
                 rule_id="CUSTOM-001", message="Custom check warning",
             ))
 
+        # In STRICT mode, warnings are upgraded to errors
         hv = HarnessValidator(mode=HarnessMode.STRICT)
         hv.register_checker(my_checker)
         report = hv.validate(_make_ast([]))
-        custom_found = any(v.rule_id == "CUSTOM-001" for v in report.warnings)
+        custom_found = any(v.rule_id == "CUSTOM-001" for v in report.errors)
         assert custom_found
 
 

@@ -65,17 +65,33 @@ def build_file(nx_file_path: str, harness_mode: str = "warn") -> str:
         ast = transformer.transform(tree)
 
         # Handle nxlib includes
+        # stdlib search paths: input file dir, then project root stdlib/
+        project_root = Path(__file__).resolve().parent.parent  # Nexa/src/cli.py -> Nexa/
+        stdlib_dir = project_root / "stdlib"
+        
         if "includes" in ast:
             for include_stmt in ast["includes"]:
                 inc_rel_path = include_stmt["path"]
-                inc_full_path = input_path.parent / inc_rel_path
                 
                 # Skip .nxs files — they are secrets config, handled by runtime
                 if inc_rel_path.endswith(".nxs"):
                     continue
                 
+                # Resolve include path: try relative to input file first, then stdlib/
+                inc_full_path = input_path.parent / inc_rel_path
                 if not inc_full_path.exists():
-                    print(f"❌ Error: Included file '{inc_rel_path}' does not exist at '{inc_full_path}'.")
+                    inc_full_path = stdlib_dir / inc_rel_path
+                if not inc_full_path.exists():
+                    # Also try stripping "stdlib/" prefix if user wrote include "stdlib/news.nx"
+                    stripped = inc_rel_path
+                    if stripped.startswith("stdlib/"):
+                        stripped = stripped[7:]
+                    inc_full_path = stdlib_dir / stripped
+                
+                if not inc_full_path.exists():
+                    print(f"❌ Error: Included file '{inc_rel_path}' not found.")
+                    print(f"   Searched: {input_path.parent / inc_rel_path}")
+                    print(f"   Searched: {stdlib_dir / inc_rel_path}")
                     sys.exit(1)
                 
                 with open(inc_full_path, 'r', encoding='utf-8') as inc_f:

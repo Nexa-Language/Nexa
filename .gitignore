@@ -44,6 +44,7 @@ err.txt
 
 # 敏感密钥文件
 secrets.nxs
+*.nxs
 
 # 杂项
 head

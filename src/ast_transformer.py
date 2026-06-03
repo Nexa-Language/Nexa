@@ -841,6 +841,12 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def import_stmt(self, args):
         return {"type": "IncludeStatement", "path": str(args[0]).strip('"')}
+    
+    @v_args(inline=False)
+    def config_stmt(self, args):
+        """use config <name>; → ConfigStatement AST 节点"""
+        config_name = str(args[0])
+        return {"type": "ConfigStatement", "config_name": config_name}
 
     # ═══════════════════════════════════════════════════════════════════════
     #  v2.0: Harness Native Handler Methods
@@ -1439,13 +1445,16 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def program(self, args):
         includes = []
+        configs = []
         body = []
         for arg in args:
             if isinstance(arg, dict) and arg.get("type") == "IncludeStatement":
                 includes.append(arg)
+            elif isinstance(arg, dict) and arg.get("type") == "ConfigStatement":
+                configs.append(arg)
             else:
                 body.append(arg)
-        return {"type": "Program", "includes": includes, "body": body}
+        return {"type": "Program", "includes": includes, "configs": configs, "body": body}
 
     @v_args(inline=False)
     def tool_decl(self, args):

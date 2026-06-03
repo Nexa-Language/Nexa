@@ -137,6 +137,14 @@ class NexaAgent:
         if not base_url:
             base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
         
+        # Debug output
+        if os.environ.get("NEXA_DEBUG"):
+            print(f"[Agent:{name}] Active config: {nexa_secrets.get_active_config_name()}")
+            print(f"[Agent:{name}] Provider: {self.provider}")
+            print(f"[Agent:{name}] Model: {self.model}")
+            print(f"[Agent:{name}] Base URL: {base_url}")
+            print(f"[Agent:{name}] API Key: {api_key[:20]}..." if api_key else f"[Agent:{name}] API Key: None")
+        
         # Provider-specific defaults for base_url (if not configured)
         if not base_url:
             if self.provider == "deepseek":

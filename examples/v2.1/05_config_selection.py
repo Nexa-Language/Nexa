@@ -145,86 +145,16 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-Researcher = NexaAgent(
-    name="Researcher",
-    prompt="You are a research specialist. Analyze the given topic and provide detailed findings.",
-    model="deepseek/deepseek-chat",
-    role="Senior Researcher",
-    memory_scope="local",
-    stream=False,
-    cache=False,
-    timeout=30,
-    retry=3,
-    max_tool_calls=10,
-    tool_call_strategy="auto",
-    tools=[]
-)
+# Config selection: use config ali
+# Load .nxs files from script directory
+nexa_secrets.load_from_script_dir(__file__)
+nexa_secrets.select_config('ali')
 
-Analyst = NexaAgent(
-    name="Analyst",
-    prompt="You are a data analyst. Provide quantitative analysis and insights.",
-    model="deepseek/deepseek-chat",
-    role="Data Analyst",
-    memory_scope="local",
-    stream=False,
-    cache=False,
-    timeout=30,
-    retry=3,
-    max_tool_calls=10,
-    tool_call_strategy="auto",
-    tools=[]
-)
-
-Writer = NexaAgent(
-    name="Writer",
-    prompt="You are a technical writer. Synthesize information into clear, engaging content.",
-    model="deepseek/deepseek-chat",
-    role="Technical Writer",
-    memory_scope="local",
-    stream=False,
-    cache=False,
-    timeout=30,
-    retry=3,
-    max_tool_calls=10,
-    tool_call_strategy="auto",
-    tools=[]
-)
-
-Reviewer = NexaAgent(
-    name="Reviewer",
-    prompt="You are a quality reviewer. Ensure content is accurate, coherent, and well-structured.",
-    model="deepseek/deepseek-chat",
-    role="Quality Reviewer",
-    memory_scope="local",
-    stream=False,
-    cache=False,
-    timeout=30,
-    retry=3,
-    max_tool_calls=10,
-    tool_call_strategy="auto",
-    tools=[]
-)
-
-UrgentHandler = NexaAgent(
-    name="UrgentHandler",
-    prompt="Handle urgent requests with priority and efficiency.",
-    model="deepseek/deepseek-chat",
-    role="Urgent Response Handler",
-    memory_scope="local",
-    stream=False,
-    cache=False,
-    timeout=30,
-    retry=3,
-    max_tool_calls=10,
-    tool_call_strategy="auto",
-    tools=[]
-)
-
-NormalHandler = NexaAgent(
-    name="NormalHandler",
-    prompt="Handle standard requests with thorough analysis.",
-    model="deepseek/deepseek-chat",
-    role="Standard Response Handler",
+TestAgent = NexaAgent(
+    name="TestAgent",
+    prompt="You are a helpful assistant. Reply briefly in one sentence.",
+    model="deepseek-v4-pro",
+    role="",
     memory_scope="local",
     stream=False,
     cache=False,
@@ -236,20 +166,15 @@ NormalHandler = NexaAgent(
 )
 
 def flow_main():
-    simple_result = nexa_pipeline("What is AI?", [  ])
-    print(simple_result)
-    research_data = "Quantum Computing Applications"
-    parallel_results = dag_fanout(research_data, [ Researcher, Analyst, Writer ])
-    print("Parallel results:")
-    print(parallel_results)
-    merged_result = dag_merge([ Researcher, Analyst ], strategy="concat", merge_agent=Reviewer)
-    print("Merged and reviewed:")
-    print(merged_result)
-    user_query = "URGENT: System outage detected"
-    handled = dag_branch(user_query, lambda x: True, UrgentHandler, NormalHandler)
-    print("Handled query:")
-    print(handled)
-    return handled
+    print("=== Config Selection Demo (v2.1.2) ===")
+    print("Using config: ali")
+    print("Using model: deepseek-v4-pro (weak model from ali config)")
+    print("")
+    result = TestAgent.run("Say hello in one sentence.")
+    print(("Agent response: " + result))
+    print("")
+    print("=== Demo completed ===")
+    return result
 
 if __name__ == "__main__":
     flow_main()

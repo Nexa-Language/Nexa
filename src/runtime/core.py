@@ -40,7 +40,20 @@ client = OpenAI(
     api_key=_api_key
 )
 
-# 从 secrets 获取模型配置
+# 从 secrets 获取模型配置（动态函数，支持 config 切换）
+def _get_model_config():
+    """获取当前激活 config 的模型配置"""
+    return nexa_secrets.get_model_config()
+
+def get_strong_model() -> str:
+    """获取 strong 模型名称"""
+    return _get_model_config().get("strong", "minimax-m2.5")
+
+def get_weak_model() -> str:
+    """获取 weak 模型名称"""
+    return _get_model_config().get("weak", "deepseek-chat")
+
+# 向后兼容：模块级常量（在导入时求值）
 _model_config = nexa_secrets.get_model_config()
 STRONG_MODEL = _model_config.get("strong", "minimax-m2.5")
 WEAK_MODEL = _model_config.get("weak", "deepseek-chat")

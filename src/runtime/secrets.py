@@ -165,8 +165,9 @@ class NexaSecrets:
             exec(code_str, {}, local_env)
             return local_env.get("tmp_dict", {})
         except Exception as e:
-            print(f"[Secrets Parser Error] block parsing failed: {e}")
-            print(f"Code string was:\n{code_str}")
+            if os.environ.get("NEXA_DEBUG"):
+                print(f"[Secrets Parser Error] block parsing failed: {e}")
+                print(f"Code string was:\n{code_str}")
             return {}
     
     def _parse_flat_content(self, content: str) -> dict:
@@ -197,26 +198,130 @@ class NexaSecrets:
         return flat
 
     def _load_secrets(self):
-        """加载 secrets.nxs 文件"""
-        # 寻找当前执行目录下的 secrets.nxs
-        secrets_file = pathlib.Path.cwd() / "secrets.nxs"
+        """
+        加载 secrets.nxs 文件
         
-        # 如果当前目录没有，尝试项目根目录
-        if not secrets_file.exists():
-            # 尝试向上查找
-            parent = pathlib.Path.cwd().parent
-            secrets_file = parent / "secrets.nxs"
+        搜索策略（覆盖法）：
+        1. 从当前工作目录开始，向上逐级搜索 *.nxs 文件
+        2. 优先使用最近的（子目录优先于父目录）
+        3. 合并所有找到的 .nxs 文件中的 config blocks
+        """
+        # 收集所有 .nxs 文件（从当前目录向上搜索）
+        nxs_files = []
+        current_dir = pathlib.Path.cwd()
         
-        if secrets_file.exists():
-            with open(secrets_file, "r", encoding="utf-8") as f:
-                content = f.read()
-            self._block_configs, self._flat_configs = self._parse_nxs(content)
+        # 向上搜索，最多搜索 10 级目录
+        for _ in range(10):
+            # 查找当前目录下的所有 .nxs 文件
+            for nxs_file in current_dir.glob("*.nxs"):
+                nxs_files.append(nxs_file)
             
-            # Debug output (can be removed in production)
+            # 移动到父目录
+            parent = current_dir.parent
+            if parent == current_dir:  # 已到达根目录
+                break
+            current_dir = parent
+        
+        if not nxs_files:
             if os.environ.get("NEXA_DEBUG"):
-                print(f"[Secrets] Loaded from: {secrets_file}")
-                print(f"[Secrets] Block configs: {list(self._block_configs.keys())}")
-                print(f"[Secrets] Flat configs: {list(self._flat_configs.keys())}")
+                print("[Secrets] No .nxs files found")
+            return
+        
+        # 合并所有 .nxs 文件的配置
+        all_block_configs = {}
+        all_flat_configs = {}
+        
+        for nxs_file in nxs_files:
+            try:
+                with open(nxs_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                block_configs, flat_configs = self._parse_nxs(content)
+                
+                # 合并配置（后面的文件覆盖前面的）
+                all_block_configs.update(block_configs)
+                all_flat_configs.update(flat_configs)
+                
+                if os.environ.get("NEXA_DEBUG"):
+                    print(f"[Secrets] Loaded from: {nxs_file}")
+                    print(f"[Secrets] Block configs: {list(block_configs.keys())}")
+                    print(f"[Secrets] Flat configs: {list(flat_configs.keys())}")
+            except Exception as e:
+                if os.environ.get("NEXA_DEBUG"):
+                    print(f"[Secrets] Error loading {nxs_file}: {e}")
+        
+        self._block_configs = all_block_configs
+        self._flat_configs = all_flat_configs
+        self._active_config = "default"  # 默认使用 "default" config
+        
+        if os.environ.get("NEXA_DEBUG"):
+            print(f"[Secrets] Total block configs: {list(self._block_configs.keys())}")
+            print(f"[Secrets] Total flat configs: {list(self._flat_configs.keys())}")
+            print(f"[Secrets] Active config: {self._active_config}")
+
+    def load_from_script_dir(self, script_path: str) -> None:
+        """
+        从脚本所在目录加载 .nxs 文件，合并到已有配置中。
+        由生成的 Python 代码在运行时调用。
+        
+        Args:
+            script_path: 当前脚本的文件路径（__file__）
+        """
+        script_dir = pathlib.Path(script_path).resolve().parent
+        
+        # 从脚本目录向上搜索 .nxs 文件
+        nxs_files = []
+        current_dir = script_dir
+        
+        for _ in range(10):
+            for nxs_file in current_dir.glob("*.nxs"):
+                if nxs_file not in nxs_files:
+                    nxs_files.append(nxs_file)
+            parent = current_dir.parent
+            if parent == current_dir:
+                break
+            current_dir = parent
+        
+        for nxs_file in nxs_files:
+            try:
+                with open(nxs_file, "r", encoding="utf-8") as f:
+                    content = f.read()
+                block_configs, flat_configs = self._parse_nxs(content)
+                self._block_configs.update(block_configs)
+                self._flat_configs.update(flat_configs)
+                
+                if os.environ.get("NEXA_DEBUG"):
+                    print(f"[Secrets] Loaded from script dir: {nxs_file}")
+                    print(f"[Secrets] Block configs: {list(block_configs.keys())}")
+            except Exception as e:
+                if os.environ.get("NEXA_DEBUG"):
+                    print(f"[Secrets] Error loading {nxs_file}: {e}")
+        
+        if os.environ.get("NEXA_DEBUG"):
+            print(f"[Secrets] Total block configs after script dir load: {list(self._block_configs.keys())}")
+
+    def select_config(self, config_name: str) -> bool:
+        """
+        选择要使用的 config block
+        
+        Args:
+            config_name: config block 的名称（如 "default", "ali", "openai"）
+            
+        Returns:
+            True 如果成功切换，False 如果 config 不存在
+        """
+        if config_name in self._block_configs:
+            self._active_config = config_name
+            if os.environ.get("NEXA_DEBUG"):
+                print(f"[Secrets] Switched to config: {config_name}")
+            return True
+        else:
+            if os.environ.get("NEXA_DEBUG"):
+                print(f"[Secrets] Config '{config_name}' not found, available: {list(self._block_configs.keys())}")
+            return False
+    
+    def get_active_config_name(self) -> str:
+        """获取当前激活的 config 名称"""
+        return self._active_config
 
     def __getattr__(self, name):
         """访问 config block"""
@@ -227,9 +332,10 @@ class NexaSecrets:
     def get(self, key: str, default: str = "") -> str:
         """
         获取配置值，按以下优先级查找:
-        1. default config block 中的值
-        2. 扁平格式中的值
-        3. 环境变量
+        1. 当前激活的 config block 中的值
+        2. default config block 中的值（如果激活的不是 default）
+        3. 扁平格式中的值
+        4. 环境变量
         
         Args:
             key: 配置键名 (如 API_KEY, BASE_URL, OPENAI_API_KEY)
@@ -238,22 +344,28 @@ class NexaSecrets:
         Returns:
             配置值字符串
         """
-        # 1. 先查 default config block
-        if "default" in self._block_configs:
-            val = self._block_configs["default"].get(key)
+        # 1. 先查当前激活的 config block
+        if self._active_config in self._block_configs:
+            val = self._block_configs[self._active_config].get(key)
             if val and not isinstance(val, ConfigNode):
                 return str(val)
             elif val and isinstance(val, ConfigNode):
                 # 如果是嵌套 ConfigNode，返回空字符串（需要用属性访问）
-                return default
+                pass
         
-        # 2. 再查 flat configs
+        # 2. 如果激活的不是 default，再查 default config block
+        if self._active_config != "default" and "default" in self._block_configs:
+            val = self._block_configs["default"].get(key)
+            if val and not isinstance(val, ConfigNode):
+                return str(val)
+        
+        # 3. 再查 flat configs
         if key in self._flat_configs:
             val = self._flat_configs[key]
             if not isinstance(val, dict):
                 return str(val)
         
-        # 3. 最后查环境变量
+        # 4. 最后查环境变量
         return os.environ.get(key, default)
     
     def get_model_config(self) -> Dict[str, str]:
@@ -269,8 +381,18 @@ class NexaSecrets:
             "super": "gpt-4"
         }
         
-        # 从 default config block 获取
-        if "default" in self._block_configs:
+        # 从当前激活的 config block 获取
+        if self._active_config in self._block_configs:
+            model_node = self._block_configs[self._active_config].MODEL_NAME
+            if isinstance(model_node, ConfigNode):
+                return {
+                    "strong": model_node.get("strong", default_models["strong"]),
+                    "weak": model_node.get("weak", default_models["weak"]),
+                    "super": model_node.get("super", default_models["super"])
+                }
+        
+        # 如果激活的不是 default，再查 default config block
+        if self._active_config != "default" and "default" in self._block_configs:
             model_node = self._block_configs["default"].MODEL_NAME
             if isinstance(model_node, ConfigNode):
                 return {
@@ -291,21 +413,30 @@ class NexaSecrets:
         Returns:
             (api_key, base_url) tuple
         """
-        # 1. 先查 provider 特定的 config block
+        # 1. 先查 active config block 中的 API_KEY 和 BASE_URL
+        if self._active_config in self._block_configs:
+            block = self._block_configs[self._active_config]
+            api_key = block.get("API_KEY", "")
+            base_url = block.get("BASE_URL", "")
+            if api_key or base_url:
+                return api_key, base_url
+        
+        # 2. 查 provider 特定的 config block
         if provider in self._block_configs:
             block = self._block_configs[provider]
             api_key = block.get("API_KEY", "")
             base_url = block.get("BASE_URL", "")
-            return api_key, base_url
+            if api_key or base_url:
+                return api_key, base_url
         
-        # 2. 查 provider 特定的环境变量格式
+        # 3. 查 provider 特定的环境变量格式
         api_key = self.get(f"{provider.upper()}_API_KEY")
         base_url = self.get(f"{provider.upper()}_BASE_URL")
         
         if api_key or base_url:
             return api_key, base_url
         
-        # 3. Fallback 到 default config
+        # 4. Fallback 到 default config
         return self.get("API_KEY"), self.get("BASE_URL")
 
 # 单例实例

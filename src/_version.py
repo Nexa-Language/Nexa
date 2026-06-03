@@ -38,7 +38,7 @@ def _read_version() -> str:
     if version_file.exists():
         return version_file.read_text().strip()
     # Fallback: 如果 VERSION 文件不存在（如 pip install 后）
-    return "1.3.7"
+    return "2.1.0"
 
 
 # 纯数字版本号，用于 Python packaging (不带 v 前缀)

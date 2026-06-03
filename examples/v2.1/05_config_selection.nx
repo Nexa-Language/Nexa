@@ -1,0 +1,33 @@
+/*
+  Nexa v2.1.2 — Config Selection 示例
+  
+  演示如何使用 `use config <name>` 语句选择不同的配置
+  
+  secrets.nxs 中定义了多个 config:
+  - config default: 默认配置 (aihub)
+  - config ali: 阿里云 DashScope 配置
+  
+  本示例使用 ali 配置的 weak 模型 (deepseek-v4-pro)
+*/
+
+// 选择使用 ali 配置
+use config ali;
+
+agent TestAgent {
+    model: "deepseek-v4-pro",
+    prompt: "You are a helpful assistant. Reply briefly in one sentence."
+}
+
+flow main {
+    print("=== Config Selection Demo (v2.1.2) ===");
+    print("Using config: ali");
+    print("Using model: deepseek-v4-pro (weak model from ali config)");
+    print("");
+    
+    // 使用 TestAgent 进行简单对话
+    result = TestAgent.run("Say hello in one sentence.");
+    print("Agent response: " + result);
+    
+    print("");
+    print("=== Demo completed ===");
+}

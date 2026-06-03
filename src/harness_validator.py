@@ -675,5 +675,11 @@ class HarnessValidator:
                 violation.severity = "warning"
                 report.warnings.append(violation)
             report.errors = []
+        # In STRICT mode, upgrade warnings to errors
+        elif self.mode == HarnessMode.STRICT:
+            for violation in report.warnings:
+                violation.severity = "error"
+                report.errors.append(violation)
+            report.warnings = []
 
         return report

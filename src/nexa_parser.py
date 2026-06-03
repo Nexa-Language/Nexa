@@ -20,9 +20,12 @@ import re
 from lark import Lark
 
 nexa_grammar = """
-program: import_stmt* script_stmt*
+program: import_stmt* config_stmt* script_stmt*
 
 import_stmt: "include" STRING_LITERAL ";"
+
+// Config selection: use config <name>;
+config_stmt: "use" "config" IDENTIFIER ";"
 
 // v1.0.2: 添加语义类型声明支持
 // v1.1: 渐进式类型系统 (Gradual Type System)

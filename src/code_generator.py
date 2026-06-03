@@ -200,6 +200,21 @@ class CodeGenerator:
         return "    " * self.indent_level
         
     def generate(self):
+        # 处理 config 选择语句
+        config_name = None
+        for config_stmt in self.ast.get("configs", []):
+            if isinstance(config_stmt, dict) and config_stmt.get("type") == "ConfigStatement":
+                config_name = config_stmt.get("config_name")
+                break  # 只使用第一个 config 声明
+        
+        # 如果指定了 config，生成 load_from_script_dir 和 select_config 调用
+        if config_name:
+            self.code.append(f"# Config selection: use config {config_name}")
+            self.code.append("# Load .nxs files from script directory")
+            self.code.append("nexa_secrets.load_from_script_dir(__file__)")
+            self.code.append(f"nexa_secrets.select_config('{config_name}')")
+            self.code.append("")
+        
         for node in self.ast.get("body", []):
             node = self._ensure_dict(node)
             if node["type"] == "ProtocolDeclaration":
@@ -933,12 +948,14 @@ def _get_pydantic_type(type_str: str):
             name = agent["name"]
             prompt = agent.get("prompt", "")
             uses = agent.get("uses", [])
-            # Auto-add all @tool functions to agent's uses list
-            for tool in self.tools:
-                if tool.get("type") == "ToolAnnotation":
-                    fn_name = tool.get("fn_name", "")
-                    if fn_name and fn_name not in uses:
-                        uses.append(fn_name)
+            # Only auto-add @tool functions if agent has NO explicit uses declaration
+            # If agent declares uses, respect it and don't auto-add
+            if not uses:
+                for tool in self.tools:
+                    if tool.get("type") == "ToolAnnotation":
+                        fn_name = tool.get("fn_name", "")
+                        if fn_name and fn_name not in uses:
+                            uses.append(fn_name)
             properties = agent.get("properties", {})
             model_raw = properties.get("model", '"minimax-m2.5"')
             if isinstance(model_raw, dict) and model_raw.get("type") == "fallback_list":
@@ -1828,8 +1845,22 @@ def _get_pydantic_type(type_str: str):
                 self.code.append(f'{self._indent()}raise ContractViolation(__ens_violation.args[0], clause_type=__ens_violation.clause_type, clause=__ens_violation.clause, context=__ens_violation.context, is_semantic=__ens_violation.is_semantic)')
                 self.indent_level -= 1
             
-            # Auto-add return result at end of flow (Nexa flows implicitly return last result)
-            self.code.append(f'{self._indent()}return result')
+            # Auto-add return of last assigned variable at end of flow
+            # Find the last assignment statement in the flow body
+            last_var = "result"  # default fallback
+            for stmt in reversed(flow["body"]):
+                if isinstance(stmt, dict):
+                    stmt_type = stmt.get("type", "")
+                    if stmt_type == "AssignmentStatement":
+                        last_var = stmt.get("target", stmt.get("name", "result"))
+                        break
+                    elif stmt_type in ("PrintStatement", "ExpressionStatement"):
+                        continue  # skip print/expression statements
+                    elif stmt_type in ("AutoLoopStmt", "WithContextStmt", "TryAgentStmt"):
+                        continue  # skip block statements
+                    else:
+                        break  # stop at first non-assignment, non-print
+            self.code.append(f'{self._indent()}return {last_var}')
             
             self.indent_level -= 1
             self.code.append("")
@@ -2869,7 +2900,7 @@ def _get_pydantic_type(type_str: str):
         if timeout:
             self.code.append(f"{self._indent()}if _config.timeout and (time.time() - _start_time) > _config.timeout:")
             self.indent_level += 1
-            self.code.append(f"{self._indent()}print(f'autoloop timeout after {_config.timeout}s')")
+            self.code.append(f"{self._indent()}print(f'autoloop timeout after {{_config.timeout}}s')")
             self.code.append(f"{self._indent()}break")
             self.indent_level -= 1
         # Generate body statements

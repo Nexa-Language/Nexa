@@ -5,7 +5,7 @@
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.1.0-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.1.2-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
     <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
   </p>
@@ -22,6 +22,63 @@
 **Nexa** 是 **the first Harness Native Agent Language**——一门为大语言模型（LLM）与智能体系统（Agentic Systems）量身定制的编程语言，将 Agent 安全从运行时框架下沉为语言级原语。
 
 当代 AI 应用开发充斥着大量的 Prompt 拼接、臃肿的 JSON 解析套件、不可靠的正则皮带，以及复杂的框架。Nexa 将高层级的意图路由、多智能体并发组装、管道流传输以及工具执行沙盒提权为核心语法一等公民，直接通过底层的 `Transpiler` 转换为稳定可靠的 Python Runtime，让你能够用最优雅的语法定义最硬核的 LLM 计算图（DAG）。
+
+---
+
+## 🔥 v2.1.2: Config Selection & Standard Library
+
+Nexa v2.1.2 引入了多配置切换和标准库系统，让不同环境（开发/测试/生产）使用不同的 API 密钥和模型配置。
+
+### `use config` 多配置切换
+
+在 `secrets.nxs` 中定义多个 config block，在 `.nx` 文件中用 `use config <name>` 选择：
+
+```nexa
+// secrets.nxs
+config default {
+    BASE_URL = "https://aihub.arcsysu.cn/v1"
+    API_KEY = "sk-xxx"
+}
+
+config ali {
+    BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    API_KEY = "sk-yyy"
+    NEWS_API_KEY = "your-newsapi-key"
+}
+```
+
+```nexa
+// your_program.nx
+include "stdlib/news.nx";   // 引入标准库新闻搜索工具
+use config ali;              // 使用 ali 配置
+
+agent SearchAgent uses search_news {
+    model: "deepseek-v4-pro",
+    prompt: "Search for news using the search_news tool."
+}
+```
+
+### 标准库 (`stdlib/`)
+
+通过 `include` 引入标准库工具，Agent 只看到 `uses` 声明的工具：
+
+```nexa
+include "stdlib/news.nx";
+
+agent MyAgent uses search_news {
+    prompt: "Search for news."
+}
+```
+
+### Harness Validator strict/warn 模式
+
+```bash
+# warn 模式（默认）：警告但编译继续
+nexa build program.nx --harness=warn
+
+# strict 模式：所有 warnings 升级为 errors，阻断编译
+nexa build program.nx --harness=strict
+```
 
 ---
 
