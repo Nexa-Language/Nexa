@@ -336,7 +336,7 @@ class TestModelInfo:
             capabilities={"reasoning": 0.9},
             context_window=128000,
         )
-        req = ModelRequirement(preferred_provider="anthropic")
+        req = ModelRequirement(preferred_provider="local")
         assert not model.matches_requirement(req)
 
     def test_score_higher_for_better_match(self):
@@ -360,7 +360,10 @@ class TestLLMRouter:
     def test_default_models_registered(self):
         router = LLMRouter()
         models = router.get_models()
-        assert len(models) >= 3  # At least gpt-4o, gpt-4o-mini, claude-sonnet
+        model_ids = {model.model_id for model in models}
+        assert len(models) >= 3
+        assert {"minimax-m2.5", "deepseek-chat", "glm-5"}.issubset(model_ids)
+        assert router.get_stats()["default_model"] == "minimax-m2.5"
 
     def test_route_coding_task(self):
         router = LLMRouter()
@@ -385,10 +388,10 @@ class TestLLMRouter:
 
     def test_route_with_provider_preference(self):
         router = LLMRouter()
-        req = ModelRequirement(preferred_provider="anthropic", min_reasoning=0.5)
+        req = ModelRequirement(preferred_provider="default", min_reasoning=0.5)
         model = router.route(req)
         assert model is not None
-        assert model.provider == "anthropic"
+        assert model.provider == "default"
 
     def test_chat_with_routing(self):
         router = LLMRouter()
@@ -405,9 +408,16 @@ class TestLLMRouter:
         router = LLMRouter()
         response = router.chat(
             messages=[{"role": "user", "content": "Hello"}],
-            model_id="gpt-4o-mini",
+            model_id="deepseek-chat",
         )
-        assert response["model_id"] == "gpt-4o-mini"
+        assert response["model_id"] == "deepseek-chat"
+
+    def test_provider_config_uses_default_compatible_endpoint(self):
+        router = LLMRouter()
+        model = router.get_model("minimax-m2.5")
+        assert model is not None
+        _api_key, base_url = router._provider_config(model)
+        assert base_url.endswith("/v1")
 
     def test_chat_unknown_model(self):
         router = LLMRouter()

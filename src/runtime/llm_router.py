@@ -5,7 +5,7 @@ LLMRouter 根据能力需求动态选择最优模型，实现：
   - MODEL_CAPABILITIES: 模型能力矩阵
   - route(): 根据 ModelRequirement 动态路由
   - chat(): 统一 LLM 调用接口 + fallback chain
-  - 模型无关: 支持 OpenAI/Anthropic/本地模型
+  - 模型无关: 支持 OpenAI-compatible provider 和本地模型
 
 Design Rationale:
   - 能力矩阵: 每个模型声明其能力 (reasoning/coding/vision/tool_use 等)
@@ -20,8 +20,11 @@ Version: 2.0.0-alpha.5
 from __future__ import annotations
 
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
+
+from .secrets import nexa_secrets
 
 logger = logging.getLogger("nexa.llm_router")
 
@@ -58,8 +61,8 @@ class ModelRequirement:
 @dataclass
 class ModelInfo:
     """Information about a registered model."""
-    model_id: str = ""               # e.g., "gpt-4o", "claude-sonnet-4-20250514"
-    provider: str = ""               # openai | anthropic | local
+    model_id: str = ""               # e.g., "minimax-m2.5", "deepseek-chat", "glm-5"
+    provider: str = ""               # default | openai-compatible | local
     display_name: str = ""
     capabilities: Dict[str, float] = field(default_factory=dict)
     context_window: int = 4096
@@ -135,62 +138,32 @@ class ModelInfo:
 
 DEFAULT_MODELS: List[ModelInfo] = [
     ModelInfo(
-        model_id="gpt-4o",
-        provider="openai",
-        display_name="GPT-4o",
-        capabilities={"reasoning": 0.9, "coding": 0.85, "vision": 0.9, "tool_use": 0.9},
+        model_id="minimax-m2.5",
+        provider="default",
+        display_name="MiniMax M2.5",
+        capabilities={"reasoning": 0.9, "coding": 0.9, "vision": 0.0, "tool_use": 0.85},
         context_window=128000,
-        cost_per_1m_input=2.50,
-        cost_per_1m_output=10.00,
         supports_tools=True,
-        supports_vision=True,
+        supports_vision=False,
         supports_streaming=True,
         is_default=True,
     ),
     ModelInfo(
-        model_id="gpt-4o-mini",
-        provider="openai",
-        display_name="GPT-4o Mini",
-        capabilities={"reasoning": 0.7, "coding": 0.65, "vision": 0.7, "tool_use": 0.7},
+        model_id="deepseek-chat",
+        provider="default",
+        display_name="DeepSeek Chat",
+        capabilities={"reasoning": 0.75, "coding": 0.8, "vision": 0.0, "tool_use": 0.75},
         context_window=128000,
-        cost_per_1m_input=0.15,
-        cost_per_1m_output=0.60,
         supports_tools=True,
-        supports_vision=True,
+        supports_vision=False,
         supports_streaming=True,
     ),
     ModelInfo(
-        model_id="claude-sonnet-4-20250514",
-        provider="anthropic",
-        display_name="Claude Sonnet 4",
-        capabilities={"reasoning": 0.9, "coding": 0.9, "vision": 0.85, "tool_use": 0.9},
-        context_window=200000,
-        cost_per_1m_input=3.00,
-        cost_per_1m_output=15.00,
-        supports_tools=True,
-        supports_vision=True,
-        supports_streaming=True,
-    ),
-    ModelInfo(
-        model_id="claude-haiku-4-20250514",
-        provider="anthropic",
-        display_name="Claude Haiku 4",
-        capabilities={"reasoning": 0.6, "coding": 0.55, "vision": 0.5, "tool_use": 0.6},
-        context_window=200000,
-        cost_per_1m_input=0.80,
-        cost_per_1m_output=4.00,
-        supports_tools=True,
-        supports_vision=True,
-        supports_streaming=True,
-    ),
-    ModelInfo(
-        model_id="deepseek-v3",
-        provider="deepseek",
-        display_name="DeepSeek V3",
-        capabilities={"reasoning": 0.85, "coding": 0.85, "vision": 0.0, "tool_use": 0.8},
+        model_id="glm-5",
+        provider="default",
+        display_name="GLM-5",
+        capabilities={"reasoning": 0.92, "coding": 0.86, "vision": 0.0, "tool_use": 0.85},
         context_window=128000,
-        cost_per_1m_input=0.27,
-        cost_per_1m_output=1.10,
         supports_tools=True,
         supports_vision=False,
         supports_streaming=True,
@@ -218,18 +191,49 @@ class LLMRouter:
         response = router.chat(messages=[{"role": "user", "content": "Write code"}])
     """
 
-    def __init__(self) -> None:
+    def __init__(self, mock: Optional[bool] = None) -> None:
         self._models: Dict[str, ModelInfo] = {}
         self._default_model_id: Optional[str] = None
         self._fallback_chain: List[str] = []  # Ordered fallback model IDs
         self._route_count = 0
         self._fallback_count = 0
+        self._mock = mock if mock is not None else os.environ.get("NEXA_LLMROUTER_MOCK", "1").lower() in {"1", "true", "yes", "on"}
 
-        # Register default models
         for model in DEFAULT_MODELS:
             self.register_model(model)
             if model.is_default:
                 self._default_model_id = model.model_id
+        self._register_models_from_secrets()
+
+    def _register_models_from_secrets(self) -> None:
+        """Register MODEL_NAME entries from secrets.nxs without requiring real API calls."""
+        model_config = nexa_secrets.get_model_config()
+        role_defaults = {
+            "strong": {"reasoning": 0.9, "coding": 0.9, "tool_use": 0.85},
+            "weak": {"reasoning": 0.7, "coding": 0.75, "tool_use": 0.7},
+            "super": {"reasoning": 0.95, "coding": 0.9, "tool_use": 0.85},
+        }
+        for role, model_id in model_config.items():
+            if not model_id:
+                continue
+            existing = self._models.get(model_id)
+            if existing:
+                if role == "strong":
+                    existing.is_default = True
+                    self._default_model_id = model_id
+                continue
+            caps = {"vision": 0.0, **role_defaults.get(role, role_defaults["weak"])}
+            self.register_model(ModelInfo(
+                model_id=model_id,
+                provider="default",
+                display_name=model_id,
+                capabilities=caps,
+                context_window=128000,
+                supports_tools=True,
+                supports_vision=False,
+                supports_streaming=True,
+                is_default=(role == "strong"),
+            ))
 
     # ─── Model Registration ───
 
@@ -396,19 +400,87 @@ class LLMRouter:
         }
 
     def _call_model(self, model: ModelInfo, messages: List[Dict], **kwargs) -> Dict:
-        """
-        Call a specific model.
+        """Call a specific model through its provider adapter."""
+        if self._mock:
+            return self._call_mock(model, messages)
 
-        This is a stub that returns a simulated response.
-        In production, this would call the actual LLM API.
-        """
-        # Simulate a response for testing
-        last_message = messages[-1]["content"] if messages else ""
+        if model.provider in {"openai", "deepseek", "minimax", "default", "openai-compatible"}:
+            return self._call_openai_compatible(model, messages, **kwargs)
+        if model.provider == "local":
+            return {
+                "content": "",
+                "model_id": model.model_id,
+                "error": "Local provider is not configured in this runtime",
+                "finish_reason": "error",
+            }
         return {
-            "content": f"[{model.display_name}] Response to: {last_message[:50]}...",
+            "content": "",
+            "model_id": model.model_id,
+            "error": f"Unsupported provider: {model.provider}",
+            "finish_reason": "error",
+        }
+
+    def _call_mock(self, model: ModelInfo, messages: List[Dict]) -> Dict:
+        """Deterministic no-network adapter used by tests and offline tooling."""
+        last_message = messages[-1].get("content", "") if messages else ""
+        return {
+            "content": f"[{model.display_name}] Response to: {str(last_message)[:50]}...",
             "model_id": model.model_id,
             "usage": {"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
             "finish_reason": "stop",
+        }
+
+    def _provider_config(self, model: ModelInfo) -> Tuple[str, str]:
+        api_key, base_url = nexa_secrets.get_provider_config(model.provider)
+        if not api_key:
+            api_key = nexa_secrets.get(f"{model.provider.upper()}_API_KEY") or nexa_secrets.get("API_KEY")
+        if not base_url:
+            base_url = nexa_secrets.get(f"{model.provider.upper()}_BASE_URL") or nexa_secrets.get("BASE_URL")
+
+        if base_url:
+            return api_key, base_url
+        if model.provider == "deepseek":
+            return api_key, "https://api.deepseek.com/v1"
+        if model.provider == "minimax":
+            return api_key, "https://aihub.arcsysu.cn/v1"
+        if model.provider == "openai":
+            return api_key, "https://api.openai.com/v1"
+        if model.provider in {"default", "openai-compatible"}:
+            return api_key, "https://aihub.arcsysu.cn/v1"
+        return api_key, ""
+
+    def _call_openai_compatible(self, model: ModelInfo, messages: List[Dict], **kwargs) -> Dict:
+        try:
+            from openai import OpenAI
+
+            api_key, base_url = self._provider_config(model)
+            if not api_key:
+                return self._error_result(model, f"API key not configured for provider '{model.provider}'")
+
+            request_kwargs = dict(kwargs)
+            request_kwargs.pop("fallback", None)
+            response = OpenAI(api_key=api_key, base_url=base_url).chat.completions.create(
+                model=model.model_id,
+                messages=messages,
+                **request_kwargs,
+            )
+            choice = response.choices[0]
+            usage = getattr(response, "usage", None)
+            return {
+                "content": choice.message.content or "",
+                "model_id": model.model_id,
+                "usage": usage.model_dump() if hasattr(usage, "model_dump") else (dict(usage) if usage else {}),
+                "finish_reason": choice.finish_reason,
+            }
+        except Exception as e:
+            return self._error_result(model, str(e))
+
+    def _error_result(self, model: ModelInfo, error: str) -> Dict:
+        return {
+            "content": "",
+            "model_id": model.model_id,
+            "error": error,
+            "finish_reason": "error",
         }
 
     # ─── Statistics ───
