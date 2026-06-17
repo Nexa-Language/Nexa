@@ -145,11 +145,11 @@ def _nexa_interp_str(value):
 # [Target Code] 自动生成的编排逻辑
 # ==========================================
 
-McpAgent = NexaAgent(
-    name="McpAgent",
-    prompt="",
-    model="dummy_model",
-    role="",
+SearchBot = NexaAgent(
+    name="SearchBot",
+    prompt="You are a search assistant. Find information about the given query.",
+    model="minimax-m2.5",
+    role="Searcher",
     memory_scope="local",
     stream=False,
     cache=False,
@@ -157,13 +157,115 @@ McpAgent = NexaAgent(
     retry=3,
     max_tool_calls=10,
     tool_call_strategy="auto",
-    tools=[*fetch_mcp_tools('http://fake.url')]
+    tools=[]
 )
 
-def test_my_agent_test():
-    msg = "hello"
-    if nexa_semantic_eval("包含打招呼", msg, r"(hello|hi)"):
-        msg = "matched"
-    assert msg
+Analyst = NexaAgent(
+    name="Analyst",
+    prompt="You are an analyst. Analyze the given data and provide insights.",
+    model="minimax-m2.5",
+    role="Analyst",
+    memory_scope="local",
+    stream=False,
+    cache=False,
+    timeout=30,
+    retry=3,
+    max_tool_calls=10,
+    tool_call_strategy="auto",
+    tools=[]
+)
+
+Critic = NexaAgent(
+    name="Critic",
+    prompt="You are a critic. Review the data and provide feedback.",
+    model="minimax-m2.5",
+    role="Critic",
+    memory_scope="local",
+    stream=False,
+    cache=False,
+    timeout=30,
+    retry=3,
+    max_tool_calls=10,
+    tool_call_strategy="auto",
+    tools=[]
+)
+
+WeatherBot = NexaAgent(
+    name="WeatherBot",
+    prompt="You are a weather bot. Provide weather information for the given location.",
+    model="minimax-m2.5",
+    role="Weather",
+    memory_scope="local",
+    stream=False,
+    cache=False,
+    timeout=30,
+    retry=3,
+    max_tool_calls=10,
+    tool_call_strategy="auto",
+    tools=[]
+)
+
+DebugBot = NexaAgent(
+    name="DebugBot",
+    prompt="You are a debug assistant. Help diagnose and fix issues.",
+    model="minimax-m2.5",
+    role="Debugger",
+    memory_scope="local",
+    stream=False,
+    cache=False,
+    timeout=30,
+    retry=3,
+    max_tool_calls=10,
+    tool_call_strategy="auto",
+    tools=[]
+)
+
+def flow_main():
+    result = SearchBot.run("latest AI news")
+    summary = propagate_or_else(result, 'Search failed')
+    print(summary)
+    return result
+
+def flow_with_otherwise_value():
+    result = propagate_or_else(WeatherBot.run_result("Beijing weather"), 'No weather data available')
+    print(result)
+    return result
+
+def flow_with_otherwise_agent():
+    result = propagate_or_else(Analyst.run_result("analyze this data"), Critic.run_result("review the raw data"))
+    print(result)
+    return result
+
+def flow_traditional_error_handling():
+    try:
+        result = SearchBot.run("query")
+        print(result)
+    except Exception as err:
+        print(("Search failed: " + err))
+    return result
+
+def flow_modern_error_propagation():
+    result = propagate_or_else(SearchBot.run_result("query"))
+    print(result)
+    return result
+
+def flow_modern_error_recovery():
+    result = propagate_or_else(SearchBot.run_result("query"), 'No results found')
+    print(result)
+    return result
+
+def flow_flat_propagation():
+    r1 = propagate_or_else(SearchBot.run_result("query"))
+    r2 = propagate_or_else(Analyst.run_result(r1))
+    r3 = propagate_or_else(Critic.run_result(r2))
+    print(r3)
+    return result
+
+def flow_mixed_operators():
+    result = propagate_or_else(SearchBot.run_result("query"))
+    final = dag_branch(result, lambda x: True, Analyst, Critic)
+    print(final)
+    return final
 
 if __name__ == "__main__":
+    flow_main()
