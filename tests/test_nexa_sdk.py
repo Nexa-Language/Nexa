@@ -99,6 +99,59 @@ class TestNexaDebugger(unittest.TestCase):
         self.assertEqual(len(watches), 1)
 
 
+class TestNexaSecrets(unittest.TestCase):
+    """测试 secrets.nxs 安全解析"""
+
+    def test_parse_multiline_config_block(self):
+        from src.runtime.secrets import ConfigNode, NexaSecrets
+
+        parser = NexaSecrets.__new__(NexaSecrets)
+        content = '''
+OPENAI_API_KEY = "<openai-api-key>"
+
+config default {
+    BASE_URL = "https://ai.example/v1",
+    API_KEY = "<provider-api-key>",
+    MODEL_NAME = {
+        "strong": "minimax-m2.5",
+        "weak": "deepseek-chat",
+        "super": "glm-5"
+    },
+    ENABLED = false,
+    RETRIES = 0
+}
+'''
+        block_configs, flat_configs = parser._parse_nxs(content)
+
+        self.assertEqual(flat_configs["OPENAI_API_KEY"], "<openai-api-key>")
+        self.assertIn("default", block_configs)
+        default = block_configs["default"]
+        self.assertEqual(default.API_KEY, "<provider-api-key>")
+        self.assertEqual(default.BASE_URL, "https://ai.example/v1")
+        self.assertIsInstance(default.MODEL_NAME, ConfigNode)
+        self.assertEqual(default.MODEL_NAME.get("strong"), "minimax-m2.5")
+        self.assertEqual(default.MODEL_NAME.get("weak"), "deepseek-chat")
+        self.assertEqual(default.MODEL_NAME.get("super"), "glm-5")
+        self.assertIs(default.ENABLED, False)
+        self.assertEqual(default.RETRIES, 0)
+
+    def test_get_returns_falsey_config_values(self):
+        from src.runtime.secrets import ConfigNode, NexaSecrets
+
+        secrets = NexaSecrets.__new__(NexaSecrets)
+        secrets._active_config = "default"
+        secrets._block_configs = {
+            "default": ConfigNode({
+                "ENABLED": False,
+                "RETRIES": 0,
+            })
+        }
+        secrets._flat_configs = {}
+
+        self.assertEqual(secrets.get("ENABLED", "missing"), "False")
+        self.assertEqual(secrets.get("RETRIES", "missing"), "0")
+
+
 class TestNexaProfiler(unittest.TestCase):
     """测试性能分析器模块"""
     

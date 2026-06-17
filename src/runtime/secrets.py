@@ -60,13 +60,13 @@ class NexaSecrets:
     支持两种 secrets.nxs 格式:
     
     1. 扁平格式 (旧格式):
-       OPENAI_API_KEY = "sk-xxx"
+       OPENAI_API_KEY = "<openai-api-key>"
        OPENAI_API_BASE = "https://api.openai.com/v1"
     
     2. Config Block 格式 (新格式):
        config default {
            BASE_URL = "https://aihub.arcsysu.cn/v1",
-           API_KEY = "sk-xxx",
+           API_KEY = "<provider-api-key>",
            MODEL_NAME = {
                "strong": "minimax-m2.5",
                "weak": "deepseek-chat"
@@ -88,6 +88,7 @@ class NexaSecrets:
         content = re.sub(r'^\s*//.*', '', content, flags=re.MULTILINE)
         
         block_configs = {}
+        block_spans = []
         flat_configs = {}
         
         # 1. 解析 config block 格式
@@ -116,6 +117,7 @@ class NexaSecrets:
                 break
                 
             config_body = content[start_brace+1:end_brace]
+            block_spans.append((idx + match.start(), end_brace + 1))
             idx = end_brace + 1
             
             # Parse block content
@@ -124,11 +126,13 @@ class NexaSecrets:
         
         # 2. 解析扁平格式 (不在 config 块内的 KEY = VALUE)
         # 移除所有 config 块，只保留块外的内容
-        content_without_blocks = content
-        for config_name in block_configs:
-            # 简单地移除已解析的 config 块
-            pattern = r'config\s+' + config_name + r'\s*\{[^}]*\}'
-            content_without_blocks = re.sub(pattern, '', content_without_blocks)
+        content_parts = []
+        last_idx = 0
+        for start, end in block_spans:
+            content_parts.append(content[last_idx:start])
+            last_idx = end
+        content_parts.append(content[last_idx:])
+        content_without_blocks = ''.join(content_parts)
         
         # 解析剩余的扁平赋值
         flat_configs = self._parse_flat_content(content_without_blocks)
@@ -136,39 +140,68 @@ class NexaSecrets:
         return block_configs, flat_configs
     
     def _parse_block_content(self, body: str) -> dict:
-        """解析 config block 内的内容"""
-        lines = body.split('\n')
-        parsed_lines = []
-        
-        for line in lines:
-            line = line.rstrip()
-            if not line or line.strip().startswith('//'):
+        """解析 config block 内的内容，不执行任意 Python 代码。"""
+        result: Dict[str, Any] = {}
+        pending_key: Optional[str] = None
+        pending_value_lines: list[str] = []
+        brace_balance = 0
+        bracket_balance = 0
+
+        for raw_line in body.split('\n'):
+            line = raw_line.strip()
+            if not line or line.startswith('//'):
                 continue
-            
-            # Replace key = ... with "key": ...
-            line = re.sub(r'^(\s*)([a-zA-Z_][a-zA-Z0-9_]+)\s*=\s*(.*)', r'\1"\2": \3', line)
-            
-            # Handle nested dicts (MODEL_NAME = {...})
-            if line.strip().endswith('{'):
-                # 不添加逗号，这是嵌套 dict 的开始
-                parsed_lines.append(line)
-            elif not line.strip().endswith(',') and not line.strip().endswith('}'):
-                line += ','
-                parsed_lines.append(line)
+
+            if pending_key is None:
+                match = re.match(r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*=\s*(.+)$', line)
+                if not match:
+                    continue
+                key = match.group(1)
+                value_part = match.group(2).strip()
+                pending_key = key
+                pending_value_lines = [value_part]
             else:
-                parsed_lines.append(line)
-        
-        code_str = "tmp_dict = {\n" + "\n".join(parsed_lines) + "\n}"
-        
+                pending_value_lines.append(line)
+
+            joined = '\n'.join(pending_value_lines)
+            brace_balance = joined.count('{') - joined.count('}')
+            bracket_balance = joined.count('[') - joined.count(']')
+            if brace_balance > 0 or bracket_balance > 0:
+                continue
+
+            value_text = self._strip_assignment_delimiter(joined)
+            result[pending_key] = self._parse_literal_value(value_text)
+            pending_key = None
+            pending_value_lines = []
+
+        if pending_key is not None:
+            result[pending_key] = self._parse_literal_value(self._strip_assignment_delimiter('\n'.join(pending_value_lines)))
+
+        return result
+
+    def _strip_assignment_delimiter(self, value_str: str) -> str:
+        """Remove a trailing top-level comma used between config entries."""
+        normalized = value_str.strip()
+        if normalized.endswith(","):
+            return normalized[:-1].rstrip()
+        return normalized
+
+    def _parse_literal_value(self, value_str: str) -> Any:
+        """Parse a .nxs literal value without executing code."""
+        normalized = value_str.strip()
+        lowered = normalized.lower()
+        if lowered == "true":
+            return True
+        if lowered == "false":
+            return False
+        if lowered in ("null", "none"):
+            return None
         try:
-            local_env = {}
-            exec(code_str, {}, local_env)
-            return local_env.get("tmp_dict", {})
-        except Exception as e:
-            if os.environ.get("NEXA_DEBUG"):
-                print(f"[Secrets Parser Error] block parsing failed: {e}")
-                print(f"Code string was:\n{code_str}")
-            return {}
+            return ast.literal_eval(normalized)
+        except (ValueError, SyntaxError):
+            if re.match(r'^[A-Za-z0-9_./:\-]+$', normalized):
+                return normalized
+            raise ValueError("Invalid .nxs literal value")
     
     def _parse_flat_content(self, content: str) -> dict:
         """解析扁平格式的 KEY = VALUE"""
@@ -185,14 +218,11 @@ class NexaSecrets:
                 key = match.group(1)
                 value_str = match.group(2).strip()
                 
-                # Try to parse the value
                 try:
-                    # Try as Python literal (string, number, dict, etc.)
-                    value = ast.literal_eval(value_str)
-                except (ValueError, SyntaxError):
-                    # Fallback to raw string
+                    value = self._parse_literal_value(value_str)
+                except ValueError:
                     value = value_str
-                
+
                 flat[key] = value
         
         return flat
@@ -346,17 +376,17 @@ class NexaSecrets:
         """
         # 1. 先查当前激活的 config block
         if self._active_config in self._block_configs:
-            val = self._block_configs[self._active_config].get(key)
-            if val and not isinstance(val, ConfigNode):
+            val = self._block_configs[self._active_config].get(key, None)
+            if val is not None and not isinstance(val, ConfigNode):
                 return str(val)
-            elif val and isinstance(val, ConfigNode):
+            elif isinstance(val, ConfigNode):
                 # 如果是嵌套 ConfigNode，返回空字符串（需要用属性访问）
                 pass
         
         # 2. 如果激活的不是 default，再查 default config block
         if self._active_config != "default" and "default" in self._block_configs:
-            val = self._block_configs["default"].get(key)
-            if val and not isinstance(val, ConfigNode):
+            val = self._block_configs["default"].get(key, None)
+            if val is not None and not isinstance(val, ConfigNode):
                 return str(val)
         
         # 3. 再查 flat configs
