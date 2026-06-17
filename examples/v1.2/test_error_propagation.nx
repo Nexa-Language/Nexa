@@ -34,8 +34,8 @@ agent DebugBot {
 // ? 操作符示例: Agent 结果传播
 flow main {
     // 如果 Agent 失败，自动 fallback 到下一个处理器
-    result = SearchBot.run("latest AI news")?
-    summary = result >> Analyst?
+    result = SearchBot.run("latest AI news")
+    summary = result otherwise "Search failed"
     print(summary)
 }
 

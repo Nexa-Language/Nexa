@@ -332,9 +332,9 @@ simple_param_list: IDENTIFIER ("," IDENTIFIER)*
 // x = expr?         → try_assignment_stmt (错误传播，失败时 early-return)
 // x = expr otherwise handler → otherwise_assignment_stmt (内联错误处理)
 // expr?             → try_expr_stmt (错误传播，无赋值)
-try_assignment_stmt: IDENTIFIER "=" expression "?" ";?"
-otherwise_assignment_stmt: IDENTIFIER "=" expression "otherwise" otherwise_handler ";?"
-try_expr_stmt: expression "?" ";?"
+try_assignment_stmt: IDENTIFIER "=" expression "?" [";"]
+otherwise_assignment_stmt: IDENTIFIER "=" expression "otherwise" otherwise_handler [";"]
+try_expr_stmt: expression "?" [";"]
 
 // otherwise handler: 可以是 Agent 调用、表达式值、变量、代码块
 otherwise_handler: method_call           -> otherwise_agent_handler
@@ -349,8 +349,10 @@ expr_stmt: expression ";"?
 
 // semantic_if 支持两种语法:
 // 1. 原有语法: semantic_if "condition" fast_match r"pattern" against var { ... }
+//    向后兼容形式: semantic_if "condition" fast_match: "pattern" against var { ... }
 // 2. 简化语法: semantic_if (var, "condition") { "case1" => action1, "case2" => action2 }
 semantic_if_stmt: "semantic_if" STRING_LITERAL ["fast_match" (STRING_LITERAL | REGEX_LITERAL)] "against" IDENTIFIER block ["else" block]
+               | "semantic_if" STRING_LITERAL ["fast_match" ":" (STRING_LITERAL | REGEX_LITERAL)] "against" IDENTIFIER block ["else" block]
                | "semantic_if" "(" IDENTIFIER "," STRING_LITERAL ")" semantic_if_block
 
 loop_stmt: "loop" block "until" "(" expression ")"
