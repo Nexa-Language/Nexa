@@ -406,6 +406,8 @@ class LLMRouter:
 
         if model.provider in {"openai", "deepseek", "minimax", "default", "openai-compatible"}:
             return self._call_openai_compatible(model, messages, **kwargs)
+        if model.provider == "anthropic":
+            return self._call_anthropic(model, messages, **kwargs)
         if model.provider == "local":
             return {
                 "content": "",
@@ -466,6 +468,69 @@ class LLMRouter:
                 "usage": usage.model_dump() if hasattr(usage, "model_dump") else (dict(usage) if usage else {}),
                 "finish_reason": choice.finish_reason,
             }
+        except Exception as e:
+            return self._error_result(model, str(e))
+
+    def _call_anthropic(self, model: ModelInfo, messages: List[Dict], **kwargs) -> Dict:
+        """
+        Anthropic Messages API adapter (optional provider).
+
+        Activated only when ``model.provider == "anthropic"``. By default, the
+        router still routes through the OpenAI-compatible client. Use this
+        adapter when you want to talk to the Anthropic API directly (e.g. for
+        model-specific features not exposed by the compatible endpoint).
+        """
+        try:
+            import anthropic  # type: ignore
+
+            api_key, base_url = self._provider_config(model)
+            if not api_key:
+                return self._error_result(model, "API key not configured for Anthropic provider")
+
+            # Anthropic separates system prompt from the message list.
+            system_text = ""
+            user_messages: List[Dict] = []
+            for m in messages:
+                if m.get("role") == "system":
+                    system_text = (system_text + "\n" + m.get("content", "")).strip() if system_text else str(m.get("content", ""))
+                else:
+                    user_messages.append({"role": m.get("role", "user"), "content": m.get("content", "")})
+
+            request_kwargs = dict(kwargs)
+            request_kwargs.pop("fallback", None)
+            max_tokens = int(request_kwargs.pop("max_tokens", 1024))
+            temperature = request_kwargs.pop("temperature", None)
+
+            client_kwargs: Dict[str, Any] = {"api_key": api_key}
+            if base_url:
+                client_kwargs["base_url"] = base_url
+            client = anthropic.Anthropic(**client_kwargs)
+            create_kwargs: Dict[str, Any] = {
+                "model": model.model_id,
+                "messages": user_messages,
+                "max_tokens": max_tokens,
+            }
+            if system_text:
+                create_kwargs["system"] = system_text
+            if temperature is not None:
+                create_kwargs["temperature"] = float(temperature)
+
+            response = client.messages.create(**create_kwargs)
+            content_parts = getattr(response, "content", []) or []
+            text = "".join(getattr(p, "text", "") for p in content_parts if getattr(p, "type", None) == "text")
+            usage = getattr(response, "usage", None)
+            stop_reason = getattr(response, "stop_reason", None) or "stop"
+            return {
+                "content": text,
+                "model_id": model.model_id,
+                "usage": usage.model_dump() if hasattr(usage, "model_dump") else (dict(usage) if usage else {}),
+                "finish_reason": "stop" if stop_reason == "end_turn" else stop_reason,
+            }
+        except ImportError:
+            return self._error_result(
+                model,
+                "anthropic package not installed. Run: pip install anthropic",
+            )
         except Exception as e:
             return self._error_result(model, str(e))
 
