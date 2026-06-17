@@ -15,6 +15,8 @@ import os
 import tempfile
 from pathlib import Path
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 from src.runtime.intent import (
     NxIntentParser, AnnotationScanner, IntentRunner,
     Colors, GlossaryEntry, Scenario, Feature, IntentFile,
@@ -138,7 +140,7 @@ Feature: Test
     def test_parse_file_from_disk(self):
         """从文件解析"""
         # 使用示例文件
-        intent_path = Path("examples/intent_demo/weather_bot.nxintent")
+        intent_path = PROJECT_ROOT / "examples/intent_demo/weather_bot.nxintent"
         if intent_path.exists():
             intent_file = self.parser.parse_file(str(intent_path))
             assert len(intent_file.glossary) > 0
@@ -224,7 +226,7 @@ agent SimpleBot {
     
     def test_scan_file(self):
         """从文件扫描"""
-        nx_path = Path("examples/intent_demo/weather_bot.nx")
+        nx_path = PROJECT_ROOT / "examples/intent_demo/weather_bot.nx"
         if nx_path.exists():
             annotations = self.scanner.scan_file(str(nx_path))
             assert len(annotations) >= 1
@@ -269,17 +271,28 @@ class TestIntentRunner:
     
     def test_find_intent_file(self):
         """自动查找 .nxintent 文件"""
-        nx_path = "examples/intent_demo/weather_bot.nx"
+        nx_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nx")
         intent_path = self.runner._find_intent_file(nx_path)
         
         # 应找到同目录下的 .nxintent 文件
         assert intent_path is not None
         assert intent_path.endswith(".nxintent")
+
+    def test_find_intent_file_returns_none_for_ambiguous_directory(self):
+        """同目录存在多个候选时不随机选择 .nxintent 文件"""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            nx_path = tmp_path / "weather_bot.nx"
+            nx_path.write_text('agent WeatherBot { role: "test" }', encoding="utf-8")
+            (tmp_path / "a.nxintent").write_text("Feature: A\n", encoding="utf-8")
+            (tmp_path / "b.nxintent").write_text("Feature: B\n", encoding="utf-8")
+
+            assert self.runner._find_intent_file(str(nx_path)) is None
     
     def test_build_vocabulary(self):
         """构建词汇表"""
         parser = NxIntentParser()
-        intent_path = Path("examples/intent_demo/weather_bot.nxintent")
+        intent_path = PROJECT_ROOT / "examples/intent_demo/weather_bot.nxintent"
         
         if intent_path.exists():
             intent_file = parser.parse_file(str(intent_path))
@@ -290,8 +303,8 @@ class TestIntentRunner:
     
     def test_check_with_demo_files(self):
         """使用示例文件执行 check"""
-        nx_path = "examples/intent_demo/weather_bot.nx"
-        intent_path = "examples/intent_demo/weather_bot.nxintent"
+        nx_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nx")
+        intent_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nxintent")
         
         if Path(nx_path).exists() and Path(intent_path).exists():
             results = self.runner.check(nx_path, intent_file_path=intent_path)
@@ -300,8 +313,8 @@ class TestIntentRunner:
     
     def test_coverage_with_demo_files(self):
         """使用示例文件计算 coverage"""
-        nx_path = "examples/intent_demo/weather_bot.nx"
-        intent_path = "examples/intent_demo/weather_bot.nxintent"
+        nx_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nx")
+        intent_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nxintent")
         
         if Path(nx_path).exists() and Path(intent_path).exists():
             report = self.runner.coverage(nx_path, intent_file_path=intent_path)

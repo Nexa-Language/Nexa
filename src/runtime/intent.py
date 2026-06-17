@@ -870,28 +870,39 @@ class IntentRunner:
     
     def _find_intent_file(self, nx_file_path: str) -> Optional[str]:
         """
-        自动查找与 .nx 文件对应的 .nxintent 文件
-        
-        查找策略:
+        自动查找与 .nx 文件对应的 .nxintent 文件。
+
+        查找策略是确定性的：
         1. 同名 .nxintent（如 weather_bot.nx → weather_bot.nxintent）
-        2. 同目录下的任何 .nxintent 文件
-        3. 父目录中的 .nxintent 文件
+        2. 同目录下唯一的 .nxintent 文件
+        3. 父目录下唯一的 .nxintent 文件
+
+        如果候选文件不唯一，则返回 None，让调用方显式传入 intent 文件，
+        避免因为文件系统遍历顺序不同而选择错误的规范。
         """
-        nx_path = Path(nx_file_path)
-        
-        # 策略 1: 同名 .nxintent
+        nx_path = Path(nx_file_path).expanduser()
+        try:
+            nx_path = nx_path.resolve()
+        except OSError:
+            nx_path = nx_path.absolute()
+
         intent_path = nx_path.with_suffix('.nxintent')
         if intent_path.exists():
             return str(intent_path)
-        
-        # 策略 2: 同目录下的 .nxintent 文件
-        for f in nx_path.parent.glob('*.nxintent'):
-            return str(f)
-        
-        # 策略 3: 父目录中的 .nxintent 文件
-        for f in nx_path.parent.parent.glob('*.nxintent'):
-            return str(f)
-        
+
+        for directory in (nx_path.parent, nx_path.parent.parent):
+            try:
+                candidates = sorted(directory.glob('*.nxintent'))
+            except OSError:
+                candidates = []
+            if len(candidates) == 1:
+                return str(candidates[0])
+            if len(candidates) > 1:
+                if self.verbose:
+                    candidate_list = ', '.join(str(p) for p in candidates)
+                    print(Colors.yellow(f"⏭️  Multiple .nxintent files found; pass --intent explicitly: {candidate_list}"))
+                return None
+
         return None
     
     def _build_vocabulary(self, intent_file: IntentFile) -> Vocabulary:
