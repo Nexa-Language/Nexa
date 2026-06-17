@@ -11,7 +11,10 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 # ==========================================
 # 0. Nexa 编译器注入的底层 Runtime (Boilerplate)
 # ==========================================
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(
+    base_url=os.environ.get("BASE_URL", "https://aihub.arcsysu.cn/v1"),
+    api_key=os.environ.get("API_KEY", "")
+)
 
 class SemanticEvalSchema(BaseModel):
     matched: bool = Field(description="Whether the condition is matched.")

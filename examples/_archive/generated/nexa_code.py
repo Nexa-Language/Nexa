@@ -223,9 +223,9 @@ class NexaCodeLLM:
     def __init__(self, model: str = None):
         self.api_key, self.base_url = nexa_secrets.get_provider_config("default")
         if not self.api_key:
-            self.api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+            self.api_key = nexa_secrets.get("API_KEY")
         if not self.base_url:
-            self.base_url = nexa_secrets.get("BASE_URL") or "https://api.openai.com/v1"
+            self.base_url = nexa_secrets.get("BASE_URL") or "https://aihub.arcsysu.cn/v1"
         self.model = model or nexa_secrets.get("MODEL_NAME") or "minimax-m2.5"
         # Handle model name dict
         if isinstance(self.model, dict):

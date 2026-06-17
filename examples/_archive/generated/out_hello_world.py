@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from src.runtime.secrets import DEFAULT_MODEL_CONFIG, nexa_secrets
+from src.runtime.secrets import DEFAULT_MODEL_CONFIG, DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 
 # ==========================================
 # [Boilerplate] Nexa 核心运行时环境
@@ -13,8 +13,8 @@ from src.runtime.secrets import DEFAULT_MODEL_CONFIG, nexa_secrets
 api_key, base_url = nexa_secrets.get_provider_config("default")
 model_name = nexa_secrets.get_model_config().get("weak", DEFAULT_MODEL_CONFIG["weak"])
 client = OpenAI(
-    base_url=base_url or os.environ.get("OPENAI_API_BASE", "https://aihub.arcsysu.cn/v1"),
-    api_key=api_key or os.environ.get("OPENAI_API_KEY", "")
+    base_url=base_url or os.environ.get("BASE_URL", DEFAULT_OPENAI_COMPATIBLE_BASE_URL),
+    api_key=api_key or os.environ.get("API_KEY", "")
 )
 
 class SemanticEvalSchema(BaseModel):

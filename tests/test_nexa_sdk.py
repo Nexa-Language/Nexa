@@ -118,7 +118,7 @@ class TestNexaSecrets(unittest.TestCase):
 
         parser = NexaSecrets.__new__(NexaSecrets)
         content = '''
-OPENAI_API_KEY = "<openai-api-key>"
+API_KEY = "<provider-api-key>"
 
 config default {
     BASE_URL = "https://ai.example/v1",
@@ -134,7 +134,7 @@ config default {
 '''
         block_configs, flat_configs = parser._parse_nxs(content)
 
-        self.assertEqual(flat_configs["OPENAI_API_KEY"], "<openai-api-key>")
+        self.assertEqual(flat_configs["API_KEY"], "<provider-api-key>")
         self.assertIn("default", block_configs)
         default = block_configs["default"]
         self.assertEqual(default.API_KEY, "<provider-api-key>")

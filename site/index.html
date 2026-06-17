@@ -248,7 +248,7 @@
 
 <span class="comment"># Manual ReAct loop — no exit condition verification</span>
 <span class="keyword">def</span> <span class="function">bug_fixer</span>(issue: str, max_steps=<span class="type">50</span>):
-    model = ChatOpenAI(model=<span class="string">"gpt-4"</span>)
+    model = ChatOpenAI(model=<span class="string">"minimax-m2.5"</span>)
     messages = [{<span class="string">"role"</span>:<span class="string">"system"</span>,<span class="string">"content"</span>:<span class="string">f"Fix: {issue}"</span>}]
     <span class="keyword">for</span> step <span class="keyword">in</span> range(max_steps):
         response = model.invoke(messages, tools=[grep])
@@ -306,7 +306,7 @@
 <span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict
 <span class="keyword">import</span> concurrent.futures
 
-model = ChatOpenAI(model=<span class="string">"gpt-4"</span>)
+model = ChatOpenAI(model=<span class="string">"minimax-m2.5"</span>)
 
 <span class="keyword">class</span> <span class="type">State</span>(TypedDict):
     topic: str; research: str; analysis: str; review: str; report: str

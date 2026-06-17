@@ -1378,7 +1378,7 @@ echo "1.4.0" > VERSION
 
 **解决**：
 1. 创建 `secrets.nxs` 文件（参考项目示例）
-2. 或设置环境变量 `API_KEY` / `OPENAI_API_KEY`
+2. 或设置环境变量 `API_KEY` / `BASE_URL`
 
 ---
 
