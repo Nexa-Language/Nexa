@@ -17,7 +17,7 @@ We are committed to providing security updates for the following versions of Nex
 If you discover a potential security vulnerability in Nexa, please help us protect our users by reporting it privately.
 
 ### Where to report
-Please send an email to **[INSERT_SECURITY_EMAIL]**. 
+Please use GitHub's private vulnerability reporting flow for this repository, or contact a project maintainer directly through a private channel. Do not include secrets or exploit details in public issues, discussions, or pull requests.
 
 ### What to expect from us
 * **Acknowledgment**: You will receive an acknowledgment of your report within 48 hours.

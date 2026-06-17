@@ -4,7 +4,7 @@
   <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
-    <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License"/>
+    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
     <img src="https://img.shields.io/badge/Version-v2.1.2-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
     <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
@@ -37,12 +37,12 @@ Nexa v2.1.2 引入了多配置切换和标准库系统，让不同环境（开�
 // secrets.nxs
 config default {
     BASE_URL = "https://aihub.arcsysu.cn/v1"
-    API_KEY = "sk-xxx"
+    API_KEY = "<provider-api-key>"
 }
 
 config ali {
     BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    API_KEY = "sk-yyy"
+    API_KEY = "<dashscope-api-key>"
     NEWS_API_KEY = "your-newsapi-key"
 }
 ```
