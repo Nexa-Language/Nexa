@@ -7,7 +7,7 @@
   2. 初始化 openai `client`。
   3. 定义 class `Agent_Researcher`，在实例化时指定 `tools=[web_search_schema]` 并且写入 system `prompt`。
   4. main flow 生成为 `def flow_main():`
-  5. 遇到 `semantic_if` 时，背后会静默调用一个 `__nexa_eval_condition` (基于 gpt-4o-mini structured output {"matched": bool, "confidence": float})。
+  5. 遇到 `semantic_if` 时，背后会静默调用一个 `__nexa_eval_condition` (基于 deepseek-chat structured output {"matched": bool, "confidence": float})。
   6. 依据布尔结果执行实际的 Python if/else 分支。
 */
 

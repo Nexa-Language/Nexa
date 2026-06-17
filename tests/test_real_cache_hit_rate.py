@@ -39,7 +39,7 @@ def test_cache_basic():
         
         # 基本设置和获取
         messages = [{"role": "user", "content": "Hello, how are you?"}]
-        model = "gpt-4"
+        model = "minimax-m2.5"
         result = "I'm doing well, thank you!"
         
         # 设置缓存
@@ -73,7 +73,7 @@ def test_cache_exact_match_hit_rate():
         # 预热缓存 - 存入 100 条
         for i in range(100):
             messages = [{"role": "user", "content": f"Question {i}: What is {i}?"}]
-            manager.set(messages, "gpt-4", f"Answer {i}: {i} is a number.")
+            manager.set(messages, "minimax-m2.5", f"Answer {i}: {i} is a number.")
         
         # 测试命中 - 使用相同查询
         hits = 0
@@ -81,7 +81,7 @@ def test_cache_exact_match_hit_rate():
         
         for i in range(100):
             messages = [{"role": "user", "content": f"Question {i}: What is {i}?"}]
-            result = manager.get(messages, "gpt-4", use_semantic=False)
+            result = manager.get(messages, "minimax-m2.5", use_semantic=False)
             if result:
                 hits += 1
             else:
@@ -123,7 +123,7 @@ def test_cache_semantic_match():
         # 存入原始查询
         original_messages = [{"role": "user", "content": "What is the capital of France?"}]
         original_result = "The capital of France is Paris."
-        manager.set(original_messages, "gpt-4", original_result)
+        manager.set(original_messages, "minimax-m2.5", original_result)
         
         # 测试语义相似查询
         similar_queries = [
@@ -134,7 +134,7 @@ def test_cache_semantic_match():
         
         hits = 0
         for query in similar_queries:
-            result = manager.get(query, "gpt-4", use_semantic=True)
+            result = manager.get(query, "minimax-m2.5", use_semantic=True)
             if result:
                 hits += 1
                 print(f"  命中: {query[0]['content'][:50]}...")
@@ -187,7 +187,7 @@ def test_cache_hit_rate_realistic():
         # 预热缓存 - 存入热点问题的答案
         for q in hot_questions:
             messages = [{"role": "user", "content": q}]
-            manager.set(messages, "gpt-4", f"Answer: {q}")
+            manager.set(messages, "minimax-m2.5", f"Answer: {q}")
         
         # 模拟真实查询模式
         total_queries = 1000
@@ -198,7 +198,7 @@ def test_cache_hit_rate_realistic():
             import random
             q = random.choice(hot_questions)
             messages = [{"role": "user", "content": q}]
-            result = manager.get(messages, "gpt-4", use_semantic=True)
+            result = manager.get(messages, "minimax-m2.5", use_semantic=True)
             if result:
                 hits += 1
         
@@ -206,7 +206,7 @@ def test_cache_hit_rate_realistic():
         for i in range(int(total_queries * 0.2)):
             q = long_tail_questions[i % len(long_tail_questions)]
             messages = [{"role": "user", "content": q}]
-            result = manager.get(messages, "gpt-4", use_semantic=True)
+            result = manager.get(messages, "minimax-m2.5", use_semantic=True)
             if result:
                 hits += 1
         
@@ -250,10 +250,10 @@ def test_cache_with_ttl():
         )
         
         messages = [{"role": "user", "content": "Test TTL"}]
-        manager.set(messages, "gpt-4", "TTL test result", ttl=1)
+        manager.set(messages, "minimax-m2.5", "TTL test result", ttl=1)
         
         # 立即获取 - 应该命中
-        result = manager.get(messages, "gpt-4")
+        result = manager.get(messages, "minimax-m2.5")
         assert result is not None, "缓存应该存在"
         print("  ✓ 缓存立即获取成功")
         
@@ -261,7 +261,7 @@ def test_cache_with_ttl():
         time.sleep(1.5)
         
         # 再次获取 - 应该过期
-        result = manager.get(messages, "gpt-4")
+        result = manager.get(messages, "minimax-m2.5")
         assert result is None, "缓存应该已过期"
         print("  ✓ 缓存过期后获取失败（预期行为）")
         
@@ -289,7 +289,7 @@ def test_cache_eviction():
         # 存入超过限制的条目
         for i in range(20):
             messages = [{"role": "user", "content": f"Question {i}"}]
-            manager.set(messages, "gpt-4", f"Answer {i}")
+            manager.set(messages, "minimax-m2.5", f"Answer {i}")
         
         stats = manager.get_stats()
         print(f"\n存入条目: 20")
@@ -321,7 +321,7 @@ def test_cache_persistence():
         )
         
         messages = [{"role": "user", "content": "Persistent test"}]
-        manager1.set(messages, "gpt-4", "Persistent result")
+        manager1.set(messages, "minimax-m2.5", "Persistent result")
         
         # 模拟重启 - 创建新管理器
         manager2 = NexaCacheManager(
@@ -330,7 +330,7 @@ def test_cache_persistence():
         )
         
         # 从新管理器获取
-        result = manager2.get(messages, "gpt-4")
+        result = manager2.get(messages, "minimax-m2.5")
         assert result == "Persistent result", "持久化缓存应该恢复"
         
         print("✓ 缓存持久化测试通过")

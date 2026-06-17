@@ -4,7 +4,7 @@
 */
 agent Planner {
     role: "计划制定者",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "You are a planner that outputs structured plans.",
     output_format: "json",
     output_schema: {

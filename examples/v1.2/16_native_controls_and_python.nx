@@ -14,12 +14,12 @@
 // ==========================================
 
 agent DataProcessor {
-    model: "gpt-4"
+    model: "minimax-m2.5"
     prompt: "You are a data processing assistant."
 }
 
 agent ReportGenerator {
-    model: "gpt-4"
+    model: "minimax-m2.5"
     prompt: "You are a report generation specialist."
 }
 

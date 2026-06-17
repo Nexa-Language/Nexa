@@ -20,7 +20,7 @@ type CustomRef = Summary
 agent Summarizer {
     role: "Text Summarization Agent"
     prompt: "Summarize the given text concisely"
-    model: "openai:gpt-4o"
+    model: "minimax:minimax-m2.5"
 }
 
 flow main {

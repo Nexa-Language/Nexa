@@ -15,7 +15,7 @@ server apiServer {
 }
 
 agent dashboardBot {
-    model "gpt-4"
+    model "minimax-m2.5"
     
     fn dashboard_handler(req) {
         let user = get_user(req)

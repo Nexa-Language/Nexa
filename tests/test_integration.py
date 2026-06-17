@@ -22,7 +22,7 @@ class TestIntegration(unittest.TestCase):
         code = '''
 agent Greeter {
     role: "greeter"
-    model: "gpt-4"
+    model: "minimax-m2.5"
     prompt: "You are a friendly greeter"
 }
 '''
@@ -39,7 +39,7 @@ agent Greeter {
         
         agent = (AgentBuilder("ToolAgent")
             .with_prompt("你是一个工具助手")
-            .with_model("gpt-4")
+            .with_model("minimax-m2.5")
             .with_tools(tools[:3])  # 使用前3个工具
             .build())
         
@@ -156,10 +156,10 @@ class TestRuntimeComponents(unittest.TestCase):
         messages = [{"role": "user", "content": "Hello"}]
         
         # 设置缓存
-        cache.set(messages, "gpt-4", "Hello response")
+        cache.set(messages, "minimax-m2.5", "Hello response")
         
         # 获取缓存
-        result = cache.get(messages, "gpt-4")
+        result = cache.get(messages, "minimax-m2.5")
         self.assertEqual(result, "Hello response")
     
     def test_knowledge_graph(self):

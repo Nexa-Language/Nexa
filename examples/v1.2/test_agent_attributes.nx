@@ -41,7 +41,7 @@ agent TestModelMinimax {
 }
 
 agent TestModelOpenai {
-    model: "openai/gpt-4",
+    model: "minimax/minimax-m2.5",
     prompt: "回复OK"
 }
 
@@ -86,7 +86,7 @@ agent TestExperienceBasic {
 
 // ==================== 测试点 8: fallback 属性 ====================
 agent TestFallbackSingle {
-    model: "openai/gpt-4",
+    model: "minimax/minimax-m2.5",
     fallback: "deepseek/deepseek-chat",
     prompt: "测试单个备用模型"
 }

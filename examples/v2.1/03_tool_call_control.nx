@@ -9,7 +9,7 @@ fn web_search(query: string): string {
 
 agent ControlledBot {
     role: "受控助手",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "You are an assistant with controlled tool access.",
     max_tool_calls: 3,
     tool_call_strategy: "auto"

@@ -25,7 +25,7 @@ class SemanticEvalSchema(BaseModel):
 )
 def __nexa_semantic_eval_with_retry(condition: str, target_text: str) -> bool:
     resp = client.beta.chat.completions.parse(
-        model="gpt-4o-mini",
+        model="deepseek-chat",
         messages=[
             {"role": "system", "content": f"Evaluate condition against target text. Condition: {condition}"},
             {"role": "user", "content": str(target_text)}
@@ -57,7 +57,7 @@ class __NexaAgent:
         # 实际情况中，这里会有完善的 tool execution 循环。
         # v0.1 Reference 简化仅做调用展示。
         kwargs = {
-            "model": "gpt-4o",
+            "model": "minimax-m2.5",
             "messages": self.messages,
         }
         if self.tools:

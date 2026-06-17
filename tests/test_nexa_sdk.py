@@ -24,7 +24,7 @@ class TestNexaSDK(unittest.TestCase):
         code = '''
 agent TestBot {
     role: "test"
-    model: "gpt-4"
+    model: "minimax-m2.5"
     prompt: "You are a test bot"
 }
 '''
@@ -37,7 +37,7 @@ agent TestBot {
         
         agent = (AgentBuilder("TestAgent")
             .with_prompt("测试提示")
-            .with_model("gpt-4")
+            .with_model("minimax-m2.5")
             .with_temperature(0.5)
             .build())
         

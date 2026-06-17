@@ -148,7 +148,7 @@ def _nexa_interp_str(value):
 StreamBot = NexaAgent(
     name="StreamBot",
     prompt="You are a streaming bot. Answer briefly.",
-    model="gpt-4o-mini",
+    model="deepseek-chat",
     role="流式助手",
     memory_scope="local",
     stream=True,

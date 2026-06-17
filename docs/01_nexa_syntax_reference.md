@@ -55,7 +55,7 @@ protocol AnalysisReport {
 @limit(max_tokens=2048)
 agent FinancialAnalyst implements AnalysisReport uses Calculator, SearchMCP {
     role: "Senior Financial Advisor",
-    model: "claude-3.5-sonnet",
+    model: "minimax-m2.5",
     prompt: "Analyze financial data and output standard reports."
 }
 ```

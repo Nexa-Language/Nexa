@@ -148,7 +148,7 @@ def _nexa_interp_str(value):
 Researcher = NexaAgent(
     name="Researcher",
     prompt="Research the given topic concisely.",
-    model="gpt-4o-mini",
+    model="deepseek-chat",
     role="研究员",
     memory_scope="local",
     stream=False,
@@ -163,7 +163,7 @@ Researcher = NexaAgent(
 Writer = NexaAgent(
     name="Writer",
     prompt="Write a short article about the topic.",
-    model="gpt-4o-mini",
+    model="deepseek-chat",
     role="作者",
     memory_scope="local",
     stream=False,

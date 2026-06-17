@@ -148,7 +148,7 @@ def _nexa_interp_str(value):
 Planner = NexaAgent(
     name="Planner",
     prompt="You are a planner that outputs structured plans.",
-    model="gpt-4o-mini",
+    model="deepseek-chat",
     role="计划制定者",
     memory_scope="local",
     stream=False,

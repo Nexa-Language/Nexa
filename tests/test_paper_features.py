@@ -99,8 +99,8 @@ def test_fallback_expr():
     
     code = '''
 agent ResilientAgent {
-    model: "openai:gpt-4o",
-    fallback: "anthropic:claude-3.5",
+    model: "minimax:minimax-m2.5",
+    fallback: "deepseek:deepseek-chat",
     prompt: "Test agent"
 }
 
@@ -113,7 +113,7 @@ flow main {
     
     # 验证 agent fallback 属性
     agent = ast["body"][0]
-    assert agent["properties"]["fallback"] == "anthropic:claude-3.5"
+    assert agent["properties"]["fallback"] == "deepseek:deepseek-chat"
     
     # 验证 fallback 表达式
     flow = ast["body"][1]

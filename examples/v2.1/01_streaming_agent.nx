@@ -4,7 +4,7 @@
 */
 agent StreamBot {
     role: "流式助手",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "You are a streaming bot. Answer briefly.",
     stream: true
 }

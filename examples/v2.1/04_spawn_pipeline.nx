@@ -5,13 +5,13 @@
 */
 agent Researcher {
     role: "研究员",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "Research the given topic concisely."
 }
 
 agent Writer {
     role: "作者",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "Write a short article about the topic."
 }
 

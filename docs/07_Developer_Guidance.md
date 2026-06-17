@@ -1152,7 +1152,7 @@ import nexa
 result = nexa.run("script.nx")
 
 # 创建 Agent
-bot = nexa.Agent(name="MyBot", prompt="You are a helpful assistant", model="gpt-4")
+bot = nexa.Agent(name="MyBot", prompt="You are a helpful assistant", model="minimax-m2.5")
 response = bot.run("Hello!")
 
 # 编译代码

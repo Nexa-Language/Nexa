@@ -236,7 +236,7 @@ python -m src.cli lint examples/01_hello_world.nx
 ```nexa
 agent ChatBot {
     role: "Helpful Assistant",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "Answer user questions concisely"
 }
 

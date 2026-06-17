@@ -63,7 +63,7 @@ semantic_if "The result explicitly suggests something illegal like tax evasion" 
 ### 它是如何工作的？
 遇到 `semantic_if` 时，Nexa 编译器并**不会**将它转译成简单的正则判断代码！
 在背后的 Python 运行时中，Nexa 会自动：
-1. 静默唤起一个小参数规模的 LLM（例如 deepseek-chat 或 gpt-4o-mini）。
+1. 静默唤起一个小参数规模的 LLM（例如 deepseek-chat 或 minimax-m2.5）。
 2. 让其作为评判器（Judge Model），判定 `target` 的信息是否满足 `condition`（提示词级语义匹配）。
 3. 自动使用内置的容错方案（如 `json_object` Fallback）获取严谨的布尔返回值。
 4. 提供基于 `tenacity` 的**自愈退避重试**以防止网络或幻觉崩溃。

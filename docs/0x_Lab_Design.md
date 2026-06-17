@@ -137,7 +137,7 @@ branch_expr ::= expression "??" expression ":" expression
 // examples/01_hello_world.nx
 agent Greeter {
     role: "Friendly Assistant",
-    model: "gpt-4o-mini",
+    model: "deepseek-chat",
     prompt: "Greet the user warmly."
 }
 
@@ -519,7 +519,7 @@ class CodeGenerator:
 def generate_agent(self, agent: dict):
     name = agent["name"]
     prompt = agent.get("prompt", "")
-    model = agent.get("model", "gpt-4o-mini")
+    model = agent.get("model", "deepseek-chat")
     tools = agent.get("uses", [])
     
     code = f'''

@@ -5,7 +5,10 @@ Nexa v0.9.7-rc 功能测试套件
 
 import sys
 import os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
 import unittest
 from unittest.mock import Mock, patch, MagicMock
@@ -147,8 +150,8 @@ class TestDAGParser(unittest.TestCase):
         from src.ast_transformer import NexaTransformer
         
         code = '''
-agent A { role: "test", model: "gpt-4", prompt: "test" }
-agent B { role: "test", model: "gpt-4", prompt: "test" }
+agent A { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent B { role: "test", model: "minimax-m2.5", prompt: "test" }
 flow main {
     result = "input" |>> [A, B];
 }
@@ -178,9 +181,9 @@ flow main {
         from src.ast_transformer import NexaTransformer
         
         code = '''
-agent A { role: "test", model: "gpt-4", prompt: "test" }
-agent B { role: "test", model: "gpt-4", prompt: "test" }
-agent C { role: "test", model: "gpt-4", prompt: "test" }
+agent A { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent B { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent C { role: "test", model: "minimax-m2.5", prompt: "test" }
 flow main {
     result = [A, B] &>> C;
 }
@@ -209,8 +212,8 @@ flow main {
         from src.ast_transformer import NexaTransformer
         
         code = '''
-agent A { role: "test", model: "gpt-4", prompt: "test" }
-agent B { role: "test", model: "gpt-4", prompt: "test" }
+agent A { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent B { role: "test", model: "minimax-m2.5", prompt: "test" }
 flow main {
     result = "input" ?? A : B;
 }
@@ -243,8 +246,8 @@ class TestDAGCodeGeneration(unittest.TestCase):
         from src.code_generator import CodeGenerator
         
         code = '''
-agent A { role: "test", model: "gpt-4", prompt: "test" }
-agent B { role: "test", model: "gpt-4", prompt: "test" }
+agent A { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent B { role: "test", model: "minimax-m2.5", prompt: "test" }
 flow main {
     result = "input" |>> [A, B];
 }
@@ -267,9 +270,9 @@ flow main {
         from src.code_generator import CodeGenerator
         
         code = '''
-agent A { role: "test", model: "gpt-4", prompt: "test" }
-agent B { role: "test", model: "gpt-4", prompt: "test" }
-agent C { role: "test", model: "gpt-4", prompt: "test" }
+agent A { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent B { role: "test", model: "minimax-m2.5", prompt: "test" }
+agent C { role: "test", model: "minimax-m2.5", prompt: "test" }
 flow main {
     result = [A, B] &>> C;
 }
@@ -296,7 +299,7 @@ class TestAllExamplesCompile(unittest.TestCase):
         from src.ast_transformer import NexaTransformer
         from src.code_generator import CodeGenerator
         
-        with open('examples/v0.1/01_hello_world.nx', 'r', encoding='utf-8') as f:
+        with open(PROJECT_ROOT / 'examples/v0.1/01_hello_world.nx', 'r', encoding='utf-8') as f:
             code = f.read()
         
         tree = parse(code)
@@ -313,7 +316,7 @@ class TestAllExamplesCompile(unittest.TestCase):
         from src.ast_transformer import NexaTransformer
         from src.code_generator import CodeGenerator
         
-        with open('examples/v1.0/15_dag_topology.nx', 'r', encoding='utf-8') as f:
+        with open(PROJECT_ROOT / 'examples/v1.0/15_dag_topology.nx', 'r', encoding='utf-8') as f:
             code = f.read()
         
         tree = parse(code)
