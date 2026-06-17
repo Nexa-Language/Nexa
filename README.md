@@ -25,6 +25,52 @@
 
 ---
 
+## 🔥 v2.2.1: Context-as-Structure
+
+Nexa v2.2.1 把 **Context** 提升为 agent 声明的结构属性（与 model、tools 同级），让每个 agent 的上下文行为在**声明时**被完全定义，而不是在使用点（`A >> B`）临时决定。
+
+### 设计动机
+
+面试官观点：**Agent = (Model, Tools, Context) 三元组完全定义**。
+
+- v2.1 及之前：model 和 tools 在 `agent` 声明里定义，但 **context 缺失**（运行时 `self.messages = []` 硬编码），导致 pipeline `A >> B` 只能传字符串。
+- v2.2.1：在 agent 声明里增加 `context { ... }` 子块，让 context 行为像 model/tools 一样在结构上完全定义。
+
+### 语法
+
+```nexa
+agent Researcher {
+    model: "deepseek/deepseek-chat",
+    uses: [web_search],
+    context {
+        source: upstream,                    // "upstream" | "shared:name" | "fresh"
+        sink: downstream,                     // "downstream" | "shared:name" | "discard"
+        output_schema: ResearchOutput,        // Protocol 类型
+        max_history_turns: 20,
+        inherit: [messages, artifacts]        // 从上游继承的字段
+    }
+    prompt: "..."
+}
+```
+
+### 编译期类型检查（C-004）
+
+Harness Validator 在编译期检查 pipeline `A >> B` 中，A 的 `output_schema` 是否匹配 B 的 `input_schema`。不匹配则编译失败：
+
+```
+C-004: Context incompatible in pipeline 'A >> B':
+       output_schema='ResearchOutput' is not a subtype of input_schema='WeatherInput'
+```
+
+### 向后兼容
+
+- 不加 `context { ... }` 块的 agent 行为**完全不变**（保持 v2.1 的字符串传递语义）
+- `context` 块是可选的，旧代码无需修改
+
+详见 [`examples/v2.2/01_context_handoff.nx`](examples/v2.2/01_context_handoff.nx)。
+
+---
+
 ## 🔥 v2.1.2: Config Selection & Standard Library
 
 Nexa v2.1.2 引入了多配置切换和标准库系统，让不同环境（开发/测试/生产）使用不同的 API 密钥和模型配置。

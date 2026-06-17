@@ -30,7 +30,7 @@ import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
 from src.runtime.agent import NexaAgent
 from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
-from src.runtime.orchestrator import join_agents, nexa_pipeline
+from src.runtime.orchestrator import join_agents, nexa_pipeline, nexa_context_pipeline
 from src.runtime.dag_orchestrator import dag_fanout, dag_merge, dag_branch, dag_parallel_map, SmartRouter
 from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
@@ -1097,6 +1097,12 @@ def _get_pydantic_type(type_str: str):
             if contract_code:
                 self.code.append(f'    contracts={contract_code},')
             self.code.append(f'    tools=[{tool_refs}]')
+            # v2.2.1: Context-as-Structure — pass context_spec if declared
+            context_spec = agent.get("context_spec")
+            if context_spec and isinstance(context_spec, dict):
+                import json as _json
+                spec_json = _json.dumps(context_spec, ensure_ascii=False)
+                self.code.append(f',\n    context_spec={spec_json}')
             self.code.append(f')\n')
             
     def _generate_jobs(self):
@@ -2592,7 +2598,9 @@ def _get_pydantic_type(type_str: str):
                 elif stage["type"] == "MethodCallExpression":
                     agent_names.append(stage["object"]) # just the agent name for now.
             agents_list_str = "[ " + ", ".join(agent_names) + " ]"
-            return f"nexa_pipeline({initial_call}, {agents_list_str})"
+            # v2.2.1: use nexa_context_pipeline by default; it auto-downgrades
+            # to v2.1 string-only behavior for agents without a context_spec.
+            return f"nexa_context_pipeline({initial_call}, {agents_list_str})"
         elif ex_type == "JoinCallExpression":
             agents_list_str = "[ " + ", ".join([a for a in expr["agents"]]) + "]"
             method = expr.get("method")

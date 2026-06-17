@@ -38,6 +38,7 @@ from .memory import global_memory
 from .tools_registry import execute_tool
 from .cache_manager import get_cache_manager, NexaCacheManager
 from .cow_state import CowAgentState
+from .agent_context import AgentContext, ContextSpec
 
 class NexaAgent:
     def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None,
@@ -45,7 +46,15 @@ class NexaAgent:
                  protocol=None, max_tokens=None, stream=False, cache=False,
                  max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3,
                  contracts=None, output_format: str = "", output_schema=None,
-                 max_tool_calls: int = 10, tool_call_strategy: str = "auto"):
+                 max_tool_calls: int = 10, tool_call_strategy: str = "auto",
+                 context_spec=None):
+        # v2.2.1: Context-as-Structure — context behaviour declared at construction
+        self.context_spec = ContextSpec.from_dict(context_spec) if isinstance(context_spec, dict) else context_spec
+        self._last_context: Optional[AgentContext] = None
+        self._artifacts: Dict[str, Any] = {}
+        self._tool_results: List[Dict[str, Any]] = []
+        self._last_output_text: str = ""
+
         self.name = name
         self.system_prompt = prompt
         if role:
@@ -411,13 +420,28 @@ class NexaAgent:
                 # Windows 系统不支持 SIGALRM，直接执行
                 yield
         
-        user_input = " ".join([str(arg) for arg in args])
-        
+        # v2.2.1: Context-as-Structure — apply upstream AgentContext if present
+        upstream_context = None
+        plain_args = []
+        for arg in args:
+            if isinstance(arg, AgentContext):
+                upstream_context = arg
+            else:
+                plain_args.append(arg)
+
+        user_input = " ".join([str(arg) for arg in plain_args])
+
+        # If an upstream AgentContext was passed and this agent declares
+        # source=upstream, inherit the declared fields now (before we append
+        # our own user message).
+        if upstream_context is not None and self.context_spec and self.context_spec.source == "upstream":
+            upstream_context.apply_to(self, self.context_spec.inherit)
+
         # Pull context from memory if specified
         context = global_memory.get_context(self.memory_scope)
         if context:
             user_input += f"\n[Context]: {context}"
-            
+
         print(f"\n> [{self.name} received]: {user_input}")
         self.messages.append({"role": "user", "content": user_input})
         
@@ -475,7 +499,7 @@ class NexaAgent:
                 print(f"< [{self.name} replied from CACHE]: {cached_result}\n")
                 self.messages.append({"role": "assistant", "content": cached_result})
                 self._save_memory()
-                return self._check_ensures_contract(cached_result, old_values)
+                return self._snapshot_context(self._check_ensures_contract(cached_result, old_values))
 
             try:
                 with timeout_context(self.timeout):
@@ -546,14 +570,32 @@ class NexaAgent:
                         print(f"< [{self.name} replied]: {reply}\n")
                         self._write_cache(kwargs, reply)
                         self._save_memory()
-                        return self._check_ensures_contract(reply, old_values)
-                        
+                        return self._snapshot_context(self._check_ensures_contract(reply, old_values))
+
             except NexaTimeoutError as e:
                 retries -= 1
                 if retries <= 0:
                     raise
                 print(f"\n[{self.name} Timeout, Retrying... ({retries} attempts left)]")
                 continue
+
+    def _snapshot_context(self, result: Any) -> Any:
+        """v2.2.1: After run(), snapshot the agent state into an AgentContext.
+
+        The context is stored on ``self._last_context`` so a downstream agent
+        (or the pipeline runtime) can fetch it via ``last_context()``.
+        The original ``result`` is returned unchanged to preserve v2.1 semantics.
+        """
+        self._last_output_text = str(result) if result is not None else ""
+        self._last_context = AgentContext.from_agent(self)
+        # Preserve v2.1 behavior: return the raw result, not the context.
+        # Pipeline codegen calls last_context() explicitly when both endpoints
+        # declare a context block.
+        return result
+
+    def last_context(self) -> Optional[AgentContext]:
+        """Return the AgentContext produced by the most recent ``run()`` call."""
+        return self._last_context
 
     def run_result(self, *args) -> NexaResult:
         """v1.2: 显式返回 NexaResult 包装的 Agent 执行结果

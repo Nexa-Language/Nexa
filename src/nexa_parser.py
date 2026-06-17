@@ -177,12 +177,27 @@ json_pair: STRING_LITERAL ":" STRING_LITERAL
 // Agent 修饰器支持: @limit, @timeout, @retry, @temperature
 // Design by Contract: requires/ensures 契约条款放在签名后、函数体前
 // v2.1: 新增 output_format, output_schema, max_tool_calls, tool_call_strategy 属性
-agent_decl: agent_decorator* "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] requires_clause* ensures_clause* "{" agent_property* "}"
+// v2.2.1: 新增 context 子块 — Context-as-Structure（声明时定义 context 行为）
+agent_decl: agent_decorator* "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] requires_clause* ensures_clause* "{" agent_body* "}"
 agent_decorator: "@" agent_decorator_name "(" agent_decorator_params ")"
 agent_decorator_name: "limit" | "timeout" | "retry" | "temperature"
 agent_decorator_params: agent_decorator_param ("," agent_decorator_param)*
 agent_decorator_param: IDENTIFIER "=" (INT | FLOAT)
 return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER
+
+// v2.2.1: agent_body allows context block or regular property inside agent body
+?agent_body: context_decl | agent_property
+
+// v2.2.1: Context declaration block — structural context properties
+// context { source: upstream, sink: downstream, input_schema: Foo, output_schema: Bar, max_history_turns: 20, inherit: [messages, artifacts] }
+context_decl: "context" "{" agent_context_param* "}"
+agent_context_param: IDENTIFIER ":" agent_context_value ","?
+agent_context_value: STRING_LITERAL -> agent_ctx_string_val
+                   | IDENTIFIER -> agent_ctx_id_val
+                   | INT -> agent_ctx_int_val
+                   | "[" identifier_list "]" -> agent_ctx_list_val
+                   | "true" -> agent_ctx_bool_true_val
+                   | "false" -> agent_ctx_bool_false_val
 
 agent_property: IDENTIFIER ":" agent_property_value ","?
  ?agent_property_value: STRING_LITERAL -> string_val
@@ -629,7 +644,7 @@ receive_stmt: "receive" "(" ")" [":" type_expr] ";"
 // v1.0.1-beta: IDENTIFIER 定义
 // 使用负向断言确保关键字不会被当作标识符匹配
 // 注意：使用 \b 边界确保只排除完整关键字，不排除前缀匹配如 test_xxx
-IDENTIFIER: /(?!if\b|else\b|for\b|each\b|in\b|while\b|break\b|continue\b|agent\b|tool\b|flow\b|protocol\b|test\b|match\b|loop\b|until\b|print\b|try\b|catch\b|assert\b|true\b|false\b|join\b|std\b|img\b|requires\b|ensures\b|invariant\b|type\b|unit\b|otherwise\b|job\b|on\b|perform\b|on_failure\b|server\b|group\b|route\b|serve\b|static\b|cors\b|semantic\b|GET\b|POST\b|PUT\b|DELETE\b|PATCH\b|HEAD\b|OPTIONS\b|db\b|connect\b|query\b|execute\b|auth\b|require_auth\b|enable_auth\b|oauth\b|kv\b|open\b|spawn\b|parallel\b|race\b|channel\b|after\b|schedule\b|await\b|select\b|recv\b|send\b|close\b|sleep_ms\b|template\b|defer\b|struct\b|enum\b|trait\b|impl\b|fn\b|let\b|autoloop\b|with_context\b|try_agent\b|catch_correction\b|step\b|reflect\b|snapshot\b|restore\b|fork\b|merge\b|verify\b|satisfies\b|unharnessed\b|pass\b|receive\b|before_step\b|after_step\b|on_error\b|before_tool\b|after_tool\b|context_policy\b|Option\b|Result\b|Actor\b|Some\b|Ok\b|Err\b)[a-zA-Z_][a-zA-Z0-9_]*/
+IDENTIFIER: /(?!if\b|else\b|for\b|each\b|in\b|while\b|break\b|continue\b|agent\b|tool\b|flow\b|protocol\b|test\b|match\b|loop\b|until\b|print\b|try\b|catch\b|assert\b|true\b|false\b|join\b|std\b|img\b|requires\b|ensures\b|invariant\b|type\b|unit\b|otherwise\b|job\b|on\b|perform\b|on_failure\b|server\b|group\b|route\b|serve\b|static\b|cors\b|semantic\b|GET\b|POST\b|PUT\b|DELETE\b|PATCH\b|HEAD\b|OPTIONS\b|db\b|connect\b|query\b|execute\b|auth\b|require_auth\b|enable_auth\b|oauth\b|kv\b|open\b|spawn\b|parallel\b|race\b|channel\b|after\b|schedule\b|await\b|select\b|recv\b|send\b|close\b|sleep_ms\b|template\b|defer\b|struct\b|enum\b|trait\b|impl\b|fn\b|let\b|autoloop\b|with_context\b|try_agent\b|catch_correction\b|step\b|reflect\b|snapshot\b|restore\b|fork\b|merge\b|verify\b|satisfies\b|unharnessed\b|pass\b|receive\b|before_step\b|after_step\b|on_error\b|before_tool\b|after_tool\b|context_policy\b|context\b|Option\b|Result\b|Actor\b|Some\b|Ok\b|Err\b)[a-zA-Z_][a-zA-Z0-9_]*/
 STRING_LITERAL: /"[^"]*"/
 MULTILINE_STRING: /\"\"\"([^\""]|\"{1,2}([^\""]|$))*?\"\"\"/
 // P2-4: Template string token (same regex as MULTILINE_STRING, but used with "template" prefix)

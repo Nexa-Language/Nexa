@@ -1,0 +1,57 @@
+/*
+  Nexa v2.2.1 — Context-as-Structure 示例
+
+  本示例演示 v2.2.1 的核心新特性：在 agent 声明块里通过 context { ... }
+  子块把 Context 提升为结构属性（与 model、tools 同级），从而让每个 agent
+  的上下文行为在声明时被完全定义。
+
+  面试官观点：Agent = (Model, Tools, Context) 三元组完全定义。
+  - v2.1 及之前：model 和 tools 在 agent 声明里定义，context 缺失
+    （运行时 self.messages = [] 硬编码），导致 pipeline A >> B 只能传字符串。
+  - v2.2.1：在 agent 声明里增加 context { source, sink, output_schema,
+    input_schema, inherit } 块，让 context 行为像 model/tools 一样在结构
+    上完全定义。Pipeline 操作符退化为纯拓扑连接。
+
+  验证：build 此示例 → 检查生成的 Python 是否含 context_spec 参数。
+*/
+
+protocol ResearchOutput {
+    summary: "string",
+    key_points: "string"
+}
+
+protocol SummaryResult {
+    title: "string",
+    abstract: "string"
+}
+
+agent Researcher {
+    model: "deepseek/deepseek-chat",
+    context {
+        source: upstream,
+        sink: downstream,
+        output_schema: ResearchOutput,
+        max_history_turns: 10,
+        inherit: [messages]
+    }
+    prompt: "You are a research assistant. Investigate the topic and provide a summary with key points."
+}
+
+agent Summarizer {
+    model: "deepseek/deepseek-chat",
+    context {
+        source: upstream,
+        sink: downstream,
+        input_schema: ResearchOutput,
+        output_schema: SummaryResult,
+        max_history_turns: 5,
+        inherit: [messages, artifacts]
+    }
+    prompt: "You are a summarizer. Given research output, produce a concise title and abstract."
+}
+
+flow main {
+    print("=== v2.2.1 Context-as-Structure Demo ===");
+    result = "quantum computing breakthroughs 2024" >> Researcher >> Summarizer;
+    print(result);
+}

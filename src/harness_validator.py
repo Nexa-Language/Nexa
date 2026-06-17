@@ -372,7 +372,82 @@ class ContextChecker(DimensionChecker):
                     suggestion="Add: strategy: importance_weighted or strategy: sliding_window",
                 ))
 
+        # v2.2.1 C-004: Pipeline context compatibility
+        # For each A >> B pipeline, check that A's output_schema matches B's input_schema
+        # (when both agents declare a context block).
+        agents_by_name = {}
+        for node in body:
+            if isinstance(node, dict) and node.get("type") == "AgentDeclaration":
+                name = node.get("name")
+                spec = node.get("context_spec")
+                if name and spec:
+                    agents_by_name[name] = spec
+
+        # v2.2.1: pipelines may be nested deeply (inside flow statements and
+        # expression subtrees), so we walk the entire AST as a tree.
+        agent_pairs = []
+        seen_ids = set()
+        stack = [body]
+        while stack:
+            current = stack.pop()
+            if isinstance(current, dict):
+                node_id = id(current)
+                if node_id in seen_ids:
+                    continue
+                seen_ids.add(node_id)
+                if current.get("type") == "PipelineExpression":
+                    stages = current.get("stages", [])
+                    agent_names = [self._stage_agent_name(s) for s in stages]
+                    flattened = []
+                    for s, name in zip(stages, agent_names):
+                        if name is not None:
+                            flattened.append(name)
+                        elif isinstance(s, dict) and s.get("type") == "PipelineExpression":
+                            inner_names = [self._stage_agent_name(inner) for inner in s.get("stages", [])]
+                            flattened.extend([x for x in inner_names if x])
+                    if len(flattened) >= 2:
+                        agent_pairs.append(flattened)
+                stack.extend(v for v in current.values() if isinstance(v, (dict, list)))
+            elif isinstance(current, list):
+                stack.extend(current)
+
+        for chain in agent_pairs:
+            for i in range(len(chain) - 1):
+                upstream_name, downstream_name = chain[i], chain[i + 1]
+                upstream_spec = agents_by_name.get(upstream_name)
+                downstream_spec = agents_by_name.get(downstream_name)
+                if upstream_spec is None or downstream_spec is None:
+                    continue
+                out_schema = upstream_spec.get("output_schema")
+                in_schema = downstream_spec.get("input_schema")
+                if out_schema and in_schema and out_schema != in_schema:
+                    report.add_error(HarnessViolation(
+                        dimension=HarnessDimension.C,
+                        severity="error",
+                        rule_id="C-004",
+                        message=(
+                            f"Context incompatible in pipeline '{upstream_name} >> {downstream_name}': "
+                            f"output_schema='{out_schema}' is not a subtype of input_schema='{in_schema}'"
+                        ),
+                        suggestion=(
+                            f"Align {upstream_name}.context.output_schema with "
+                            f"{downstream_name}.context.input_schema, or remove the mismatched schema."
+                        ),
+                    ))
+
         report.dimension_coverage["C"] = True
+
+    @staticmethod
+    def _stage_agent_name(stage: Any) -> Optional[str]:
+        """Extract the agent name from a pipeline stage AST node."""
+        if not isinstance(stage, dict):
+            return None
+        stype = stage.get("type")
+        if stype == "Identifier":
+            return stage.get("value")
+        if stype == "MethodCallExpression":
+            return stage.get("object")
+        return None
 
 
 class StateChecker(DimensionChecker):

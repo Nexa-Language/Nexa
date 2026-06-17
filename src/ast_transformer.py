@@ -2355,10 +2355,14 @@ class NexaTransformer(Transformer):
             
         # Collect requires and ensures contract clauses
         # They appear between implements and the property block
+        # v2.2.1: also collect ContextDecl nodes
         properties = {}
+        context_spec = None
         for arg in args[idx:]:
             if isinstance(arg, dict):
-                if arg.get("type") == "ContractClause":
+                if arg.get("type") == "ContextDecl":
+                    context_spec = arg
+                elif arg.get("type") == "ContractClause":
                     if arg.get("clause_type") == "requires":
                         requires_clauses.append(arg)
                     elif arg.get("clause_type") == "ensures":
@@ -2401,6 +2405,7 @@ class NexaTransformer(Transformer):
             "prompt": properties.get("prompt", ""),
             "requires": requires_clauses,
             "ensures": ensures_clauses,
+            "context_spec": context_spec,
         }
 
     @v_args(inline=False)
@@ -2449,6 +2454,61 @@ class NexaTransformer(Transformer):
         key = str(args[0])
         value = args[1]
         return {"key": key, "value": value}
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # v2.2.1: Context-as-Structure — context declaration block
+    # ═══════════════════════════════════════════════════════════════════════
+
+    @v_args(inline=False)
+    def context_decl(self, args):
+        """Parse the context { ... } block into a ContextSpec dict."""
+        params = {}
+        for arg in args:
+            if isinstance(arg, dict) and "key" in arg:
+                params[arg["key"]] = arg["value"]
+        return {
+            "type": "ContextDecl",
+            "source": params.get("source", "upstream"),
+            "sink": params.get("sink", "downstream"),
+            "input_schema": params.get("input_schema"),
+            "output_schema": params.get("output_schema"),
+            "max_history_turns": params.get("max_history_turns"),
+            "inherit": params.get("inherit", []),
+        }
+
+    @v_args(inline=False)
+    def agent_context_param(self, args):
+        """key: value inside the context { ... } block."""
+        key = str(args[0])
+        value = args[1] if len(args) > 1 else None
+        return {"key": key, "value": value}
+
+    @v_args(inline=True)
+    def agent_ctx_string_val(self, s):
+        return str(s).strip('"')
+
+    @v_args(inline=True)
+    def agent_ctx_id_val(self, i):
+        return str(i)
+
+    @v_args(inline=True)
+    def agent_ctx_int_val(self, n):
+        return int(n)
+
+    @v_args(inline=False)
+    def agent_ctx_list_val(self, args):
+        # args[0] is already a list returned by identifier_list
+        if args and isinstance(args[0], list):
+            return args[0]
+        return [str(a) for a in args]
+
+    @v_args(inline=True)
+    def agent_ctx_bool_true_val(self):
+        return True
+
+    @v_args(inline=True)
+    def agent_ctx_bool_false_val(self):
+        return False
 
     @v_args(inline=True)
     def string_val(self, s):

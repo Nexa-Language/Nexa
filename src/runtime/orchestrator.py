@@ -47,3 +47,32 @@ def nexa_pipeline(initial_input: str, agents: List[NexaAgent]) -> str:
     for agent in agents:
         curr_input = agent.run(curr_input)
     return curr_input
+
+
+def nexa_context_pipeline(initial_input, agents: List[NexaAgent]):
+    """v2.2.1: Pipeline with AgentContext handoff.
+
+    Unlike ``nexa_pipeline``, this variant threads the upstream agent's
+    ``AgentContext`` into the downstream agent's ``run()`` so that declared
+    inherit fields (messages, artifacts, tool_results) carry over. Agents
+    without a ``context_spec`` fall back to v2.1 string-only behavior.
+    """
+    from .agent_context import AgentContext
+
+    curr = initial_input
+    for agent in agents:
+        has_context = getattr(agent, "context_spec", None) is not None
+        if has_context:
+            if isinstance(curr, AgentContext):
+                curr = agent.run(curr)
+            else:
+                curr = agent.run(curr)
+                if agent.last_context() is not None:
+                    curr = agent.last_context()
+        else:
+            if isinstance(curr, AgentContext):
+                curr = curr.output_text
+            curr = agent.run(curr)
+    if isinstance(curr, AgentContext):
+        return curr.output_text
+    return curr
