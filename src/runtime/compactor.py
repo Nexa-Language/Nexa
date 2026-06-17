@@ -28,7 +28,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from openai import OpenAI
-from .secrets import DEFAULT_MODEL_CONFIG, nexa_secrets
+from .secrets import DEFAULT_MODEL_CONFIG, DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 
 
 @dataclass
@@ -110,12 +110,12 @@ Summary:"""
 
         api_key, base_url = nexa_secrets.get_provider_config(self.provider)
         if not api_key:
-            api_key = nexa_secrets.get(f"{self.provider.upper()}_API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+            api_key = nexa_secrets.get(f"{self.provider.upper()}_API_KEY") or nexa_secrets.get("API_KEY")
         if not base_url:
             base_url = (
                 nexa_secrets.get(f"{self.provider.upper()}_BASE_URL")
                 or nexa_secrets.get("BASE_URL")
-                or "https://aihub.arcsysu.cn/v1"
+                or DEFAULT_OPENAI_COMPATIBLE_BASE_URL
             )
         if not api_key:
             raise ValueError(

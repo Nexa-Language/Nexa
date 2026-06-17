@@ -1,6 +1,6 @@
 from unittest.mock import patch
 
-from src.runtime.secrets import DEFAULT_MODEL_CONFIG, NexaSecrets
+from src.runtime.secrets import DEFAULT_MODEL_CONFIG, DEFAULT_OPENAI_COMPATIBLE_BASE_URL, NexaSecrets
 
 
 def _assert_no_disallowed_models(models):
@@ -62,7 +62,26 @@ def test_agent_client_falls_back_to_configured_openai_compatible_base(monkeypatc
         agent = NexaAgent(name="test_agent", prompt="test")
         agent._get_client()
 
-    mock_openai.assert_called_once_with(api_key="test-key", base_url="https://aihub.arcsysu.cn/v1")
+    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL)
+
+
+def test_agent_openai_provider_uses_configured_compatible_base(monkeypatch):
+    monkeypatch.delenv("NEXA_DEBUG", raising=False)
+
+    with patch("src.runtime.agent.nexa_secrets") as mock_secrets, patch("src.runtime.agent.OpenAI") as mock_openai:
+        mock_secrets.get_model_config.return_value = {
+            **DEFAULT_MODEL_CONFIG,
+            "strong": "openai/minimax-m2.5",
+        }
+        mock_secrets.get_provider_config.return_value = ("test-key", "")
+        mock_secrets.get.side_effect = lambda key, default="": ""
+
+        from src.runtime.agent import NexaAgent
+
+        agent = NexaAgent(name="test_agent", prompt="test")
+        agent._get_client()
+
+    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL)
 
 
 def test_compactor_uses_configured_weak_model_without_eager_client():
@@ -89,4 +108,4 @@ def test_compactor_client_falls_back_to_configured_openai_compatible_base():
         compactor = ContextCompactor()
         compactor._get_client()
 
-    mock_openai.assert_called_once_with(api_key="test-key", base_url="https://aihub.arcsysu.cn/v1")
+    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL)

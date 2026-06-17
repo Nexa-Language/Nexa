@@ -549,7 +549,7 @@ def _execute_semantic_check(semantic_check: SemanticCheck,
     
     # 策略 1: 使用 Nexa 的 semantic_if 机制 (LLM 判断)
     # 检查是否有 LLM 可用
-    api_key = os.environ.get("NEXA_API_KEY") or os.environ.get("OPENAI_API_KEY")
+    api_key = os.environ.get("NEXA_API_KEY")
     
     if api_key:
         try:

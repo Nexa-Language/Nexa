@@ -33,7 +33,7 @@ from typing import Any, Type, TypeVar, get_type_hints
 from pydantic import BaseModel
 
 from .core import client, STRONG_MODEL
-from .secrets import nexa_secrets
+from .secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 from openai import OpenAI
 
 T = TypeVar('T')
@@ -96,20 +96,12 @@ def reason(
     api_key, base_url = nexa_secrets.get_provider_config(provider)
     
     if not api_key:
-        api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+        api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get(f"{provider.upper()}_API_KEY")
     if not base_url:
-        base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
+        base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get(f"{provider.upper()}_BASE_URL")
     
-    # Provider-specific defaults
     if not base_url:
-        if provider == "deepseek":
-            base_url = "https://api.deepseek.com/v1"
-        elif provider == "minimax":
-            base_url = "https://aihub.arcsysu.cn/v1"
-        elif provider == "openai":
-            base_url = "https://api.openai.com/v1"
-        else:
-            base_url = "https://api.openai.com/v1"
+        base_url = DEFAULT_OPENAI_COMPATIBLE_BASE_URL
     
     if not api_key:
         raise ValueError(f"API key not found for provider '{provider}'")

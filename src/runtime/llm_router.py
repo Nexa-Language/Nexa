@@ -24,7 +24,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
 
-from .secrets import nexa_secrets
+from .secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 
 logger = logging.getLogger("nexa.llm_router")
 
@@ -439,14 +439,8 @@ class LLMRouter:
 
         if base_url:
             return api_key, base_url
-        if model.provider == "deepseek":
-            return api_key, "https://api.deepseek.com/v1"
-        if model.provider == "minimax":
-            return api_key, "https://aihub.arcsysu.cn/v1"
-        if model.provider == "openai":
-            return api_key, "https://api.openai.com/v1"
-        if model.provider in {"default", "openai-compatible"}:
-            return api_key, "https://aihub.arcsysu.cn/v1"
+        if model.provider in {"default", "openai", "openai-compatible", "minimax", "deepseek"}:
+            return api_key, DEFAULT_OPENAI_COMPATIBLE_BASE_URL
         return api_key, ""
 
     def _call_openai_compatible(self, model: ModelInfo, messages: List[Dict], **kwargs) -> Dict:

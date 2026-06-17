@@ -19,19 +19,19 @@
 from openai import OpenAI
 import os
 
-from .secrets import nexa_secrets
+from .secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 
 # 动态获取配置
-_base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
-_api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+_base_url = nexa_secrets.get("BASE_URL")
+_api_key = nexa_secrets.get("API_KEY")
 
 # 如果没有配置，使用默认值
 if not _base_url:
-    _base_url = "https://aihub.arcsysu.cn/v1"  # 默认使用 aihub
+    _base_url = DEFAULT_OPENAI_COMPATIBLE_BASE_URL
 
 if not _api_key:
     # 在开发阶段，如果没有配置，给出警告而不是报错
-    print("[Warning] API key not configured. Please create secrets.nxs with API_KEY or OPENAI_API_KEY.")
+    print("[Warning] API key not configured. Please create secrets.nxs with API_KEY.")
     print("[Warning] Using fallback configuration for development.")
     _api_key = os.environ.get("NEXA_DEV_API_KEY", "")
 

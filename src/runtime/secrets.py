@@ -28,6 +28,8 @@ DEFAULT_MODEL_CONFIG = {
     "super": "glm-5",
 }
 
+DEFAULT_OPENAI_COMPATIBLE_BASE_URL = "https://aihub.arcsysu.cn/v1"
+
 
 class ConfigNode:
     def __init__(self, data=None):
@@ -67,8 +69,8 @@ class NexaSecrets:
     支持两种 secrets.nxs 格式:
     
     1. 扁平格式 (旧格式):
-       OPENAI_API_KEY = "<openai-api-key>"
-       OPENAI_API_BASE = "https://api.openai.com/v1"
+       API_KEY = "<provider-api-key>"
+       BASE_URL = "https://aihub.arcsysu.cn/v1"
     
     2. Config Block 格式 (新格式):
        config default {
@@ -375,7 +377,7 @@ class NexaSecrets:
         4. 环境变量
         
         Args:
-            key: 配置键名 (如 API_KEY, BASE_URL, OPENAI_API_KEY)
+            key: 配置键名 (如 API_KEY, BASE_URL)
             default: 默认值
             
         Returns:

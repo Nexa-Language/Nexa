@@ -413,11 +413,26 @@ class TestLLMRouter:
         assert response["model_id"] == "deepseek-chat"
 
     def test_provider_config_uses_default_compatible_endpoint(self):
+        from src.runtime.secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL
+
         router = LLMRouter()
         model = router.get_model("minimax-m2.5")
         assert model is not None
         _api_key, base_url = router._provider_config(model)
-        assert base_url.endswith("/v1")
+        assert base_url == DEFAULT_OPENAI_COMPATIBLE_BASE_URL
+
+    def test_openai_provider_uses_default_compatible_endpoint(self):
+        from src.runtime.secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL
+
+        router = LLMRouter()
+        model = ModelInfo(
+            model_id="compat-model",
+            provider="openai",
+            capabilities={},
+            context_window=4096,
+        )
+        _api_key, base_url = router._provider_config(model)
+        assert base_url == DEFAULT_OPENAI_COMPATIBLE_BASE_URL
 
     def test_chat_unknown_model(self):
         router = LLMRouter()

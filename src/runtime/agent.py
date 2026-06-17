@@ -17,7 +17,7 @@
 # ========================================================================
 
 from typing import Any, Dict, List, Optional
-from .secrets import DEFAULT_MODEL_CONFIG, nexa_secrets
+from .secrets import DEFAULT_MODEL_CONFIG, DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 from .contracts import ContractSpec, ContractClause, ContractViolation, check_requires, check_ensures, capture_old_values, OldValues
 from .type_system import TypeChecker, TypeViolation, TypeMode, get_type_mode, TypeInferrer, PrimitiveTypeExpr, AliasTypeExpr
 from .result_types import NexaResult, NexaOption, ErrorPropagation, wrap_agent_result
@@ -145,19 +145,13 @@ class NexaAgent:
         api_key, base_url = nexa_secrets.get_provider_config(self.provider)
 
         if not api_key:
-            api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
+            api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get(f"{self.provider.upper()}_API_KEY")
         if not base_url:
-            base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
+            base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get(f"{self.provider.upper()}_BASE_URL")
 
         if base_url:
             return api_key, base_url
-        if self.provider == "deepseek":
-            return api_key, "https://api.deepseek.com/v1"
-        if self.provider == "minimax":
-            return api_key, "https://aihub.arcsysu.cn/v1"
-        if self.provider == "openai":
-            return api_key, "https://api.openai.com/v1"
-        return api_key, nexa_secrets.get("BASE_URL", "https://aihub.arcsysu.cn/v1")
+        return api_key, DEFAULT_OPENAI_COMPATIBLE_BASE_URL
 
     def _default_summary_model(self) -> str:
         """Use the configured weak model for low-cost context summaries."""

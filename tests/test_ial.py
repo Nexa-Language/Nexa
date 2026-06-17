@@ -121,6 +121,17 @@ class TestSemanticCheck:
         check = SemanticCheck(actual="", intent="weather information")
         assert "weather" in repr(check)
 
+    def test_semantic_check_ignores_legacy_openai_env_fallback(self, monkeypatch):
+        """语义检查不再把旧式 OpenAI 环境变量作为 LLM 可用信号"""
+        monkeypatch.delenv("NEXA_API_KEY", raising=False)
+        monkeypatch.setenv("OPENAI" + "_API_KEY", "legacy-key")
+
+        check = SemanticCheck(actual="clear weather", intent="weather information")
+        result = execute_primitive(check)
+
+        assert result.passed is True
+        assert "heuristic" in result.message
+
 
 # ========================================
 # 2. Vocabulary Tests
