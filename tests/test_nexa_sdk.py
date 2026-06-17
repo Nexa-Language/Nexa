@@ -34,6 +34,7 @@ agent TestBot {
     def test_agent_builder(self):
         """测试 Agent 构建器"""
         from src.nexa_sdk import AgentBuilder
+        from src.runtime.secrets import DEFAULT_MODEL_CONFIG
         
         agent = (AgentBuilder("TestAgent")
             .with_prompt("测试提示")
@@ -42,6 +43,16 @@ agent TestBot {
             .build())
         
         self.assertIsNotNone(agent)
+        self.assertEqual(agent.model, DEFAULT_MODEL_CONFIG["strong"])
+
+    def test_agent_defaults_to_configured_strong_model(self):
+        """测试快捷 Agent 默认使用支持的 strong 模型"""
+        from src.nexa_sdk import Agent
+        from src.runtime.secrets import DEFAULT_MODEL_CONFIG
+
+        agent = Agent(name="DefaultModelAgent", prompt="test")
+
+        self.assertEqual(agent.model, DEFAULT_MODEL_CONFIG["strong"])
     
     def test_tool_builder(self):
         """测试 Tool 构建器"""

@@ -29,7 +29,7 @@ pub mod jobs;  // P1-3: Background Job System
 
 pub use agent::{AgentConfig, AgentInstance, AgentRegistry};
 pub use tool::{ToolExecutor, ToolRegistry, ToolSpec};
-pub use llm::{LlmClient, LlmConfig};
+pub use llm::{LlmClient, LlmConfig, DEFAULT_LLM_MODEL};
 pub use contracts::{check_requires, check_ensures, capture_old_values, ContractViolation};
 // v1.2: Error Propagation (错误传播)
 pub use result_types::{NexaResult, NexaOption, ErrorPropagation, OtherwiseHandlerCtx, PropagationResult, propagate_or_else, wrap_agent_result};
@@ -72,7 +72,7 @@ impl Default for AvmConfig {
             max_stack_depth: 1024,
             max_call_depth: 128,
             cache_enabled: true,
-            default_model: "gpt-4".to_string(),
+            default_model: DEFAULT_LLM_MODEL.to_string(),
         }
     }
 }
@@ -192,6 +192,7 @@ mod tests {
     async fn test_runtime_creation() {
         let runtime = AvmRuntime::default();
         assert!(runtime.agents.read().await.get_agent("test").is_none());
+        assert_eq!(runtime.config.default_model, DEFAULT_LLM_MODEL);
     }
 
     #[tokio::test]

@@ -23,6 +23,8 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 use crate::utils::error::AvmResult;
 use std::collections::HashMap;
 
+pub const DEFAULT_LLM_MODEL: &str = "minimax-m2.5";
+
 /// LLM 配置
 #[derive(Debug, Clone)]
 pub struct LlmConfig {
@@ -39,7 +41,7 @@ impl Default for LlmConfig {
             provider: "openai".to_string(),
             api_key: None,
             base_url: None,
-            default_model: "gpt-4".to_string(),
+            default_model: DEFAULT_LLM_MODEL.to_string(),
             cache_enabled: true,
         }
     }
@@ -97,5 +99,6 @@ mod tests {
         let messages = vec![("user", "Hello")];
         let result = client.chat(&messages, None).unwrap();
         assert!(result.contains("Hello"));
+        assert!(result.contains(DEFAULT_LLM_MODEL));
     }
 }

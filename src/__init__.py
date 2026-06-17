@@ -25,7 +25,7 @@ Nexa - 智能体原生编程语言 SDK
     result = nexa.run("script.nx")
     
     # 创建 Agent
-    bot = nexa.Agent(name="MyBot", prompt="...", model="gpt-4")
+    bot = nexa.Agent(name="MyBot", prompt="...", model="minimax-m2.5")
     response = bot.run("Hello!")
     
     # 编译代码

@@ -31,7 +31,7 @@ Nexa SDK - Python 互操作接口
     result = nexa.run("script.nx")
     
     # 创建 Agent
-    bot = nexa.Agent(name="MyBot", prompt="...", model="gpt-4")
+    bot = nexa.Agent(name="MyBot", prompt="...", model="minimax-m2.5")
     response = bot.run("Hello!")
     
     # 编译代码
@@ -98,14 +98,14 @@ class AgentBuilder:
     使用示例:
         agent = (nexa.AgentBuilder("MyBot")
             .with_prompt("你是一个有用的助手")
-            .with_model("gpt-4")
+            .with_model("minimax-m2.5")
             .with_tools([tool1, tool2])
             .with_cache(True)
             .build())
     """
     name: str
     prompt: str = ""
-    model: str = "gpt-4"
+    model: Optional[str] = None
     role: str = ""
     tools: List[Dict] = field(default_factory=list)
     protocol: Any = None
@@ -399,7 +399,7 @@ def test(source: str) -> Dict[str, Any]:
 
 # ==================== 快捷函数 ====================
 
-def Agent(name: str, prompt: str = "", model: str = "gpt-4", **kwargs) -> NexaAgent:
+def Agent(name: str, prompt: str = "", model: Optional[str] = None, **kwargs) -> NexaAgent:
     """
     快速创建 Agent 实例
     
