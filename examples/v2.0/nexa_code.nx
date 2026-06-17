@@ -97,12 +97,15 @@ except Exception as e:
 fn shell_exec(command: string): string {
     python! """
 import subprocess
+import shlex
 dangerous = ["rm -rf", "drop database", "chmod 777", "dd", "mkfs"]
 for d in dangerous:
     if d in command.lower():
         return f"Blocked dangerous command: '{command}'"
 try:
-    result = subprocess.run(command, shell=True, capture_output=True, text=True, timeout=30)
+    if any(ch in command for ch in "|&;<>$`\\n"):
+        return "Blocked command: shell metacharacters are not allowed"
+    result = subprocess.run(shlex.split(command), shell=False, capture_output=True, text=True, timeout=30)
     output = result.stdout[:2000] if result.stdout else ""
     if result.stderr:
         output += f"\\nstderr: {result.stderr[:500]}"

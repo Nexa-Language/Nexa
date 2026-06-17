@@ -178,15 +178,18 @@ class NexaCodeTools:
 
     def shell_exec(self, command: str) -> str:
         """Execute a shell command safely."""
+        import shlex
         # Safety: block destructive commands
         dangerous = ["rm -rf", "drop database", "chmod 777", "dd", "mkfs", ":(){ :|:& };:"]
         for d in dangerous:
             if d in command.lower():
                 return f"⛔ Blocked dangerous command: '{command}'"
+        if any(ch in command for ch in "|&;<>$`\n"):
+            return "⛔ Blocked command: shell metacharacters are not allowed"
 
         try:
             result = subprocess.run(
-                command, shell=True, cwd=str(self.working_dir),
+                shlex.split(command), shell=False, cwd=str(self.working_dir),
                 capture_output=True, text=True, timeout=30
             )
             output = ""

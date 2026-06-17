@@ -145,8 +145,15 @@ elif func == "secret":
 def _shell_exec(command: str, timeout: int = 30) -> str:
     """执行 shell 命令"""
     try:
+        if not _dangerous_tools_enabled():
+            return json.dumps({
+                "stdout": "",
+                "stderr": _dangerous_tool_error("shell_exec"),
+                "returncode": -1,
+            })
+        args = parse_safe_command(command)
         result = subprocess.run(
-            command, shell=True, capture_output=True, text=True, timeout=timeout
+            args, shell=False, capture_output=True, text=True, timeout=timeout
         )
         return json.dumps({
             "stdout": result.stdout,
