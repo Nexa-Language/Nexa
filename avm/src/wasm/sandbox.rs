@@ -22,8 +22,8 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //!
 //! 提供权限控制、资源限制和 WASI 接口支持
 
+use super::runtime::{ExecutionStats, WasmConfig, WasmInstance, WasmModule, WasmValue};
 use crate::utils::error::{AvmError, AvmResult};
-use super::runtime::{WasmModule, WasmInstance, WasmConfig, WasmValue, ExecutionStats};
 use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
@@ -63,7 +63,7 @@ impl SandboxPermission {
             SandboxPermission::ThreadCreate => "thread_create",
         }
     }
-    
+
     /// 从名称创建权限
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
@@ -99,7 +99,7 @@ impl PermissionLevel {
     /// 获取权限集合
     pub fn permissions(&self) -> HashSet<SandboxPermission> {
         let mut perms = HashSet::new();
-        
+
         match self {
             PermissionLevel::None => {}
             PermissionLevel::ReadOnly => {
@@ -128,7 +128,7 @@ impl PermissionLevel {
                 perms.insert(SandboxPermission::ThreadCreate);
             }
         }
-        
+
         perms
     }
 }
@@ -154,9 +154,9 @@ pub struct ResourceLimits {
 
 impl Default for ResourceLimits {
     fn default() -> Self {
-        // 论文声称：默认16MB内存，30s超时
+        // 默认资源限制采用严格执行预算：16MB 内存，5s CPU 时间。
         Self {
-            max_cpu_time_ms: 30_000, // 30s - 匹配论文声明
+            max_cpu_time_ms: 5_000,             // 5s
             max_memory_bytes: 16 * 1024 * 1024, // 16MB - 匹配论文声明
             max_fds: 64,
             max_file_size: 1 * 1024 * 1024, // 1MB
@@ -180,7 +180,7 @@ impl ResourceLimits {
             max_stack_depth: usize::MAX,
         }
     }
-    
+
     /// 创建严格限制配置
     pub fn strict() -> Self {
         Self {
@@ -233,7 +233,7 @@ impl SandboxConfig {
             audit_enabled: true,
         }
     }
-    
+
     /// 创建只读沙盒配置
     pub fn read_only() -> Self {
         Self {
@@ -244,36 +244,36 @@ impl SandboxConfig {
             audit_enabled: true,
         }
     }
-    
+
     /// 添加权限
     pub fn add_permission(&mut self, permission: SandboxPermission) {
         self.permissions.insert(permission);
     }
-    
+
     /// 移除权限
     pub fn remove_permission(&mut self, permission: &SandboxPermission) {
         self.permissions.remove(permission);
     }
-    
+
     /// 检查权限
     pub fn has_permission(&self, permission: &SandboxPermission) -> bool {
         self.permissions.contains(permission)
     }
-    
+
     /// 添加允许的路径
     pub fn add_allowed_path(&mut self, path: impl Into<PathBuf>) {
         self.allowed_paths.push(path.into());
     }
-    
+
     /// 检查路径是否允许
     pub fn is_path_allowed(&self, path: &PathBuf) -> bool {
         if self.allowed_paths.is_empty() {
             return true;
         }
-        
-        self.allowed_paths.iter().any(|allowed| {
-            path.starts_with(allowed) || path.strip_prefix(allowed).is_ok()
-        })
+
+        self.allowed_paths
+            .iter()
+            .any(|allowed| path.starts_with(allowed) || path.strip_prefix(allowed).is_ok())
     }
 }
 
@@ -332,7 +332,7 @@ impl AuditLog {
             max_events,
         }
     }
-    
+
     /// 添加事件
     pub fn add(&mut self, event: AuditEvent) {
         if self.events.len() >= self.max_events {
@@ -340,20 +340,23 @@ impl AuditLog {
         }
         self.events.push(event);
     }
-    
+
     /// 获取所有事件
     pub fn events(&self) -> &[AuditEvent] {
         &self.events
     }
-    
+
     /// 清除日志
     pub fn clear(&mut self) {
         self.events.clear();
     }
-    
+
     /// 过滤事件
     pub fn filter(&self, event_type: AuditEventType) -> Vec<&AuditEvent> {
-        self.events.iter().filter(|e| e.event_type == event_type).collect()
+        self.events
+            .iter()
+            .filter(|e| e.event_type == event_type)
+            .collect()
     }
 }
 
@@ -395,10 +398,12 @@ impl WasmSandbox {
             execution_timeout_ms: config.limits.max_cpu_time_ms,
             enable_wasi: true,
             max_table_elements: 10000,
-            enable_threads: config.permissions.contains(&SandboxPermission::ThreadCreate),
+            enable_threads: config
+                .permissions
+                .contains(&SandboxPermission::ThreadCreate),
             enable_simd: true,
         };
-        
+
         Self {
             wasm_config,
             audit_log: Arc::new(Mutex::new(AuditLog::new(1000))),
@@ -407,17 +412,17 @@ impl WasmSandbox {
             config,
         }
     }
-    
+
     /// 获取配置
     pub fn config(&self) -> &SandboxConfig {
         &self.config
     }
-    
+
     /// 获取审计日志
     pub fn audit_log(&self) -> &Arc<Mutex<AuditLog>> {
         &self.audit_log
     }
-    
+
     /// 加载模块
     pub fn load_module(&self, name: &str, bytes: Vec<u8>) -> AvmResult<WasmModule> {
         // 记录审计事件
@@ -433,12 +438,16 @@ impl WasmSandbox {
                 });
             }
         }
-        
+
         WasmModule::from_bytes(name, bytes)
     }
-    
+
     /// 创建沙盒实例
-    pub fn create_instance(&mut self, name: &str, module: WasmModule) -> AvmResult<&mut SandboxedInstance> {
+    pub fn create_instance(
+        &mut self,
+        name: &str,
+        module: WasmModule,
+    ) -> AvmResult<&mut SandboxedInstance> {
         let instance = WasmInstance::new(module)?;
         let sandboxed = SandboxedInstance {
             instance,
@@ -446,18 +455,19 @@ impl WasmSandbox {
             audit_log: self.audit_log.clone(),
             usage: ResourceUsage::default(),
         };
-        
+
         self.instances.insert(name.to_string(), sandboxed);
-        self.resource_usage.insert(name.to_string(), ResourceUsage::default());
-        
+        self.resource_usage
+            .insert(name.to_string(), ResourceUsage::default());
+
         Ok(self.instances.get_mut(name).unwrap())
     }
-    
+
     /// 获取实例
     pub fn get_instance(&mut self, name: &str) -> Option<&mut SandboxedInstance> {
         self.instances.get_mut(name)
     }
-    
+
     /// 检查权限
     pub fn check_permission(&self, permission: SandboxPermission) -> AvmResult<()> {
         if !self.config.permissions.contains(&permission) {
@@ -474,16 +484,16 @@ impl WasmSandbox {
                     });
                 }
             }
-            
+
             return Err(AvmError::WasmSandboxViolation(format!(
                 "Permission denied: {}",
                 permission.name()
             )));
         }
-        
+
         Ok(())
     }
-    
+
     /// 调用函数
     pub fn call(
         &mut self,
@@ -493,24 +503,27 @@ impl WasmSandbox {
     ) -> AvmResult<Vec<WasmValue>> {
         // 先检查资源限制
         self.check_resource_limits(instance_name)?;
-        
+
         // 检查实例是否存在
         if !self.instances.contains_key(instance_name) {
-            return Err(AvmError::WasmError(format!("Instance '{}' not found", instance_name)));
+            return Err(AvmError::WasmError(format!(
+                "Instance '{}' not found",
+                instance_name
+            )));
         }
-        
+
         // 执行调用
         let start = std::time::Instant::now();
         let instance = self.instances.get_mut(instance_name).unwrap();
         let result = instance.call(function, args);
         let elapsed = start.elapsed().as_nanos() as u64;
-        
+
         // 更新资源使用
         if let Some(usage) = self.resource_usage.get_mut(instance_name) {
             usage.cpu_time_ns += elapsed;
             usage.call_count += 1;
         }
-        
+
         // 记录审计
         if self.config.audit_enabled {
             if let Ok(mut log) = self.audit_log.lock() {
@@ -528,15 +541,18 @@ impl WasmSandbox {
                 });
             }
         }
-        
+
         result
     }
-    
+
     /// 检查资源限制
     fn check_resource_limits(&self, instance_name: &str) -> AvmResult<()> {
         let default_usage = ResourceUsage::default();
-        let usage = self.resource_usage.get(instance_name).unwrap_or(&default_usage);
-        
+        let usage = self
+            .resource_usage
+            .get(instance_name)
+            .unwrap_or(&default_usage);
+
         // 检查 CPU 时间
         let cpu_time_ms = usage.cpu_time_ns / 1_000_000;
         if cpu_time_ms >= self.config.limits.max_cpu_time_ms {
@@ -545,20 +561,20 @@ impl WasmSandbox {
                 cpu_time_ms, self.config.limits.max_cpu_time_ms
             )));
         }
-        
+
         Ok(())
     }
-    
+
     /// 获取资源使用统计
     pub fn resource_usage(&self, instance_name: &str) -> Option<&ResourceUsage> {
         self.resource_usage.get(instance_name)
     }
-    
+
     /// 销毁实例
     pub fn destroy_instance(&mut self, name: &str) -> AvmResult<()> {
         self.instances.remove(name);
         self.resource_usage.remove(name);
-        
+
         if self.config.audit_enabled {
             if let Ok(mut log) = self.audit_log.lock() {
                 log.add(AuditEvent {
@@ -571,15 +587,15 @@ impl WasmSandbox {
                 });
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// 清理所有实例
     pub fn clear(&mut self) {
         self.instances.clear();
         self.resource_usage.clear();
-        
+
         if let Ok(mut log) = self.audit_log.lock() {
             log.clear();
         }
@@ -609,17 +625,17 @@ impl SandboxedInstance {
     pub fn stats(&self) -> &ExecutionStats {
         self.instance.stats()
     }
-    
+
     /// 获取资源使用
     pub fn resource_usage(&self) -> &ResourceUsage {
         &self.usage
     }
-    
+
     /// 获取内存大小
     pub fn memory_size(&self) -> usize {
         self.instance.memory_size()
     }
-    
+
     /// 读取内存
     pub fn read_memory(&self, offset: usize, len: usize) -> AvmResult<Vec<u8>> {
         // 检查内存限制
@@ -631,47 +647,53 @@ impl SandboxedInstance {
                     module: String::new(),
                     function: None,
                     success: false,
-                    message: format!("Memory access denied: {} + {} > {}", 
-                        offset, len, self.config.limits.max_memory_bytes),
+                    message: format!(
+                        "Memory access denied: {} + {} > {}",
+                        offset, len, self.config.limits.max_memory_bytes
+                    ),
                 });
             }
-            
-            return Err(AvmError::WasmSandboxViolation("Memory access denied".to_string()));
+
+            return Err(AvmError::WasmSandboxViolation(
+                "Memory access denied".to_string(),
+            ));
         }
-        
+
         self.instance.read_memory(offset, len)
     }
-    
+
     /// 写入内存
     pub fn write_memory(&mut self, offset: usize, data: &[u8]) -> AvmResult<()> {
         // 检查内存限制
         if offset + data.len() > self.config.limits.max_memory_bytes {
-            return Err(AvmError::WasmSandboxViolation("Memory access denied".to_string()));
+            return Err(AvmError::WasmSandboxViolation(
+                "Memory access denied".to_string(),
+            ));
         }
-        
+
         self.instance.write_memory(offset, data)
     }
-    
+
     /// 调用函数
     pub fn call(&mut self, function: &str, args: &[WasmValue]) -> AvmResult<Vec<WasmValue>> {
         // 更新资源使用
         self.usage.call_count += 1;
-        
+
         // 检查栈深度限制
         if self.usage.call_count as usize > self.config.limits.max_stack_depth {
             return Err(AvmError::WasmSandboxViolation(
-                "Stack depth limit exceeded".to_string()
+                "Stack depth limit exceeded".to_string(),
             ));
         }
-        
+
         self.instance.call(function, args)
     }
-    
+
     /// 检查权限
     pub fn check_permission(&self, permission: SandboxPermission) -> bool {
         self.config.permissions.contains(&permission)
     }
-    
+
     /// 获取配置
     pub fn config(&self) -> &SandboxConfig {
         &self.config
@@ -704,32 +726,32 @@ impl WasiContext {
             preopens: Vec::new(),
         }
     }
-    
+
     /// 设置环境变量
     pub fn set_env(&mut self, key: impl Into<String>, value: impl Into<String>) {
         self.env.insert(key.into(), value.into());
     }
-    
+
     /// 获取环境变量
     pub fn get_env(&self, key: &str) -> Option<&String> {
         self.env.get(key)
     }
-    
+
     /// 添加预打开目录
     pub fn add_preopen(&mut self, name: impl Into<String>, path: impl Into<PathBuf>) {
         self.preopens.push((name.into(), path.into()));
     }
-    
+
     /// 写入标准输出
     pub fn write_stdout(&mut self, data: &[u8]) {
         self.stdout.extend_from_slice(data);
     }
-    
+
     /// 写入标准错误
     pub fn write_stderr(&mut self, data: &[u8]) {
         self.stderr.extend_from_slice(data);
     }
-    
+
     /// 读取标准输入
     pub fn read_stdin(&mut self, buf: &mut [u8]) -> usize {
         let len = buf.len().min(self.stdin.len());
@@ -749,12 +771,12 @@ impl WasiImpl {
     pub fn new(context: WasiContext) -> Self {
         Self { context }
     }
-    
+
     /// 获取上下文
     pub fn context(&self) -> &WasiContext {
         &self.context
     }
-    
+
     /// 获取可变上下文
     pub fn context_mut(&mut self) -> &mut WasiContext {
         &mut self.context
@@ -764,76 +786,87 @@ impl WasiImpl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_sandbox_permission() {
         let perm = SandboxPermission::FsRead;
         assert_eq!(perm.name(), "fs_read");
-        
+
         let parsed = SandboxPermission::from_name("fs_read");
         assert_eq!(parsed, Some(SandboxPermission::FsRead));
-        
+
         let invalid = SandboxPermission::from_name("invalid");
         assert_eq!(invalid, None);
     }
-    
+
     #[test]
     fn test_permission_level() {
         let none_perms = PermissionLevel::None.permissions();
         assert!(none_perms.is_empty());
-        
+
         let read_only = PermissionLevel::ReadOnly.permissions();
         assert!(read_only.contains(&SandboxPermission::FsRead));
         assert!(!read_only.contains(&SandboxPermission::FsWrite));
-        
+
         let full = PermissionLevel::Full.permissions();
         assert!(full.contains(&SandboxPermission::FsRead));
         assert!(full.contains(&SandboxPermission::FsWrite));
         assert!(full.contains(&SandboxPermission::Network));
     }
-    
+
     #[test]
     fn test_resource_limits() {
         let limits = ResourceLimits::default();
-        assert_eq!(limits.max_cpu_time_ms, 5000);
+        assert_eq!(limits.max_cpu_time_ms, 5_000);
         assert_eq!(limits.max_memory_bytes, 16 * 1024 * 1024);
-        
+        assert_eq!(limits.max_fds, 64);
+        assert_eq!(limits.max_file_size, 1024 * 1024);
+        assert_eq!(limits.max_connections, 10);
+        assert_eq!(limits.max_threads, 1);
+        assert_eq!(limits.max_stack_depth, 1024);
+
         let unlimited = ResourceLimits::unlimited();
         assert_eq!(unlimited.max_cpu_time_ms, u64::MAX);
-        
+
         let strict = ResourceLimits::strict();
         assert_eq!(strict.max_cpu_time_ms, 1000);
+        assert_eq!(strict.max_memory_bytes, 4 * 1024 * 1024);
+        assert_eq!(strict.max_fds, 16);
+        assert_eq!(strict.max_file_size, 64 * 1024);
+        assert_eq!(strict.max_connections, 2);
+        assert_eq!(strict.max_threads, 1);
+        assert_eq!(strict.max_stack_depth, 256);
     }
-    
+
     #[test]
     fn test_sandbox_config() {
         let config = SandboxConfig::default();
         assert!(!config.permissions.is_empty());
-        
+
         let mut config = SandboxConfig::with_level(PermissionLevel::ReadOnly);
         assert!(config.has_permission(&SandboxPermission::FsRead));
         assert!(!config.has_permission(&SandboxPermission::FsWrite));
-        
+
         config.add_permission(SandboxPermission::Network);
         assert!(config.has_permission(&SandboxPermission::Network));
-        
+
         config.remove_permission(&SandboxPermission::FsRead);
         assert!(!config.has_permission(&SandboxPermission::FsRead));
     }
-    
+
     #[test]
     fn test_sandbox_config_paths() {
         let mut config = SandboxConfig::default();
         config.add_allowed_path("/tmp");
-        
+
         assert!(config.is_path_allowed(&PathBuf::from("/tmp/file.txt")));
         assert!(!config.is_path_allowed(&PathBuf::from("/home/user/file.txt")));
     }
-    
+
     #[test]
     fn test_audit_log() {
         let mut log = AuditLog::new(10);
-        
+
         log.add(AuditEvent {
             timestamp: std::time::Instant::now(),
             event_type: AuditEventType::FunctionCall,
@@ -842,66 +875,63 @@ mod tests {
             success: true,
             message: "Called main".to_string(),
         });
-        
+
         assert_eq!(log.events().len(), 1);
-        
+
         let filtered = log.filter(AuditEventType::FunctionCall);
         assert_eq!(filtered.len(), 1);
-        
+
         log.clear();
         assert!(log.events().is_empty());
     }
-    
+
     #[test]
     fn test_wasm_sandbox_creation() {
         let sandbox = WasmSandbox::default();
         assert!(!sandbox.config().permissions.is_empty());
     }
-    
+
     #[test]
     fn test_wasm_sandbox_permission_check() {
         let mut config = SandboxConfig::with_level(PermissionLevel::ReadOnly);
         let sandbox = WasmSandbox::new(config.clone());
-        
+
         // 应该通过
         assert!(sandbox.check_permission(SandboxPermission::FsRead).is_ok());
-        
+
         // 应该失败
         config.remove_permission(&SandboxPermission::FsRead);
         let sandbox = WasmSandbox::new(config);
         assert!(sandbox.check_permission(SandboxPermission::FsRead).is_err());
     }
-    
+
     #[test]
     fn test_wasi_context() {
         let mut ctx = WasiContext::new();
-        
+
         ctx.set_env("PATH", "/usr/bin");
         assert_eq!(ctx.get_env("PATH"), Some(&"/usr/bin".to_string()));
-        
+
         ctx.write_stdout(b"Hello");
         assert_eq!(&ctx.stdout, b"Hello");
-        
+
         ctx.add_preopen("/tmp", "/tmp");
         assert_eq!(ctx.preopens.len(), 1);
     }
-    
+
     #[test]
     fn test_resource_usage() {
         let usage = ResourceUsage::default();
         assert_eq!(usage.call_count, 0);
         assert_eq!(usage.cpu_time_ns, 0);
     }
-    
+
     #[test]
     fn test_sandbox_instance() {
         let sandbox = WasmSandbox::default();
-        
-        let valid_wasm = vec![
-            0x00, 0x61, 0x73, 0x6d,
-            0x01, 0x00, 0x00, 0x00,
-        ];
-        
+
+        let valid_wasm = vec![0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
+
         let result = sandbox.load_module("test", valid_wasm);
         assert!(result.is_ok());
     }

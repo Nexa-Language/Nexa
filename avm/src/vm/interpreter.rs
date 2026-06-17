@@ -27,12 +27,12 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! - requires 失败 → 跳过执行或抛 ContractViolation
 //! - ensures 失败 → 触发 retry/fallback 或抛 ContractViolation
 
-use crate::bytecode::{BytecodeModule, Instruction, OpCode, Operand, Constant};
-use crate::utils::error::{AvmError, AvmResult};
-use crate::runtime::contracts::{check_requires, check_ensures, capture_old_values};
-use crate::runtime::result_types::{NexaResult, PropagationResult, propagate_or_else};
-use crate::compiler::ast::{ContractSpec, Statement, OtherwiseHandler};
 use super::stack::{Stack, Value};
+use crate::bytecode::{BytecodeModule, Constant, Instruction, OpCode, Operand};
+use crate::compiler::ast::{ContractSpec, OtherwiseHandler, Statement};
+use crate::runtime::contracts::{capture_old_values, check_ensures, check_requires};
+use crate::runtime::result_types::{propagate_or_else, NexaResult, PropagationResult};
+use crate::utils::error::{AvmError, AvmResult};
 use std::collections::HashMap;
 
 /// 解释器配置
@@ -132,11 +132,16 @@ impl Interpreter {
     }
 
     fn fetch_instruction(&mut self) -> AvmResult<Instruction> {
-        let module = self.module.as_ref()
+        let module = self
+            .module
+            .as_ref()
             .ok_or_else(|| AvmError::RuntimeError("No module loaded".to_string()))?;
         let idx = self.ip as usize;
         if idx >= module.instructions.len() {
-            return Err(AvmError::RuntimeError(format!("IP out of bounds: {}", self.ip)));
+            return Err(AvmError::RuntimeError(format!(
+                "IP out of bounds: {}",
+                self.ip
+            )));
         }
         let instr = module.instructions[idx].clone();
         self.ip += 1;
@@ -148,10 +153,22 @@ impl Interpreter {
             OpCode::Nop => Ok(false),
             OpCode::Halt => Ok(true),
             OpCode::PushConst => self.exec_push_const(&instr.operand),
-            OpCode::PushNull => { self.stack.push(Value::Null)?; Ok(false) }
-            OpCode::PushTrue => { self.stack.push(Value::Bool(true))?; Ok(false) }
-            OpCode::PushFalse => { self.stack.push(Value::Bool(false))?; Ok(false) }
-            OpCode::Pop => { self.stack.pop()?; Ok(false) }
+            OpCode::PushNull => {
+                self.stack.push(Value::Null)?;
+                Ok(false)
+            }
+            OpCode::PushTrue => {
+                self.stack.push(Value::Bool(true))?;
+                Ok(false)
+            }
+            OpCode::PushFalse => {
+                self.stack.push(Value::Bool(false))?;
+                Ok(false)
+            }
+            OpCode::Pop => {
+                self.stack.pop()?;
+                Ok(false)
+            }
             OpCode::Add => self.exec_binary_op(|a, b| a + b),
             OpCode::Sub => self.exec_binary_op(|a, b| a - b),
             OpCode::Mul => self.exec_binary_op(|a, b| a * b),
@@ -161,7 +178,11 @@ impl Interpreter {
             OpCode::Jump => self.exec_jump(&instr.operand),
             OpCode::JumpIfTrue => self.exec_jump_if(true, &instr.operand),
             OpCode::JumpIfFalse => self.exec_jump_if(false, &instr.operand),
-            _ => Err(AvmError::RuntimeError(format!("Unimplemented opcode: {:?}", instr.opcode))),
+            OpCode::CreateAgent => self.exec_create_agent(&instr.operand),
+            _ => Err(AvmError::RuntimeError(format!(
+                "Unimplemented opcode: {:?}",
+                instr.opcode
+            ))),
         }
     }
 
@@ -170,18 +191,25 @@ impl Interpreter {
             Some(Operand::U32(idx)) => *idx,
             Some(Operand::U16(idx)) => *idx as u32,
             Some(Operand::U8(idx)) => *idx as u32,
-            _ => return Err(AvmError::RuntimeError("Invalid PushConst operand".to_string())),
+            _ => {
+                return Err(AvmError::RuntimeError(
+                    "Invalid PushConst operand".to_string(),
+                ))
+            }
         };
         let module = self.module.as_ref().unwrap();
-        let constant = module.constants.get(idx as usize)
-            .ok_or_else(|| AvmError::RuntimeError(format!("Constant index out of bounds: {}", idx)))?;
+        let constant = module.constants.get(idx as usize).ok_or_else(|| {
+            AvmError::RuntimeError(format!("Constant index out of bounds: {}", idx))
+        })?;
         let value = self.constant_to_value(constant);
         self.stack.push(value)?;
         Ok(false)
     }
 
     fn exec_binary_op<F>(&mut self, op: F) -> AvmResult<bool>
-    where F: Fn(f64, f64) -> f64 {
+    where
+        F: Fn(f64, f64) -> f64,
+    {
         let b = self.stack.pop()?;
         let a = self.stack.pop()?;
         let result = match (a, b) {
@@ -196,7 +224,9 @@ impl Interpreter {
     }
 
     fn exec_compare<F>(&mut self, op: F) -> AvmResult<bool>
-    where F: Fn(&Value, &Value) -> bool {
+    where
+        F: Fn(&Value, &Value) -> bool,
+    {
         let b = self.stack.pop()?;
         let a = self.stack.pop()?;
         self.stack.push(Value::Bool(op(&a, &b)))?;
@@ -224,6 +254,44 @@ impl Interpreter {
         Ok(false)
     }
 
+    fn exec_create_agent(&mut self, operand: &Option<Operand>) -> AvmResult<bool> {
+        let arg_count = match operand {
+            Some(Operand::U8(count)) => *count as usize,
+            Some(Operand::U16(count)) => *count as usize,
+            Some(Operand::U32(count)) => *count as usize,
+            _ => {
+                return Err(AvmError::RuntimeError(
+                    "Invalid CreateAgent operand".to_string(),
+                ))
+            }
+        };
+        if arg_count < 4 {
+            return Err(AvmError::RuntimeError(
+                "CreateAgent requires name, prompt, role, and model".to_string(),
+            ));
+        }
+
+        let mut args = Vec::with_capacity(arg_count);
+        for _ in 0..arg_count {
+            args.push(self.stack.pop()?);
+        }
+        args.reverse();
+
+        let name = args[0].clone();
+        let mut agent = HashMap::new();
+        agent.insert("name".to_string(), name.clone());
+        agent.insert("prompt".to_string(), args[1].clone());
+        agent.insert("role".to_string(), args[2].clone());
+        agent.insert("model".to_string(), args[3].clone());
+        agent.insert("tools".to_string(), Value::List(args[4..].to_vec()));
+
+        if let Value::String(name) = name {
+            self.globals.insert(name, Value::Dict(agent.clone()));
+        }
+        self.stack.push(Value::Dict(agent))?;
+        Ok(false)
+    }
+
     fn constant_to_value(&self, constant: &Constant) -> Value {
         match constant {
             Constant::Int(v) => Value::Int(*v),
@@ -238,13 +306,13 @@ impl Interpreter {
     pub fn state(&self) -> InterpreterState {
         self.state
     }
-    
+
     pub fn stack_depth(&self) -> usize {
         self.stack.depth()
     }
-    
+
     // ==================== Design by Contract (契约式编程) ====================
-    
+
     /// 检查 Agent 的前置契约 (requires)
     ///
     /// 在 Agent 执行前调用。如果 requires 失败，返回 AvmError。
@@ -256,7 +324,7 @@ impl Interpreter {
     ) -> AvmResult<()> {
         check_requires(contracts, context)
     }
-    
+
     /// 检查 Agent 的后置契约 (ensures)
     ///
     /// 在 Agent 执行后调用。如果 ensures 失败，返回 AvmError。
@@ -270,7 +338,7 @@ impl Interpreter {
     ) -> AvmResult<()> {
         check_ensures(contracts, context, result, old_values)
     }
-    
+
     /// 捕获 old() 值（用于后置条件比较）
     ///
     /// 在 Agent 执行前调用，记录入口时的变量值。
@@ -283,7 +351,7 @@ impl Interpreter {
     }
 
     // ==================== v1.2: Error Propagation (? 操作符 + otherwise) ====================
-    
+
     /// 执行 ? 操作符赋值语句 — TryAssignment
     ///
     /// x = expr? → 对 expr 结果执行 unwrap
@@ -304,9 +372,9 @@ impl Interpreter {
             // 普通值 → 包装为 NexaResult::Ok
             NexaResult::Ok(expression_value.clone())
         };
-        
+
         let propagation = propagate_or_else(&result, None);
-        
+
         match propagation {
             PropagationResult::Ok(value) => {
                 // 成功 → 赋值给 target
@@ -315,7 +383,10 @@ impl Interpreter {
             }
             PropagationResult::Propagate(error) => {
                 // 失败 → ErrorPropagation
-                Err(AvmError::RuntimeError(format!("Error propagation: {}", error.error)))
+                Err(AvmError::RuntimeError(format!(
+                    "Error propagation: {}",
+                    error.error
+                )))
             }
             PropagationResult::Fallback(value) => {
                 // 不应到达这里（? 操作符没有 otherwise handler）
@@ -324,7 +395,7 @@ impl Interpreter {
             }
         }
     }
-    
+
     /// 执行 otherwise 内联错误处理赋值语句 — OtherwiseAssignment
     ///
     /// x = expr otherwise handler → 对 expr 结果执行 unwrap_or_else
@@ -342,7 +413,7 @@ impl Interpreter {
         } else {
             NexaResult::Ok(expression_value.clone())
         };
-        
+
         if result.is_ok() {
             // 成功 → 返回值
             let value = match result {
@@ -352,13 +423,14 @@ impl Interpreter {
             self.globals.insert(target.to_string(), value.clone());
             return Ok(value);
         }
-        
+
         // 失败 → 执行 handler
         let fallback_value = self.exec_otherwise_handler(handler, &result)?;
-        self.globals.insert(target.to_string(), fallback_value.clone());
+        self.globals
+            .insert(target.to_string(), fallback_value.clone());
         Ok(fallback_value)
     }
-    
+
     /// 执行 otherwise handler
     ///
     /// handler 可以是:
@@ -372,19 +444,23 @@ impl Interpreter {
         _result: &NexaResult,
     ) -> AvmResult<Value> {
         match handler {
-            OtherwiseHandler::AgentCall { agent_name, args: _ } => {
+            OtherwiseHandler::AgentCall {
+                agent_name,
+                args: _,
+            } => {
                 // Agent fallback: 在 AVM 中简化为字符串标记
                 // 实际 Agent 调用需要异步运行时支持
                 Ok(Value::String(format!("fallback:{}", agent_name)))
             }
-            OtherwiseHandler::Value(value_str) => {
-                Ok(Value::String(value_str.clone()))
-            }
+            OtherwiseHandler::Value(value_str) => Ok(Value::String(value_str.clone())),
             OtherwiseHandler::Variable(var_name) => {
                 // 从全局变量中获取值
-                self.globals.get(var_name)
-                    .cloned()
-                    .ok_or_else(|| AvmError::RuntimeError(format!("Variable '{}' not found for otherwise handler", var_name)))
+                self.globals.get(var_name).cloned().ok_or_else(|| {
+                    AvmError::RuntimeError(format!(
+                        "Variable '{}' not found for otherwise handler",
+                        var_name
+                    ))
+                })
             }
             OtherwiseHandler::Block(statements) => {
                 // 执行代码块中的语句
@@ -399,7 +475,7 @@ impl Interpreter {
             }
         }
     }
-    
+
     /// 检查值是否是 NexaResult
     ///
     /// 在 AVM 中，NexaResult 以特殊的字典形式存储：
@@ -409,7 +485,7 @@ impl Interpreter {
         // 后续可以通过 Value 扩展或特殊标记来区分
         false
     }
-    
+
     /// 将 Value 转换为 NexaResult
     ///
     /// 如果值已经是 NexaResult 标记形式，则解析
@@ -417,7 +493,7 @@ impl Interpreter {
     fn value_to_nexa_result(&self, value: &Value) -> NexaResult {
         NexaResult::Ok(value.clone())
     }
-    
+
     /// 执行 AST 级别的语句（支持 ? 和 otherwise）
     ///
     /// 当 AVM 需要直接执行 AST 而非字节码时使用此方法。
@@ -430,13 +506,18 @@ impl Interpreter {
                 let result = self.exec_try_assignment(target, &value)?;
                 match result {
                     PropagationResult::Ok(v) => Ok(Some(v)),
-                    PropagationResult::Propagate(e) => {
-                        Err(AvmError::RuntimeError(format!("Error propagation: {}", e.error)))
-                    }
+                    PropagationResult::Propagate(e) => Err(AvmError::RuntimeError(format!(
+                        "Error propagation: {}",
+                        e.error
+                    ))),
                     PropagationResult::Fallback(v) => Ok(Some(v)),
                 }
             }
-            Statement::OtherwiseAssignment { target, expression, handler } => {
+            Statement::OtherwiseAssignment {
+                target,
+                expression,
+                handler,
+            } => {
                 // 评估表达式
                 let value = self.eval_ast_expression(expression)?;
                 let result = self.exec_otherwise_assignment(target, &value, handler)?;
@@ -449,16 +530,19 @@ impl Interpreter {
                 let propagation = propagate_or_else(&nexa_result, None);
                 match propagation {
                     PropagationResult::Ok(v) => Ok(Some(v)),
-                    PropagationResult::Propagate(e) => {
-                        Err(AvmError::RuntimeError(format!("Error propagation: {}", e.error)))
-                    }
+                    PropagationResult::Propagate(e) => Err(AvmError::RuntimeError(format!(
+                        "Error propagation: {}",
+                        e.error
+                    ))),
                     PropagationResult::Fallback(v) => Ok(Some(v)),
                 }
             }
-            _ => Err(AvmError::RuntimeError(format!("Unsupported AST statement type for direct execution")))
+            _ => Err(AvmError::RuntimeError(format!(
+                "Unsupported AST statement type for direct execution"
+            ))),
         }
     }
-    
+
     /// 评估 AST 表达式（简化版）
     ///
     /// 在完整实现中，这应该递归评估 AST Expression。
@@ -471,18 +555,21 @@ impl Interpreter {
             Expression::Float(f) => Ok(Value::Float(*f)),
             Expression::Bool(b) => Ok(Value::Bool(*b)),
             Expression::Null => Ok(Value::Null),
-            Expression::Identifier(name) => {
-                self.globals.get(name)
-                    .cloned()
-                    .ok_or_else(|| AvmError::RuntimeError(format!("Variable '{}' not found", name)))
-            }
+            Expression::Identifier(name) => self
+                .globals
+                .get(name)
+                .cloned()
+                .ok_or_else(|| AvmError::RuntimeError(format!("Variable '{}' not found", name))),
             Expression::TryOp { expression } => {
                 // ? 操作符：评估内部表达式，然后 unwrap
                 let value = self.eval_ast_expression(expression)?;
                 let result = NexaResult::Ok(value);
                 match result.unwrap() {
                     Ok(v) => Ok(v),
-                    Err(e) => Err(AvmError::RuntimeError(format!("Error propagation: {}", e.error))),
+                    Err(e) => Err(AvmError::RuntimeError(format!(
+                        "Error propagation: {}",
+                        e.error
+                    ))),
                 }
             }
             _ => Ok(Value::Null), // 其他表达式类型暂不支持
@@ -499,10 +586,53 @@ impl Default for Interpreter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::bytecode::Constant;
 
     #[test]
     fn test_interpreter_creation() {
         let interp = Interpreter::default();
         assert_eq!(interp.state(), InterpreterState::Ready);
+    }
+
+    #[test]
+    fn test_create_agent_opcode() {
+        let mut module = BytecodeModule::new("test".to_string());
+        let name_idx = module.add_constant(Constant::String("AgentA".to_string()));
+        let prompt_idx = module.add_constant(Constant::String("Assist".to_string()));
+        let role_idx = module.add_constant(Constant::String("assistant".to_string()));
+        let model_idx = module.add_constant(Constant::String("minimax-m2.5".to_string()));
+        module.emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
+        module.emit(OpCode::PushConst, Some(Operand::U32(prompt_idx)), None);
+        module.emit(OpCode::PushConst, Some(Operand::U32(role_idx)), None);
+        module.emit(OpCode::PushConst, Some(Operand::U32(model_idx)), None);
+        module.emit(OpCode::CreateAgent, Some(Operand::U8(4)), None);
+        module.emit(OpCode::Halt, None, None);
+
+        let mut interp = Interpreter::default();
+        interp.load_module(module);
+        let result = interp.run().unwrap();
+
+        match result.value {
+            Value::Dict(agent) => {
+                assert_eq!(
+                    agent.get("name"),
+                    Some(&Value::String("AgentA".to_string()))
+                );
+                assert_eq!(
+                    agent.get("prompt"),
+                    Some(&Value::String("Assist".to_string()))
+                );
+                assert_eq!(
+                    agent.get("role"),
+                    Some(&Value::String("assistant".to_string()))
+                );
+                assert_eq!(
+                    agent.get("model"),
+                    Some(&Value::String("minimax-m2.5".to_string()))
+                );
+                assert_eq!(agent.get("tools"), Some(&Value::List(vec![])));
+            }
+            other => panic!("expected agent dict, got {other:?}"),
+        }
     }
 }

@@ -44,7 +44,7 @@ pub struct WasmConfig {
 impl Default for WasmConfig {
     fn default() -> Self {
         Self {
-            max_memory_pages: 256,  // 16MB
+            max_memory_pages: 256, // 16MB
             execution_timeout_ms: 30000,
             enable_wasi: true,
             max_table_elements: 10000,
@@ -172,9 +172,15 @@ pub enum ImportKind {
     /// 全局变量导入
     Global { val_type: ValType, mutable: bool },
     /// 内存导入
-    Memory { min_pages: u32, max_pages: Option<u32> },
+    Memory {
+        min_pages: u32,
+        max_pages: Option<u32>,
+    },
     /// 表导入
-    Table { min_elements: u32, max_elements: Option<u32> },
+    Table {
+        min_elements: u32,
+        max_elements: Option<u32>,
+    },
 }
 
 /// 导出描述
@@ -190,11 +196,18 @@ pub struct ExportDesc {
 #[derive(Debug, Clone)]
 pub enum ExportKind {
     /// 函数导出
-    Function { index: u32, signature: FunctionSignature },
+    Function {
+        index: u32,
+        signature: FunctionSignature,
+    },
     /// 全局变量导出
     Global { index: u32, val_type: ValType },
     /// 内存导出
-    Memory { index: u32, min_pages: u32, max_pages: Option<u32> },
+    Memory {
+        index: u32,
+        min_pages: u32,
+        max_pages: Option<u32>,
+    },
     /// 表导出
     Table { index: u32, min_elements: u32 },
 }
@@ -231,12 +244,12 @@ impl WasmModule {
         if bytes.len() < 8 {
             return Err(AvmError::WasmError("WASM module too small".to_string()));
         }
-        
+
         // WASM 魔数: \0asm
         if &bytes[0..4] != b"\x00asm" {
             return Err(AvmError::WasmError("Invalid WASM magic number".to_string()));
         }
-        
+
         // 版本号检查 (支持 1.0 和 2.0)
         let version = u32::from_le_bytes([bytes[4], bytes[5], bytes[6], bytes[7]]);
         if version != 1 && version != 2 {
@@ -245,7 +258,7 @@ impl WasmModule {
                 version
             )));
         }
-        
+
         Ok(Self {
             name: name.to_string(),
             bytes,
@@ -253,66 +266,69 @@ impl WasmModule {
             metadata: None,
         })
     }
-    
+
     /// 获取模块名
     pub fn name(&self) -> &str {
         &self.name
     }
-    
+
     /// 获取原始字节
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
-    
+
     /// 检查是否已验证
     pub fn is_validated(&self) -> bool {
         self.validated
     }
-    
+
     /// 获取元数据
     pub fn metadata(&self) -> Option<&ModuleMetadata> {
         self.metadata.as_ref()
     }
-    
+
     /// 解析模块元数据
     pub fn parse_metadata(&mut self) -> AvmResult<&ModuleMetadata> {
         if self.metadata.is_some() {
             return Ok(self.metadata.as_ref().unwrap());
         }
-        
+
         let metadata = self.extract_metadata()?;
         self.metadata = Some(metadata);
         Ok(self.metadata.as_ref().unwrap())
     }
-    
+
     /// 从字节码提取元数据
     fn extract_metadata(&self) -> AvmResult<ModuleMetadata> {
         let mut imports = Vec::new();
         let mut exports = Vec::new();
         let mut custom_sections = Vec::new();
-        
+
         // 简单解析 (不需要完整解析，只提取关键信息)
         let bytes = &self.bytes;
         let mut pos = 8; // 跳过魔数和版本
-        
+
         while pos < bytes.len() {
-            if pos >= bytes.len() { break; }
-            
+            if pos >= bytes.len() {
+                break;
+            }
+
             let section_id = bytes[pos];
             pos += 1;
-            
+
             // 读取 LEB128 编码的段大小
             let (size, consumed) = read_leb128_u32(&bytes[pos..])?;
             pos += consumed;
-            
+
             let section_start = pos;
-            
+
             match section_id {
                 0 => {
                     // 自定义段
                     let (name_len, consumed) = read_leb128_u32(&bytes[pos..])?;
                     pos += consumed;
-                    let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize]).to_string();
+                    let name =
+                        String::from_utf8_lossy(&bytes[pos..pos + name_len as usize]).to_string();
                     pos += name_len as usize;
                     let data = bytes[pos..section_start + size as usize].to_vec();
                     custom_sections.push((name, data));
@@ -327,17 +343,19 @@ impl WasmModule {
                     for _ in 0..count {
                         let (mod_len, consumed) = read_leb128_u32(&bytes[pos..])?;
                         pos += consumed;
-                        let module = String::from_utf8_lossy(&bytes[pos..pos + mod_len as usize]).to_string();
+                        let module = String::from_utf8_lossy(&bytes[pos..pos + mod_len as usize])
+                            .to_string();
                         pos += mod_len as usize;
-                        
+
                         let (name_len, consumed) = read_leb128_u32(&bytes[pos..])?;
                         pos += consumed;
-                        let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize]).to_string();
+                        let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize])
+                            .to_string();
                         pos += name_len as usize;
-                        
+
                         let kind = bytes[pos];
                         pos += 1;
-                        
+
                         // 简化处理，只记录导入存在
                         imports.push(ImportDesc {
                             module,
@@ -347,7 +365,7 @@ impl WasmModule {
                                 results: vec![],
                             }),
                         });
-                        
+
                         // 跳过剩余描述
                         match kind {
                             0 => {
@@ -375,15 +393,16 @@ impl WasmModule {
                     for _ in 0..count {
                         let (name_len, consumed) = read_leb128_u32(&bytes[pos..])?;
                         pos += consumed;
-                        let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize]).to_string();
+                        let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize])
+                            .to_string();
                         pos += name_len as usize;
-                        
+
                         let _kind = bytes[pos];
                         pos += 1;
-                        
+
                         let (index, consumed) = read_leb128_u32(&bytes[pos..])?;
                         pos += consumed;
-                        
+
                         exports.push(ExportDesc {
                             name,
                             kind: ExportKind::Function {
@@ -398,10 +417,10 @@ impl WasmModule {
                 }
                 _ => {}
             }
-            
+
             pos = section_start + size as usize;
         }
-        
+
         Ok(ModuleMetadata {
             name: self.name.clone(),
             imports,
@@ -409,13 +428,13 @@ impl WasmModule {
             custom_sections,
         })
     }
-    
+
     /// 验证模块
     pub fn validate(&mut self) -> AvmResult<()> {
         if self.validated {
             return Ok(());
         }
-        
+
         // 基本验证
         self.parse_metadata()?;
         self.validated = true;
@@ -428,27 +447,27 @@ fn read_leb128_u32(bytes: &[u8]) -> AvmResult<(u32, usize)> {
     let mut result: u32 = 0;
     let mut shift = 0;
     let mut pos = 0;
-    
+
     loop {
         if pos >= bytes.len() {
             return Err(AvmError::WasmError("Invalid LEB128 encoding".to_string()));
         }
-        
+
         let byte = bytes[pos];
         pos += 1;
-        
+
         result |= ((byte & 0x7F) as u32) << shift;
-        
+
         if byte & 0x80 == 0 {
             break;
         }
-        
+
         shift += 7;
         if shift >= 35 {
             return Err(AvmError::WasmError("LEB128 overflow".to_string()));
         }
     }
-    
+
     Ok((result, pos))
 }
 
@@ -502,48 +521,53 @@ impl WasmInstance {
             initialized: false,
         })
     }
-    
+
     /// 获取模块引用
     pub fn module(&self) -> &WasmModule {
         &self.module
     }
-    
+
     /// 获取执行统计
     pub fn stats(&self) -> &ExecutionStats {
         &self.stats
     }
-    
+
     /// 获取内存大小
     pub fn memory_size(&self) -> usize {
         self.memory.len()
     }
-    
+
     /// 读取内存
     pub fn read_memory(&self, offset: usize, len: usize) -> AvmResult<Vec<u8>> {
         if offset + len > self.memory.len() {
-            return Err(AvmError::WasmError("Memory access out of bounds".to_string()));
+            return Err(AvmError::WasmError(
+                "Memory access out of bounds".to_string(),
+            ));
         }
         Ok(self.memory[offset..offset + len].to_vec())
     }
-    
+
     /// 写入内存
     pub fn write_memory(&mut self, offset: usize, data: &[u8]) -> AvmResult<()> {
         if offset + data.len() > self.memory.len() {
-            return Err(AvmError::WasmError("Memory access out of bounds".to_string()));
+            return Err(AvmError::WasmError(
+                "Memory access out of bounds".to_string(),
+            ));
         }
         self.memory[offset..offset + data.len()].copy_from_slice(data);
         Ok(())
     }
-    
+
     /// 调用函数
     pub fn call(&mut self, function: &str, args: &[WasmValue]) -> AvmResult<Vec<WasmValue>> {
         // 检查函数是否导出
         let metadata = self.module.metadata();
         if let Some(meta) = metadata {
-            let found = meta.exports.iter().any(|e| {
-                matches!(&e.kind, ExportKind::Function { .. }) && e.name == function
-            });
-            
+            let found = meta
+                .exports
+                .iter()
+                .any(|e| matches!(&e.kind, ExportKind::Function { .. }) && e.name == function);
+
             if !found {
                 return Err(AvmError::WasmError(format!(
                     "Function '{}' not found in module '{}'",
@@ -551,7 +575,7 @@ impl WasmInstance {
                 )));
             }
         }
-        
+
         // 由于没有启用 wasmtime feature，返回占位符结果
         // 实际执行需要启用 wasm feature
         #[cfg(not(feature = "wasm"))]
@@ -564,61 +588,70 @@ impl WasmInstance {
                 Ok(args.to_vec())
             }
         }
-        
+
         #[cfg(feature = "wasm")]
         {
             self.execute_with_wasmtime(function, args)
         }
     }
-    
+
     /// 使用 wasmtime 执行
     #[cfg(feature = "wasm")]
-    fn execute_with_wasmtime(&mut self, function: &str, args: &[WasmValue]) -> AvmResult<Vec<WasmValue>> {
+    fn execute_with_wasmtime(
+        &mut self,
+        function: &str,
+        _args: &[WasmValue],
+    ) -> AvmResult<Vec<WasmValue>> {
         use wasmtime::*;
-        
+
         let start = std::time::Instant::now();
-        
+
         // 创建引擎和模块
         let engine = Engine::default();
         let module = Module::from_binary(&engine, &self.module.bytes)
             .map_err(|e| AvmError::WasmError(format!("Failed to compile module: {}", e)))?;
-        
+
         // 创建存储和实例
-        let mut store = Store::new(&engine, ());
-        
-        // 设置资源限制
-        store.limiter(|_| Some(Box::new(ResourceLimiter {
-            max_memory: self.memory.len(),
-            max_table: 10000,
-        })));
-        
+        let mut store = Store::new(
+            &engine,
+            WasmResourceLimiter {
+                max_memory: self.memory.len(),
+                max_table: 10000,
+            },
+        );
+
+        store.limiter(|limiter| limiter);
+
         let instance = Instance::new(&mut store, &module, &[])
             .map_err(|e| AvmError::WasmError(format!("Failed to instantiate module: {}", e)))?;
-        
+
         // 获取导出函数
         let func = instance
             .get_typed_func::<(), (i32,)>(&mut store, function)
-            .map_err(|e| AvmError::WasmError(format!("Function '{}' not found: {}", function, e)))?;
-        
+            .map_err(|e| {
+                AvmError::WasmError(format!("Function '{}' not found: {}", function, e))
+            })?;
+
         // 执行
-        let result = func.call(&mut store, ())
+        let result = func
+            .call(&mut store, ())
             .map_err(|e| AvmError::WasmError(format!("Execution failed: {}", e)))?;
-        
+
         // 更新统计
         let elapsed = start.elapsed().as_nanos() as u64;
         self.stats.call_count += 1;
         self.stats.total_time_ns += elapsed;
         self.stats.max_time_ns = self.stats.max_time_ns.max(elapsed);
-        
+
         Ok(vec![WasmValue::I32(result.0)])
     }
-    
+
     /// 初始化实例
     pub fn initialize(&mut self) -> AvmResult<()> {
         if self.initialized {
             return Ok(());
         }
-        
+
         // 执行 start 函数（如果存在）
         if let Some(meta) = self.module.metadata() {
             let has_start = meta.exports.iter().any(|e| e.name == "_start");
@@ -626,7 +659,7 @@ impl WasmInstance {
                 self.call("_start", &[])?;
             }
         }
-        
+
         self.initialized = true;
         Ok(())
     }
@@ -634,19 +667,29 @@ impl WasmInstance {
 
 /// 资源限制器 (用于 wasmtime)
 #[cfg(feature = "wasm")]
-struct ResourceLimiter {
+struct WasmResourceLimiter {
     max_memory: usize,
     max_table: usize,
 }
 
 #[cfg(feature = "wasm")]
-impl wasmtime::ResourceLimiter for ResourceLimiter {
-    fn memory_growing(&mut self, current: usize, desired: usize, _maximum: Option<usize>) -> bool {
-        desired <= self.max_memory && desired >= current
+impl wasmtime::ResourceLimiter for WasmResourceLimiter {
+    fn memory_growing(
+        &mut self,
+        current: usize,
+        desired: usize,
+        _maximum: Option<usize>,
+    ) -> wasmtime::Result<bool> {
+        Ok(desired <= self.max_memory && desired >= current)
     }
-    
-    fn table_growing(&mut self, current: usize, desired: usize, _maximum: Option<usize>) -> bool {
-        desired <= self.max_table && desired >= current
+
+    fn table_growing(
+        &mut self,
+        current: u32,
+        desired: u32,
+        _maximum: Option<u32>,
+    ) -> wasmtime::Result<bool> {
+        Ok((desired as usize) <= self.max_table && desired >= current)
     }
 }
 
@@ -669,12 +712,12 @@ impl WasmRuntime {
             instances: std::collections::HashMap::new(),
         }
     }
-    
+
     /// 获取配置
     pub fn config(&self) -> &WasmConfig {
         &self.config
     }
-    
+
     /// 加载模块
     pub fn load_module(&mut self, name: &str, bytes: Vec<u8>) -> AvmResult<&WasmModule> {
         let mut module = WasmModule::from_bytes(name, bytes)?;
@@ -682,31 +725,32 @@ impl WasmRuntime {
         self.modules.insert(name.to_string(), module);
         Ok(self.modules.get(name).unwrap())
     }
-    
+
     /// 获取模块
     pub fn get_module(&self, name: &str) -> Option<&WasmModule> {
         self.modules.get(name)
     }
-    
+
     /// 创建实例
     pub fn instantiate(&mut self, module_name: &str) -> AvmResult<&mut WasmInstance> {
-        let module = self.modules.get(module_name).ok_or_else(|| {
-            AvmError::WasmError(format!("Module '{}' not found", module_name))
-        })?;
-        
+        let module = self
+            .modules
+            .get(module_name)
+            .ok_or_else(|| AvmError::WasmError(format!("Module '{}' not found", module_name)))?;
+
         // 克隆模块用于实例
         let module_clone = WasmModule::from_bytes(&module.name, module.bytes.clone())?;
         let instance = WasmInstance::new(module_clone)?;
-        
+
         self.instances.insert(module_name.to_string(), instance);
         Ok(self.instances.get_mut(module_name).unwrap())
     }
-    
+
     /// 获取实例
     pub fn get_instance(&mut self, name: &str) -> Option<&mut WasmInstance> {
         self.instances.get_mut(name)
     }
-    
+
     /// 调用函数 (便捷方法)
     pub fn call(
         &mut self,
@@ -714,24 +758,25 @@ impl WasmRuntime {
         function: &str,
         args: &[WasmValue],
     ) -> AvmResult<Vec<WasmValue>> {
-        let instance = self.instances.get_mut(module_name).ok_or_else(|| {
-            AvmError::WasmError(format!("Instance '{}' not found", module_name))
-        })?;
+        let instance = self
+            .instances
+            .get_mut(module_name)
+            .ok_or_else(|| AvmError::WasmError(format!("Instance '{}' not found", module_name)))?;
         instance.call(function, args)
     }
-    
+
     /// 卸载模块
     pub fn unload_module(&mut self, name: &str) -> AvmResult<()> {
         self.modules.remove(name);
         self.instances.remove(name);
         Ok(())
     }
-    
+
     /// 列出已加载的模块
     pub fn list_modules(&self) -> Vec<&str> {
         self.modules.keys().map(|s| s.as_str()).collect()
     }
-    
+
     /// 清理所有资源
     pub fn clear(&mut self) {
         self.modules.clear();
@@ -748,7 +793,7 @@ impl Default for WasmRuntime {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_wasm_config_default() {
         let config = WasmConfig::default();
@@ -756,23 +801,23 @@ mod tests {
         assert_eq!(config.execution_timeout_ms, 30000);
         assert!(config.enable_wasi);
     }
-    
+
     #[test]
     fn test_wasm_value_types() {
         let i32_val = WasmValue::I32(42);
         assert_eq!(i32_val.type_name(), "i32");
         assert_eq!(i32_val.as_i32(), Some(42));
         assert_eq!(i32_val.as_i64(), None);
-        
+
         let i64_val = WasmValue::I64(-100);
         assert_eq!(i64_val.type_name(), "i64");
         assert_eq!(i64_val.as_i64(), Some(-100));
-        
+
         let f64_val = WasmValue::F64(3.14159);
         assert_eq!(f64_val.type_name(), "f64");
         assert!((f64_val.as_f64().unwrap() - 3.14159).abs() < 1e-6);
     }
-    
+
     #[test]
     fn test_wasm_module_validation() {
         // 有效的 WASM 模块 (最小模块)
@@ -780,54 +825,54 @@ mod tests {
             0x00, 0x61, 0x73, 0x6d, // 魔数
             0x01, 0x00, 0x00, 0x00, // 版本 1.0
         ];
-        
+
         let module = WasmModule::from_bytes("test", valid_wasm);
         assert!(module.is_ok());
-        
+
         // 无效的 WASM 模块
         let invalid_wasm = vec![0x00, 0x01, 0x02, 0x03];
         let result = WasmModule::from_bytes("invalid", invalid_wasm);
         assert!(result.is_err());
     }
-    
+
     #[test]
     fn test_wasm_runtime_basic() {
         let runtime = WasmRuntime::default();
         assert!(runtime.modules.is_empty());
         assert!(runtime.instances.is_empty());
     }
-    
+
     #[test]
     fn test_wasm_instance_memory() {
         let valid_wasm = vec![
             0x00, 0x61, 0x73, 0x6d, // 魔数
             0x01, 0x00, 0x00, 0x00, // 版本 1.0
         ];
-        
+
         let module = WasmModule::from_bytes("test", valid_wasm).unwrap();
         let instance = WasmInstance::new(module).unwrap();
-        
+
         assert_eq!(instance.memory_size(), 65536);
-        
+
         // 测试内存读写
         let mut instance = instance;
         instance.write_memory(0, &[1, 2, 3, 4]).unwrap();
         let data = instance.read_memory(0, 4).unwrap();
         assert_eq!(data, vec![1, 2, 3, 4]);
-        
+
         // 越界访问应该失败
         assert!(instance.read_memory(65536, 1).is_err());
     }
-    
+
     #[test]
     fn test_execution_stats() {
         let mut stats = ExecutionStats::default();
         stats.call_count = 10;
         stats.total_time_ns = 1_000_000_000; // 1 秒
-        
+
         assert!((stats.avg_time_ms() - 100.0).abs() < 0.01);
     }
-    
+
     #[test]
     fn test_leb128_parsing() {
         // 测试简单的 LEB128 编码
@@ -835,34 +880,31 @@ mod tests {
         let (value, consumed) = read_leb128_u32(&bytes).unwrap();
         assert_eq!(value, 0);
         assert_eq!(consumed, 1);
-        
+
         let bytes = vec![0x7F]; // 127
         let (value, _) = read_leb128_u32(&bytes).unwrap();
         assert_eq!(value, 127);
-        
+
         let bytes = vec![0x80, 0x01]; // 128
         let (value, _) = read_leb128_u32(&bytes).unwrap();
         assert_eq!(value, 128);
     }
-    
+
     #[test]
     fn test_wasm_runtime_module_management() {
         let mut runtime = WasmRuntime::default();
-        
-        let valid_wasm = vec![
-            0x00, 0x61, 0x73, 0x6d,
-            0x01, 0x00, 0x00, 0x00,
-        ];
-        
+
+        let valid_wasm = vec![0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00];
+
         // 加载模块
         let result = runtime.load_module("test_module", valid_wasm);
         assert!(result.is_ok());
-        
+
         // 检查模块列表
         let modules = runtime.list_modules();
         assert_eq!(modules.len(), 1);
         assert!(modules.contains(&"test_module"));
-        
+
         // 卸载模块
         runtime.unload_module("test_module").unwrap();
         assert!(runtime.list_modules().is_empty());
