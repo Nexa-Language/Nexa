@@ -17,8 +17,7 @@
 # ========================================================================
 
 from typing import Any, Dict, List, Optional
-from .core import client, STRONG_MODEL
-from .secrets import nexa_secrets
+from .secrets import DEFAULT_MODEL_CONFIG, nexa_secrets
 from .contracts import ContractSpec, ContractClause, ContractViolation, check_requires, check_ensures, capture_old_values, OldValues
 from .type_system import TypeChecker, TypeViolation, TypeMode, get_type_mode, TypeInferrer, PrimitiveTypeExpr, AliasTypeExpr
 from .result_types import NexaResult, NexaOption, ErrorPropagation, wrap_agent_result
@@ -42,7 +41,7 @@ from .cow_state import CowAgentState
 
 class NexaAgent:
     def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None,
-                 model: str = STRONG_MODEL, role: str = "", memory_scope: str = "local",
+                 model: str = None, role: str = "", memory_scope: str = "local",
                  protocol=None, max_tokens=None, stream=False, cache=False,
                  max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3,
                  contracts=None, output_format: str = "", output_schema=None,
@@ -73,9 +72,9 @@ class NexaAgent:
         self.tools = tools or []
         
         self.provider = "default"
-        self.model = model
-        if "/" in model:
-            self.provider, self.model = model.split("/", 1)
+        self.model = model or nexa_secrets.get_model_config().get("strong", DEFAULT_MODEL_CONFIG["strong"])
+        if "/" in self.model:
+            self.provider, self.model = self.model.split("/", 1)
             
         self.memory_scope = memory_scope
         # protocol 已在上面处理
@@ -128,42 +127,57 @@ class NexaAgent:
         if not self.messages and self.system_prompt:
             self.messages.append({"role": "system", "content": self.system_prompt})
             
-        # Init Client - 使用新的 secrets API
+        # LLM client is initialized lazily so local compilation, inspection, and
+        # unit tests can construct agents without requiring external credentials.
+        self.client = None
+        self._client_base_url = None
+
+        if os.environ.get("NEXA_DEBUG"):
+            configured_key, configured_base_url = self._resolve_provider_config()
+            print(f"[Agent:{name}] Active config: {nexa_secrets.get_active_config_name()}")
+            print(f"[Agent:{name}] Provider: {self.provider}")
+            print(f"[Agent:{name}] Model: {self.model}")
+            print(f"[Agent:{name}] Base URL: {configured_base_url}")
+            print(f"[Agent:{name}] API key configured: {bool(configured_key)}")
+
+    def _resolve_provider_config(self) -> tuple[str, str]:
+        """Resolve provider credentials without logging or validating secrets."""
         api_key, base_url = nexa_secrets.get_provider_config(self.provider)
-        
-        # 如果 provider 特定配置不存在，尝试通用配置
+
         if not api_key:
             api_key = nexa_secrets.get("API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
         if not base_url:
             base_url = nexa_secrets.get("BASE_URL") or nexa_secrets.get("OPENAI_API_BASE")
-        
-        # Debug output
-        if os.environ.get("NEXA_DEBUG"):
-            print(f"[Agent:{name}] Active config: {nexa_secrets.get_active_config_name()}")
-            print(f"[Agent:{name}] Provider: {self.provider}")
-            print(f"[Agent:{name}] Model: {self.model}")
-            print(f"[Agent:{name}] Base URL: {base_url}")
-            print(f"[Agent:{name}] API Key: {api_key[:20]}..." if api_key else f"[Agent:{name}] API Key: None")
-        
-        # Provider-specific defaults for base_url (if not configured)
-        if not base_url:
-            if self.provider == "deepseek":
-                base_url = "https://api.deepseek.com/v1"
-            elif self.provider == "minimax":
-                base_url = "https://aihub.arcsysu.cn/v1"
-            elif self.provider == "openai":
-                base_url = "https://api.openai.com/v1"
-            else:
-                base_url = nexa_secrets.get("BASE_URL", "https://api.openai.com/v1")
-        
-        # 验证 API key 存在
+
+        if base_url:
+            return api_key, base_url
+        if self.provider == "deepseek":
+            return api_key, "https://api.deepseek.com/v1"
+        if self.provider == "minimax":
+            return api_key, "https://aihub.arcsysu.cn/v1"
+        if self.provider == "openai":
+            return api_key, "https://api.openai.com/v1"
+        return api_key, nexa_secrets.get("BASE_URL", "https://aihub.arcsysu.cn/v1")
+
+    def _default_summary_model(self) -> str:
+        """Use the configured weak model for low-cost context summaries."""
+        return nexa_secrets.get_model_config().get("weak", DEFAULT_MODEL_CONFIG["weak"])
+
+    def _get_client(self) -> OpenAI:
+        """Create the OpenAI-compatible client only when a model call is required."""
+        if self.client is not None:
+            return self.client
+
+        api_key, base_url = self._resolve_provider_config()
         if not api_key:
             raise ValueError(
                 f"API key not found for provider '{self.provider}'. "
-                f"Please configure secrets.nxs with API_KEY or {self.provider.upper()}_API_KEY."
+                f"Configure secrets.nxs with API_KEY or {self.provider.upper()}_API_KEY before running this agent."
             )
-                
+
+        self._client_base_url = base_url
         self.client = OpenAI(api_key=api_key, base_url=base_url)
+        return self.client
 
     # v1.1: 渐进式类型系统 — 初始化 Agent 级别类型检查器
     _type_checker_instance = None
@@ -336,10 +350,11 @@ class NexaAgent:
                 to_summarize = self.messages[len(sys_msgs):keep_idx]
                 if to_summarize:
                     sum_prompt = "Please summarize the following conversation history concisely:\n" + json.dumps(to_summarize, ensure_ascii=False)
-                    summary_model = "deepseek-chat" if getattr(self, "provider", "default") == "deepseek" else ("gpt-4o-mini" if getattr(self, "provider", "default") == "default" else self.model)
+                    summary_model = self._default_summary_model() if getattr(self, "provider", "default") == "default" else self.model
                     
                     try:
-                        summary_res = self.client.chat.completions.create(
+                        client = self._get_client()
+                        summary_res = client.chat.completions.create(
                             model=summary_model,
                             messages=[{"role": "user", "content": sum_prompt}]
                         )
@@ -474,7 +489,7 @@ class NexaAgent:
                         kwargs["stream"] = True
                         print(f"< [{self.name} replied]: ", end="")
                         sys.stdout.flush()
-                        response = self.client.chat.completions.create(**kwargs)
+                        response = self._get_client().chat.completions.create(**kwargs)
                         accumulated_reply = ""
                         for chunk in response:
                             content = chunk.choices[0].delta.content
@@ -492,7 +507,7 @@ class NexaAgent:
                     if "stream" in kwargs:
                         del kwargs["stream"]
                         
-                    response = self.client.chat.completions.create(**kwargs)
+                    response = self._get_client().chat.completions.create(**kwargs)
                     msg = response.choices[0].message
                     
                     if msg.tool_calls:

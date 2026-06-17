@@ -28,7 +28,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 from openai import OpenAI
-from .secrets import nexa_secrets
+from .secrets import DEFAULT_MODEL_CONFIG, nexa_secrets
 
 
 @dataclass
@@ -55,7 +55,7 @@ class ContextCompactor:
     - 渐进式压缩：根据上下文长度选择压缩策略
     """
     
-    DEFAULT_COMPACTOR_MODEL = "gpt-4o-mini"  # 轻量模型用于压缩
+    DEFAULT_COMPACTOR_MODEL = DEFAULT_MODEL_CONFIG["weak"]  # 轻量模型用于压缩
     
     # 压缩提示模板
     SUMMARIZE_PROMPT = """You are a context compression specialist. Your task is to summarize the following conversation history while preserving ALL critical information.
@@ -96,21 +96,35 @@ Summary:"""
         max_context_tokens: int = 4000,
         target_compression_ratio: float = 0.3
     ):
-        self.model = model or self.DEFAULT_COMPACTOR_MODEL
+        self.model = model or nexa_secrets.get_model_config().get("weak", self.DEFAULT_COMPACTOR_MODEL)
         self.provider = provider
         self.max_context_tokens = max_context_tokens
         self.target_compression_ratio = target_compression_ratio
         
-        # 初始化客户端
-        api_key = nexa_secrets.get(f"{provider.upper()}_API_KEY")
-        base_url = nexa_secrets.get(f"{provider.upper()}_BASE_URL")
-        
+        self._client: Optional[OpenAI] = None
+
+    def _get_client(self) -> OpenAI:
+        """Create the provider client lazily and never fall back to embedded keys."""
+        if self._client is not None:
+            return self._client
+
+        api_key, base_url = nexa_secrets.get_provider_config(self.provider)
         if not api_key:
-            api_key = nexa_secrets.get("OPENAI_API_KEY", "sk-lDc9yRMvfPzpxXKuuXB2LA")
+            api_key = nexa_secrets.get(f"{self.provider.upper()}_API_KEY") or nexa_secrets.get("OPENAI_API_KEY")
         if not base_url:
-            base_url = "https://api.openai.com/v1"
-            
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
+            base_url = (
+                nexa_secrets.get(f"{self.provider.upper()}_BASE_URL")
+                or nexa_secrets.get("BASE_URL")
+                or "https://aihub.arcsysu.cn/v1"
+            )
+        if not api_key:
+            raise ValueError(
+                f"API key not found for compactor provider '{self.provider}'. "
+                "Configure it in secrets.nxs or an environment variable before compacting with an LLM."
+            )
+
+        self._client = OpenAI(api_key=api_key, base_url=base_url)
+        return self._client
         
     def estimate_tokens(self, messages: List[Dict]) -> int:
         """估算消息的token数量（简化版）"""
@@ -236,7 +250,7 @@ Summary:"""
             conversation_text = json.dumps(messages, ensure_ascii=False, indent=2)
             prompt = self.SUMMARIZE_PROMPT.format(conversation=conversation_text)
             
-            response = self.client.chat.completions.create(
+            response = self._get_client().chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": prompt}],
                 response_format={"type": "json_object"}
@@ -266,7 +280,7 @@ Summary:"""
                 chunk_text = json.dumps(chunk, ensure_ascii=False)
                 prompt = self.PROGRESSIVE_COMPACT_PROMPT.format(segment=chunk_text)
                 
-                response = self.client.chat.completions.create(
+                response = self._get_client().chat.completions.create(
                     model=self.model,
                     messages=[{"role": "user", "content": prompt}],
                     max_tokens=100
@@ -315,7 +329,7 @@ Summary:"""
         try:
             merge_prompt = f"Combine these summaries into one coherent paragraph:\n\n" + "\n".join(f"- {s}" for s in summaries)
             
-            response = self.client.chat.completions.create(
+            response = self._get_client().chat.completions.create(
                 model=self.model,
                 messages=[{"role": "user", "content": merge_prompt}],
                 max_tokens=200

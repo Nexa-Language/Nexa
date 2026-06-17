@@ -22,6 +22,13 @@ import re
 import ast
 from typing import Any, Dict, Optional
 
+DEFAULT_MODEL_CONFIG = {
+    "strong": "minimax-m2.5",
+    "weak": "deepseek-chat",
+    "super": "glm-5",
+}
+
+
 class ConfigNode:
     def __init__(self, data=None):
         self._data = data or {}
@@ -405,11 +412,7 @@ class NexaSecrets:
         Returns:
             {"strong": "...", "weak": "...", "super": "..."} 或默认值
         """
-        default_models = {
-            "strong": "gpt-4",
-            "weak": "gpt-3.5-turbo",
-            "super": "gpt-4"
-        }
+        default_models = DEFAULT_MODEL_CONFIG
         
         # 从当前激活的 config block 获取
         if self._active_config in self._block_configs:
