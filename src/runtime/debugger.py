@@ -52,6 +52,9 @@ class BreakpointType(Enum):
     SEMANTIC = "semantic"    # 语义条件判断
 
 
+from .safe_eval import safe_eval
+
+
 @dataclass
 class Breakpoint:
     """断点定义"""
@@ -68,7 +71,7 @@ class Breakpoint:
         
         if self.condition:
             try:
-                return eval(self.condition, {}, context)
+                return bool(safe_eval(self.condition, context))
             except:
                 return False
         return True
@@ -217,7 +220,7 @@ class NexaDebugger:
         now = datetime.now()
         for watch in self.watches:
             try:
-                value = eval(watch.expression, {}, self.current_variables)
+                value = safe_eval(watch.expression, self.current_variables)
                 watch.value = value
                 watch.type_name = type(value).__name__
                 watch.last_updated = now

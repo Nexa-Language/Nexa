@@ -30,6 +30,8 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
+from .safe_eval import parse_safe_command
+
 logger = logging.getLogger("nexa.wasm_sandbox")
 
 
@@ -270,9 +272,10 @@ class WasmSandbox:
         start_time = time.time()
 
         try:
+            args = parse_safe_command(code)
             result = subprocess.run(
-                code,
-                shell=True,
+                args,
+                shell=False,
                 capture_output=True,
                 text=True,
                 timeout=timeout_ms / 1000.0,

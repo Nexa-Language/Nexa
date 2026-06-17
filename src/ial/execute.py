@@ -38,6 +38,9 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional, Union
 
+from src.runtime.safe_eval import parse_safe_command, resolve_type_name
+
+
 from src.ial.primitives import (
     Check, CheckOp, AgentAssertion, ProtocolCheck, PipelineCheck,
     SemanticCheck, Http, Cli, CodeQuality, ReadFile, FunctionCall,
@@ -248,15 +251,7 @@ def _apply_check_op(op: CheckOp, actual: Any, expected: Any) -> tuple:
             return (False, f"EndsWith: both must be strings")
         
         if op == CheckOp.IsType:
-            type_map = {"str": str, "int": int, "float": float, "bool": bool, 
-                       "list": list, "dict": dict, "string": str, "number": (int, float)}
-            expected_type = type_map.get(expected, type(None))
-            if expected_type == type(None) and isinstance(expected, str):
-                # Try to evaluate the type name
-                try:
-                    expected_type = eval(expected)
-                except Exception:
-                    pass
+            expected_type = resolve_type_name(expected)
             passed = isinstance(actual, expected_type)
             msg = f"IsType: {type(actual).__name__} is {expected}" if passed else f"IsType: {type(actual).__name__} is not {expected}"
             return (passed, msg)
@@ -696,8 +691,9 @@ def _execute_cli(cli: Cli, context: Dict[str, Any]) -> CheckResult:
     执行 CLI 命令原语
     """
     try:
+        args = parse_safe_command(cli.command)
         result = subprocess.run(
-            cli.command, shell=True, capture_output=True, text=True, timeout=30
+            args, shell=False, capture_output=True, text=True, timeout=30
         )
         
         output = result.stdout + result.stderr

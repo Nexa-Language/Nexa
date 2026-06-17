@@ -41,13 +41,54 @@ import datetime
 import hashlib
 import base64
 import urllib.parse
+from pathlib import Path
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass
+from .safe_eval import parse_safe_command, safe_arithmetic_eval
 # P2-4: Template System imports
 from .template import (
     NexaTemplateRenderer, FILTER_REGISTRY, render_string, template, compile_template, render,
     agent_template_prompt, agent_template_slot_fill, agent_template_register, agent_template_list,
 )
+
+
+
+def _dangerous_tools_enabled() -> bool:
+    return os.environ.get("NEXA_ENABLE_DANGEROUS_TOOLS", "").lower() in {"1", "true", "yes", "on"}
+
+
+def _dangerous_tool_error(tool_name: str) -> str:
+    return (
+        f"Error: {tool_name} is disabled by default. "
+        "Set NEXA_ENABLE_DANGEROUS_TOOLS=1 and configure NEXA_ALLOWED_WRITE_ROOTS for mutating filesystem tools."
+    )
+
+
+def _allowed_write_roots() -> list[Path]:
+    raw = os.environ.get("NEXA_ALLOWED_WRITE_ROOTS", "")
+    roots = [Path.cwd()]
+    for part in raw.split(os.pathsep):
+        if part.strip():
+            roots.append(Path(part).expanduser())
+    resolved = []
+    for root in roots:
+        try:
+            resolved.append(root.resolve())
+        except OSError:
+            continue
+    return resolved
+
+
+def _is_path_allowed_for_write(path: str) -> bool:
+    try:
+        target = Path(path).expanduser().resolve()
+    except OSError:
+        return False
+    for root in _allowed_write_roots():
+        if target == root or root in target.parents:
+            return True
+    return False
+
 
 
 # ==================== 工具定义 ====================
@@ -131,25 +172,6 @@ def _http_delete(url: str, headers: Dict = None, timeout: int = 30) -> str:
         return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
     except Exception as e:
         return f"Error: {str(e)}"
-    """HTTP POST 请求"""
-    try:
-        import urllib.request
-        import urllib.error
-        
-        req = urllib.request.Request(
-            url,
-            data=data.encode('utf-8'),
-            method='POST'
-        )
-        req.add_header('Content-Type', content_type)
-        if headers:
-            for k, v in headers.items():
-                req.add_header(k, v)
-        
-        with urllib.request.urlopen(req, timeout=timeout) as response:
-            return response.read().decode('utf-8')
-    except Exception as e:
-        return f"HTTP POST Error: {str(e)}"
 
 
 def _url_encode(text: str) -> str:
@@ -176,7 +198,11 @@ def _file_read(path: str, encoding: str = "utf-8") -> str:
 def _file_write(path: str, content: str, encoding: str = "utf-8") -> str:
     """写入文件"""
     try:
-        os.makedirs(os.path.dirname(path), exist_ok=True)
+        if not _dangerous_tools_enabled():
+            return _dangerous_tool_error("file_write")
+        if not _is_path_allowed_for_write(path):
+            return "File Write Error: path is outside NEXA_ALLOWED_WRITE_ROOTS"
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, 'w', encoding=encoding) as f:
             f.write(content)
         return f"Successfully wrote {len(content)} characters to {path}"
@@ -187,6 +213,11 @@ def _file_write(path: str, content: str, encoding: str = "utf-8") -> str:
 def _file_append(path: str, content: str, encoding: str = "utf-8") -> str:
     """追加文件"""
     try:
+        if not _dangerous_tools_enabled():
+            return _dangerous_tool_error("file_append")
+        if not _is_path_allowed_for_write(path):
+            return "File Append Error: path is outside NEXA_ALLOWED_WRITE_ROOTS"
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
         with open(path, 'a', encoding=encoding) as f:
             f.write(content)
         return f"Successfully appended {len(content)} characters to {path}"
@@ -212,6 +243,10 @@ def _file_list(directory: str, pattern: str = "*") -> str:
 def _file_delete(path: str) -> str:
     """删除文件"""
     try:
+        if not _dangerous_tools_enabled():
+            return _dangerous_tool_error("file_delete")
+        if not _is_path_allowed_for_write(path):
+            return "File Delete Error: path is outside NEXA_ALLOWED_WRITE_ROOTS"
         os.remove(path)
         return f"Successfully deleted {path}"
     except Exception as e:
@@ -437,12 +472,7 @@ def _time_diff(start: str, end: str, unit: str = "seconds") -> str:
 def _math_calc(expression: str) -> str:
     """安全数学计算"""
     try:
-        # 只允许安全的数学运算
-        allowed = set('0123456789+-*/.() ')
-        if not all(c in allowed for c in expression):
-            return "Error: Invalid characters in expression"
-        
-        result = eval(expression)
+        result = safe_arithmetic_eval(expression)
         return json.dumps({"result": result, "expression": expression})
     except Exception as e:
         return f"Math Calc Error: {str(e)}"
@@ -465,9 +495,17 @@ def _shell_exec(command: str, timeout: int = 30) -> str:
     """执行 shell 命令"""
     import subprocess
     try:
+        if not _dangerous_tools_enabled():
+            return json.dumps({
+                "stdout": "",
+                "stderr": _dangerous_tool_error("shell_exec"),
+                "returncode": -1,
+                "success": False
+            })
+        args = parse_safe_command(command)
         result = subprocess.run(
-            command,
-            shell=True,
+            args,
+            shell=False,
             capture_output=True,
             text=True,
             timeout=timeout

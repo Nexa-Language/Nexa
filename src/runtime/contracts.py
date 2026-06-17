@@ -34,6 +34,7 @@ Nexa 特色：
 
 from typing import Any, Dict, List, Optional, Callable
 from .evaluator import nexa_semantic_eval
+from .safe_eval import safe_eval
 
 
 class ContractViolation(Exception):
@@ -265,23 +266,8 @@ def _evaluate_deterministic_expression(expression: str, context: Dict[str, Any],
     if result is not None:
         eval_context['result'] = result
     
-    # 安全评估：使用受限的 eval
-    # 只允许基本比较和数学运算
     try:
-        # 首先尝试直接 eval（受限于 eval_context）
-        allowed_names = set(eval_context.keys())
-        # 添加内置函数
-        safe_builtins = {
-            'True': True, 'False': False, 'None': None,
-            'len': len, 'str': str, 'int': int, 'float': float,
-            'abs': abs, 'min': min, 'max': max,
-            'isinstance': isinstance, 'type': type,
-            'list': list, 'dict': dict, 'bool': bool,
-        }
-        eval_globals = {"__builtins__": safe_builtins}
-        eval_locals = {k: v for k, v in eval_context.items() if k in allowed_names}
-        
-        return bool(eval(expression, eval_globals, eval_locals))
+        return bool(safe_eval(expression, eval_context))
     except Exception as e:
         print(f"[Contract] Failed to evaluate expression '{expression}': {e}")
         return False

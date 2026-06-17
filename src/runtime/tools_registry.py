@@ -20,7 +20,14 @@ import json
 import hashlib
 import time
 import subprocess
-from .stdlib import execute_stdlib_tool, get_stdlib_tools
+from .stdlib import (
+    execute_stdlib_tool,
+    get_stdlib_tools,
+    _dangerous_tool_error,
+    _dangerous_tools_enabled,
+    _is_path_allowed_for_write,
+)
+from .safe_eval import parse_safe_command
 
 def calculate_hash(text: str) -> str:
     """Calculates the SHA256 string for any given input string."""
@@ -33,9 +40,12 @@ def get_current_time(timezone: str = "UTC") -> str:
 def std_shell_execute(command: str, timeout: int = 60) -> str:
     """执行系统命令"""
     try:
+        if not _dangerous_tools_enabled():
+            return _dangerous_tool_error("std_shell_execute")
+        args = parse_safe_command(command)
         result = subprocess.run(
-            command,
-            shell=True,
+            args,
+            shell=False,
             capture_output=True,
             text=True,
             timeout=timeout
@@ -57,6 +67,10 @@ def std_fs_read_file(path: str, encoding: str = "utf-8") -> str:
 def std_fs_write_file(path: str, content: str, encoding: str = "utf-8") -> str:
     """写入文件"""
     try:
+        if not _dangerous_tools_enabled():
+            return _dangerous_tool_error("std_fs_write_file")
+        if not _is_path_allowed_for_write(path):
+            return "Error: path is outside NEXA_ALLOWED_WRITE_ROOTS"
         with open(path, 'w', encoding=encoding) as f:
             f.write(content)
         return "Success"
