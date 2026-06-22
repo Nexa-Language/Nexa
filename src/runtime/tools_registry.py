@@ -108,10 +108,12 @@ def std_ask_human(prompt: str, default: str = None) -> str:
 def web_search(query: str, max_results: int = 5) -> str:
     """使用 DuckDuckGo HTML 端点进行免费网络搜索（无需 API key）。
 
+    自动检测 HTTP_PROXY/HTTPS_PROXY 环境变量（如 WSL 的 127.0.0.1:7897）。
     返回 JSON 字符串，包含结果列表（title/snippet/url）。
     优先尝试 Instant Answer API，失败则解析 HTML 搜索结果页。
     """
     import json as _json
+    import os
     import re
     import urllib.parse
     import urllib.request
@@ -119,11 +121,33 @@ def web_search(query: str, max_results: int = 5) -> str:
     ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
     results = []
 
+    # 自动配置代理（WSL 环境通常用 127.0.0.1:7897）
+    proxy_url = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy") or \
+                os.environ.get("HTTP_PROXY") or os.environ.get("http_proxy") or ""
+    if not proxy_url:
+        # 尝试常见 WSL 代理端口
+        import socket
+        for port in ("7897", "7890", "1080"):
+            try:
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.5)
+                s.connect(("127.0.0.1", int(port)))
+                s.close()
+                proxy_url = f"http://127.0.0.1:{port}"
+                break
+            except Exception:
+                continue
+    if proxy_url:
+        proxy_handler = urllib.request.ProxyHandler({"http": proxy_url, "https": proxy_url})
+        opener = urllib.request.build_opener(proxy_handler)
+    else:
+        opener = urllib.request.build_opener()
+
     # 1) 先试 Instant Answer API（结构化，但覆盖率低）
     api_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json&no_html=1&skip_disambig=1"
     try:
         req = urllib.request.Request(api_url, headers={"User-Agent": ua})
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with opener.open(req, timeout=8) as resp:
             data = _json.loads(resp.read().decode("utf-8"))
         abstract = data.get("AbstractText", "") or data.get("Abstract", "")
         if abstract:
@@ -151,7 +175,7 @@ def web_search(query: str, max_results: int = 5) -> str:
         html_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
         try:
             req = urllib.request.Request(html_url, headers={"User-Agent": ua})
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with opener.open(req, timeout=10) as resp:
                 html = resp.read().decode("utf-8", errors="replace")
             titles = re.findall(r'class="result__a"[^>]*>([^<]+)</a>', html)
             snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
@@ -166,7 +190,11 @@ def web_search(query: str, max_results: int = 5) -> str:
                 })
         except Exception as e:
             if not results:
-                return _json.dumps({"error": f"DuckDuckGo HTML scrape failed: {e}", "query": query}, ensure_ascii=False)
+                return _json.dumps({
+                    "error": f"DuckDuckGo request failed: {e}",
+                    "query": query,
+                    "hint": "Set HTTPS_PROXY=http://127.0.0.1:7897 if behind a proxy",
+                }, ensure_ascii=False)
 
     if not results:
         results.append({
