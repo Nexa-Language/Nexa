@@ -104,6 +104,80 @@ def std_ask_human(prompt: str, default: str = None) -> str:
     except EOFError:
         return default or ""
 
+
+def web_search(query: str, max_results: int = 5) -> str:
+    """使用 DuckDuckGo HTML 端点进行免费网络搜索（无需 API key）。
+
+    返回 JSON 字符串，包含结果列表（title/snippet/url）。
+    优先尝试 Instant Answer API，失败则解析 HTML 搜索结果页。
+    """
+    import json as _json
+    import re
+    import urllib.parse
+    import urllib.request
+
+    ua = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+    results = []
+
+    # 1) 先试 Instant Answer API（结构化，但覆盖率低）
+    api_url = f"https://api.duckduckgo.com/?q={urllib.parse.quote(query)}&format=json&no_html=1&skip_disambig=1"
+    try:
+        req = urllib.request.Request(api_url, headers={"User-Agent": ua})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = _json.loads(resp.read().decode("utf-8"))
+        abstract = data.get("AbstractText", "") or data.get("Abstract", "")
+        if abstract:
+            results.append({
+                "title": data.get("Heading", query),
+                "snippet": abstract,
+                "url": data.get("AbstractURL", ""),
+                "source": "DuckDuckGo Instant Answer",
+            })
+        for topic in (data.get("RelatedTopics") or [])[:max_results]:
+            if isinstance(topic, dict) and topic.get("Text"):
+                results.append({
+                    "title": topic["Text"][:80],
+                    "snippet": topic["Text"],
+                    "url": topic.get("FirstURL", ""),
+                    "source": "DuckDuckGo Related",
+                })
+                if len(results) >= max_results:
+                    break
+    except Exception:
+        pass  # fall through to HTML scraping
+
+    # 2) Fallback: HTML 搜索结果页解析
+    if len(results) < max_results:
+        html_url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+        try:
+            req = urllib.request.Request(html_url, headers={"User-Agent": ua})
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                html = resp.read().decode("utf-8", errors="replace")
+            titles = re.findall(r'class="result__a"[^>]*>([^<]+)</a>', html)
+            snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
+            urls = re.findall(r'class="result__url"[^>]*href="([^"]+)"', html)
+            for i in range(min(len(titles), max_results - len(results))):
+                snippet = re.sub(r'<[^>]+>', '', snippets[i]) if i < len(snippets) else ""
+                results.append({
+                    "title": titles[i].strip(),
+                    "snippet": snippet.strip()[:300],
+                    "url": urls[i] if i < len(urls) else "",
+                    "source": "DuckDuckGo HTML",
+                })
+        except Exception as e:
+            if not results:
+                return _json.dumps({"error": f"DuckDuckGo HTML scrape failed: {e}", "query": query}, ensure_ascii=False)
+
+    if not results:
+        results.append({
+            "title": query,
+            "snippet": f"No results found for '{query}'.",
+            "source": "DuckDuckGo",
+        })
+
+    return _json.dumps({"query": query, "results": results[:max_results]}, ensure_ascii=False)
+
+
 # Tool dispatcher mapped by function name
 LOCAL_TOOLS = {
     "calculate_hash": calculate_hash,
@@ -112,6 +186,7 @@ LOCAL_TOOLS = {
     "std_fs_read_file": std_fs_read_file,
     "std_fs_write_file": std_fs_write_file,
     "std_http_fetch": std_http_fetch,
+    "web_search": web_search,
     "std_time_now": std_time_now,
     "std_ask_human": std_ask_human
 }
