@@ -3,7 +3,6 @@
   <h1>Nexa Language</h1>
   <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
   <p>
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
     <img src="https://img.shields.io/badge/Version-v2.1.0-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
