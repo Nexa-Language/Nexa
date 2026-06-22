@@ -7,7 +7,7 @@ import pydantic
 from src.runtime.stdlib import STD_NAMESPACE_MAP
 from src.runtime.agent import NexaAgent
 from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
-from src.runtime.orchestrator import join_agents, nexa_pipeline
+from src.runtime.orchestrator import join_agents, nexa_pipeline, nexa_context_pipeline
 from src.runtime.dag_orchestrator import dag_fanout, dag_merge, dag_branch, dag_parallel_map, SmartRouter
 from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP

@@ -5,7 +5,7 @@
   <p>
     <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.19994263.svg" alt="DOI"/>
     <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.1.2-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.2.1-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
     <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
   </p>
