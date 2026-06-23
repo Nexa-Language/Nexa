@@ -6,7 +6,7 @@
 // 引入标准库新闻搜索工具
 include "stdlib/news.nx";
 
-use config ali;
+use config default;
 
 agent SearchAgent uses search_news {
     model: "deepseek-v4-pro",
