@@ -1,0 +1,64 @@
+// ═══════════════════════════════════════════════════════════════════════
+// Nexa Project Template
+// ═══════════════════════════════════════════════════════════════════════
+// Copy this file as a starting point for any Nexa project.
+// Build:  nexa build template.nx
+// Run:    python template.py
+//
+// For multi-file projects: split tools, agents, flows into separate
+// .nx files and use `include "file.nx"` in main.nx.
+// ═══════════════════════════════════════════════════════════════════════
+
+// ─── Secrets (optional) ───
+// include "secrets.nxs";    // uncomment if you need API keys
+
+// ─── Tool Definitions ───
+
+@tool("Perform a calculation given a mathematical expression")
+fn calculate(expression: string): string {
+    python! """
+from src.runtime.safe_eval import safe_arithmetic_eval
+try:
+    result = safe_arithmetic_eval(expression)
+    return f"Result: {result}"
+except Exception as e:
+    return f"Error: {e}"
+"""
+}
+
+// ─── Agent Definition ───
+
+agent Assistant {
+    prompt: "You are a helpful AI assistant. Use tools when appropriate.
+             Be concise and accurate. When unsure, ask for clarification."
+    model: "minimax-m2.5"
+}
+
+// ─── Flow: Main Entry Point ───
+
+flow main {
+    std.ui.banner("Nexa Agent Template", "Type your question, or /exit to quit.");
+
+    // E-dimension: autoloop for interactive REPL
+    autoloop max_steps: 50, exit_when: "user typed /exit", timeout: 600 {
+        // Read user input
+        user_input = std.ui.input("You> ");
+
+        // Exit check
+        if (user_input == "/exit") {
+            print("Goodbye!");
+            exit(0);
+        }
+
+        // C-dimension: manage context token budget
+        with_context max_tokens: 30000 {
+            // Call the agent
+            result = Assistant.run(user_input);
+        }
+
+        // V-dimension: verify output type
+        verify result satisfies string;
+
+        std.ui.agent_reply("Assistant", result);
+    }
+}
