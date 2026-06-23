@@ -513,7 +513,7 @@ class NexaAgent:
                 with timeout_context(self.timeout):
                     if self.stream and not self.tools and not self.protocol:
                         kwargs["stream"] = True
-                        _debug__debug_print(f"< [{self.name} replied]: ", end="")
+                        _debug_print(f"< [{self.name} replied]: ", end="")
                         sys.stdout.flush()
                         response = self._get_client().chat.completions.create(**kwargs)
                         accumulated_reply = ""
@@ -533,7 +533,19 @@ class NexaAgent:
                     if "stream" in kwargs:
                         del kwargs["stream"]
                         
-                    response = self._get_client().chat.completions.create(**kwargs)
+                    # v2.3.1: Show "Thinking..." spinner during LLM call in quiet mode
+                    if os.environ.get("NEXA_QUIET"):
+                        try:
+                            from .ui import _console, _RICH_AVAILABLE
+                            if _RICH_AVAILABLE and _console:
+                                with _console.status("[dim]Thinking...[/dim]", spinner="dots"):
+                                    response = self._get_client().chat.completions.create(**kwargs)
+                            else:
+                                response = self._get_client().chat.completions.create(**kwargs)
+                        except Exception:
+                            response = self._get_client().chat.completions.create(**kwargs)
+                    else:
+                        response = self._get_client().chat.completions.create(**kwargs)
                     msg = response.choices[0].message
                     
                     if msg.tool_calls:

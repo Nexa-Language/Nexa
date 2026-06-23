@@ -220,30 +220,60 @@ LOCAL_TOOLS = {
 }
 
 def execute_tool(name: str, args_json: str) -> str:
-    print(f"    [ToolRegistry] Executing {name} with args {args_json} ...")
-    
+    """Execute a tool by name. In NEXA_QUIET mode, shows a spinner instead
+    of verbose execution logs. Details are hidden but results still returned."""
+    import os as _os
+
     try:
         args = json.loads(args_json) if args_json else {}
     except json.JSONDecodeError:
         args = {}
-    
+
+    quiet = _os.environ.get("NEXA_QUIET")
+
+    if quiet:
+        # v2.3.1: Show compact tool execution status (spinner)
+        try:
+            from .ui import print_tool_call, print_tool_result
+            print_tool_call(name, args_json[:80] if args_json else "")
+        except Exception:
+            pass
+    else:
+        print(f"    [ToolRegistry] Executing {name} with args {args_json} ...")
+
     # First try LOCAL_TOOLS
     if name in LOCAL_TOOLS:
         try:
             result = LOCAL_TOOLS[name](**args)
-            print(f"    [ToolRegistry] Execution result: {result}")
+            if quiet:
+                try:
+                    from .ui import print_tool_result
+                    print_tool_result(str(result))
+                except Exception:
+                    pass
+            else:
+                print(f"    [ToolRegistry] Execution result: {result}")
             return str(result)
         except Exception as e:
             err = f"Error executing tool {name}: {str(e)}"
-            print(f"    [ToolRegistry] {err}")
+            if not quiet:
+                print(f"    [ToolRegistry] {err}")
             return err
-    
+
     # Then try stdlib tools
     try:
         result = execute_stdlib_tool(name, **args)
-        print(f"    [ToolRegistry] Execution result: {result}")
+        if quiet:
+            try:
+                from .ui import print_tool_result
+                print_tool_result(str(result))
+            except Exception:
+                pass
+        else:
+            print(f"    [ToolRegistry] Execution result: {result}")
         return str(result)
     except Exception as e:
         err = f"Error: Tool '{name}' not found locally or in stdlib. {str(e)}"
-        print(f"    [ToolRegistry] {err}")
+        if not quiet:
+            print(f"    [ToolRegistry] {err}")
         return err
