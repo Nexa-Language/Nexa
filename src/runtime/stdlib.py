@@ -253,6 +253,67 @@ def _file_delete(path: str) -> str:
         return f"File Delete Error: {str(e)}"
 
 
+# v2.3.1: diff-style file editing + search + directory listing
+
+def _file_edit(path: str, old_text: str, new_text: str) -> str:
+    """Edit a file by replacing old_text with new_text (diff-style)."""
+    try:
+        if not _dangerous_tools_enabled():
+            return _dangerous_tool_error("file_edit")
+        if not _is_path_allowed_for_write(path):
+            return "File Edit Error: path is outside NEXA_ALLOWED_WRITE_ROOTS"
+        if not os.path.exists(path):
+            return f"File Edit Error: File '{path}' does not exist."
+        content = open(path, 'r', encoding='utf-8', errors='replace').read()
+        if old_text not in content:
+            return f"File Edit Error: old_text not found in '{path}'. No changes made."
+        count = content.count(old_text)
+        new_content = content.replace(old_text, new_text)
+        open(path, 'w', encoding='utf-8').write(new_content)
+        return f"Successfully edited {path}: {count} replacement(s) made."
+    except Exception as e:
+        return f"File Edit Error: {str(e)}"
+
+
+def _search_files(pattern: str, directory: str = ".") -> str:
+    """Search for a text pattern in files under a directory."""
+    try:
+        import subprocess
+        target_dir = os.path.join(os.getcwd(), directory) if directory != "." else os.getcwd()
+        result = subprocess.run(
+            ["grep", "-rn", "--include=*.py", "--include=*.nx", "--include=*.md",
+             "--include=*.txt", "--include=*.json", "--include=*.yaml",
+             "--include=*.toml", "--include=*.rs", "--include=*.go",
+             "--include=*.c", "--include=*.cpp", "--include=*.h",
+             "--include=*.js", "--include=*.ts", pattern],
+            cwd=target_dir, capture_output=True, text=True, timeout=10
+        )
+        if not result.stdout:
+            return f"No matches found for '{pattern}' in '{directory}'"
+        lines = result.stdout.splitlines()[:30]
+        return "\n".join(lines)
+    except Exception as e:
+        return f"Search Error: {e}"
+
+
+def _list_directory(path: str = ".") -> str:
+    """List files and directories in a path."""
+    try:
+        target = os.path.join(os.getcwd(), path) if path != "." else os.getcwd()
+        entries = sorted(os.listdir(target))
+        output = []
+        for entry in entries:
+            full = os.path.join(target, entry)
+            if os.path.isdir(full):
+                output.append(f"  DIR  {entry}/")
+            else:
+                size = os.path.getsize(full)
+                output.append(f"  FILE {entry} ({size} bytes)")
+        return f"Directory: {path}\n" + "\n".join(output[:50])
+    except Exception as e:
+        return f"Error listing '{path}': {e}"
+
+
 # ==================== 数据处理工具 ====================
 
 def _json_parse(text: str) -> str:
@@ -3714,7 +3775,7 @@ def _std_ui_tool_call(tool_name: str, args: str = "") -> str:
 
 
 STD_NAMESPACE_MAP = {
-    "std.fs": ["file_read", "file_write", "file_exists", "file_list", "file_append", "file_delete"],
+    "std.fs": ["file_read", "file_write", "file_exists", "file_list", "file_append", "file_delete", "file_edit"],
     "std.http": ["http_get", "http_post", "http_put", "http_delete"],
     "std.time": ["time_now", "time_diff", "time_format", "time_sleep", "time_timestamp"],
     "std.text": ["text_split", "text_replace", "text_upper", "text_lower"],
@@ -3723,6 +3784,7 @@ STD_NAMESPACE_MAP = {
     "std.math": ["math_calc", "math_random"],
     "std.regex": ["regex_match", "regex_replace"],
     "std.shell": ["shell_exec", "shell_which"],
+    "std.code": ["search_files", "list_directory", "file_edit"],
     "std.ask_human": ["ask_human"],
     # P1-5: Database Integration (内置数据库集成)
     "std.db.sqlite": ["std_db_sqlite_connect", "std_db_sqlite_query", "std_db_sqlite_query_one", "std_db_sqlite_execute", "std_db_sqlite_close", "std_db_sqlite_begin", "std_db_sqlite_commit", "std_db_sqlite_rollback"],

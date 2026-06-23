@@ -28,7 +28,8 @@ from .stdlib import (
     _is_path_allowed_for_write,
 )
 from .safe_eval import parse_safe_command
-
+from .safe_eval import safe_eval, safe_arithmetic_eval, parse_safe_command
+from .stdlib import (_file_read as _stdlib_read_file, _file_write as _stdlib_write_file, _file_edit as _stdlib_edit_file, _search_files as _stdlib_search_files, _list_directory as _stdlib_list_directory, _shell_exec as _stdlib_shell_exec)
 def calculate_hash(text: str) -> str:
     """Calculates the SHA256 string for any given input string."""
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -216,7 +217,14 @@ LOCAL_TOOLS = {
     "std_http_fetch": std_http_fetch,
     "web_search": web_search,
     "std_time_now": std_time_now,
-    "std_ask_human": std_ask_human
+    "std_ask_human": std_ask_human,
+    # v2.3.1: code tools for nexa_code REPL (from stdlib)
+    "read_file": _stdlib_read_file,
+    "write_file": _stdlib_write_file,
+    "edit_file": _stdlib_edit_file,
+    "search_files": _stdlib_search_files,
+    "list_directory": _stdlib_list_directory,
+    "shell_exec": _stdlib_shell_exec,
 }
 
 def execute_tool(name: str, args_json: str) -> str:
