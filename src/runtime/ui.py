@@ -190,12 +190,32 @@ def print_tool_result(result: str) -> None:
 
 
 def input_prompt(prompt: str = "nexa> ") -> str:
-    """Styled input prompt. Falls back to built-in input()."""
+    """Styled input prompt with CJK wide-character support.
+
+    Uses prompt_toolkit when available (correct backspace handling for
+    multi-byte CJK characters). Falls back to rich Prompt, then to
+    built-in input().
+    """
+    # Try prompt_toolkit first — it handles CJK width correctly
+    try:
+        from prompt_toolkit import prompt as pt_prompt
+        from prompt_toolkit.formatted_text import HTML
+        return pt_prompt(HTML(f'<style fg="ansigreen">{prompt}</style>'))
+    except ImportError:
+        pass
+    except (EOFError, KeyboardInterrupt):
+        return ""
+
+    # Fallback: rich Prompt
     try:
         if _RICH_AVAILABLE and _console:
-            _console.print(f"[nexa.user]{prompt}[/nexa.user]", end="")
-            sys.stdout.flush()
-            return input()
+            from rich.prompt import Prompt
+            return Prompt.ask(prompt, console=_console, show_default=False)
+    except Exception:
+        pass
+
+    # Last resort: built-in input (may have CJK backspace issues)
+    try:
         return input(prompt)
     except EOFError:
         return ""

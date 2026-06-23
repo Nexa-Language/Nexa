@@ -4,7 +4,7 @@
   <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.1.0-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.3.1-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
     <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
   </p>

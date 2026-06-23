@@ -4,7 +4,7 @@
   <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
   <p>
     <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.2.1-brightgreen.svg" alt="Version"/>
+    <img src="https://img.shields.io/badge/Version-v2.3.1-brightgreen.svg" alt="Version"/>
     <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
     <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
   </p>
@@ -21,6 +21,35 @@
 **Nexa** 是 **the first Harness Native Agent Language**——一门为大语言模型（LLM）与智能体系统（Agentic Systems）量身定制的编程语言，将 Agent 安全从运行时框架下沉为语言级原语。
 
 当代 AI 应用开发充斥着大量的 Prompt 拼接、臃肿的 JSON 解析套件、不可靠的正则皮带，以及复杂的框架。Nexa 将高层级的意图路由、多智能体并发组装、管道流传输以及工具执行沙盒提权为核心语法一等公民，直接通过底层的 `Transpiler` 转换为稳定可靠的 Python Runtime，让你能够用最优雅的语法定义最硬核的 LLM 计算图（DAG）。
+
+---
+
+## 🔥 v2.3.1: Terminal UI + CJK Input
+
+Nexa v2.3.1 引入基于 `rich` 的终端 UI 渲染库和 `prompt_toolkit` 的 CJK 宽字符输入支持。
+
+### `std.ui` 终端 UI DSL
+
+在 `.nx` 文件中直接调用 UI 函数：
+
+```nexa
+flow main {
+    std.ui.banner("My App", "Subtitle");
+    std.ui.markdown("# Hello\n\nThis is **bold**.");
+    std.ui.code("print('hello')", "python");
+    std.ui.thinking("Analyzing...", 1.0);
+    std.ui.success("Done!");
+    std.ui.agent_reply("Agent", "Reply as **markdown**");
+}
+```
+
+### 中文输入修复
+
+`prompt_toolkit` 替代 Python 内置 `input()`，正确处理 CJK 宽字符的回退（backspace）。
+
+### 向后兼容
+
+未安装 `rich` / `prompt_toolkit` 时自动降级为纯文本输出。
 
 ---
 
