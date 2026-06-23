@@ -32,7 +32,7 @@ flow main {
     // [原生语义分支]
     // 这里不会写恶心的 if "agent-native" in result 这种文本匹配
     // 而是委托给轻量级 LLM 进行语义判定
-    semantic_if "The result explicitly mentions 'agent-native' or 'transpiler'" against result {
+    semantic_if "The result explicitly mentions 'harness-native' or 'agent language'" against result {
         
         // 判定通过
         Researcher.run("Provide a 50-word technical summary based on the result.", result);

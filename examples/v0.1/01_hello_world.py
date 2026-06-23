@@ -11,6 +11,8 @@ from src.runtime.orchestrator import join_agents, nexa_pipeline, nexa_context_pi
 from src.runtime.dag_orchestrator import dag_fanout, dag_merge, dag_branch, dag_parallel_map, SmartRouter
 from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
+# v2.2.1: Terminal UI functions (rich-based rendering)
+from src.runtime.stdlib import (_std_ui_banner, _std_ui_markdown, _std_ui_code, _std_ui_panel, _std_ui_thinking, _std_ui_success, _std_ui_error, _std_ui_warning, _std_ui_info, _std_ui_input, _std_ui_agent_reply, _std_ui_tool_call)
 from src.runtime.secrets import nexa_secrets
 from src.runtime.core import nexa_fallback, nexa_img_loader
 from src.runtime.mcp_client import fetch_mcp_tools
@@ -174,7 +176,7 @@ Researcher = NexaAgent(
 
 def flow_main():
     result = Researcher.run("Search the latest news about the new 'Nexa' programming language.")
-    if nexa_semantic_eval("The result explicitly mentions 'agent-native' or 'transpiler'", result):
+    if nexa_semantic_eval("The result explicitly mentions 'harness-native' or 'agent language'", result):
         Researcher.run("Provide a 50-word technical summary based on the result.", result)
     else:
         Researcher.run("Just reply: 'No relevant Nexa logic found in search results.'")
