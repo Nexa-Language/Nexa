@@ -39,6 +39,14 @@ from .tools_registry import execute_tool
 from .cache_manager import get_cache_manager, NexaCacheManager
 from .cow_state import CowAgentState
 from .agent_context import AgentContext, ContextSpec
+# v2.2.1: UI-aware output — suppress debug prints when NEXA_QUIET is set
+import os as _os
+def _debug_print(*args, **kwargs):
+    """Print only when NEXA_QUIET is not set. Used for runtime debug output
+    that should be suppressed when a UI layer (e.g. nexa_code REPL) controls output."""
+    if not _os.environ.get("NEXA_QUIET"):
+        print(*args, **kwargs)
+
 
 class NexaAgent:
     def __init__(self, name: str, prompt: str = "", tools: List[Dict[str, Any]] = None,
@@ -364,7 +372,7 @@ class NexaAgent:
                         summary = summary_res.choices[0].message.content
                         self.messages = sys_msgs + [{"role": "system", "content": f"Previous conversation summary: {summary}"}] + self.messages[keep_idx:]
                     except Exception as e:
-                        print(f"[{self.name} Context Compaction Failed]: {e}")
+                        _debug_print(f"[{self.name} Context Compaction Failed]: {e}")
 
     def run(self, *args) -> str:
         import signal
@@ -442,7 +450,7 @@ class NexaAgent:
         if context:
             user_input += f"\n[Context]: {context}"
 
-        print(f"\n> [{self.name} received]: {user_input}")
+        _debug_print(f"\n> [{self.name} received]: {user_input}")
         self.messages.append({"role": "user", "content": user_input})
         
         self._compact_context()
@@ -487,7 +495,7 @@ class NexaAgent:
 
             # v2.1: Max tool calls enforcement
             if self._tool_call_count >= self.max_tool_calls:
-                print(f"[{self.name}] Max tool calls ({self.max_tool_calls}) reached, forcing final answer")
+                _debug_print(f"[{self.name}] Max tool calls ({self.max_tool_calls}) reached, forcing final answer")
                 if "tools" in kwargs:
                     del kwargs["tools"]
                 if "tool_choice" in kwargs:
@@ -496,7 +504,7 @@ class NexaAgent:
             
             cached_result = self._check_cache(kwargs)
             if cached_result is not None:
-                print(f"< [{self.name} replied from CACHE]: {cached_result}\n")
+                _debug_print(f"< [{self.name} replied from CACHE]: {cached_result}\n")
                 self.messages.append({"role": "assistant", "content": cached_result})
                 self._save_memory()
                 return self._snapshot_context(self._check_ensures_contract(cached_result, old_values))
@@ -505,7 +513,7 @@ class NexaAgent:
                 with timeout_context(self.timeout):
                     if self.stream and not self.tools and not self.protocol:
                         kwargs["stream"] = True
-                        print(f"< [{self.name} replied]: ", end="")
+                        _debug__debug_print(f"< [{self.name} replied]: ", end="")
                         sys.stdout.flush()
                         response = self._get_client().chat.completions.create(**kwargs)
                         accumulated_reply = ""
@@ -533,7 +541,7 @@ class NexaAgent:
                         msg_dict = msg.dict(exclude_none=True) if hasattr(msg, "dict") else dict(msg)
                         self.messages.append(msg_dict)
                         for tc in msg.tool_calls:
-                            print(f"[{self.name} requested TOOL CALL]: {tc.function.name} -> {tc.function.arguments}")
+                            _debug_print(f"[{self.name} requested TOOL CALL]: {tc.function.name} -> {tc.function.arguments}")
                             result = execute_tool(tc.function.name, tc.function.arguments)
                             tool_message = {
                                 "role": "tool",
@@ -552,7 +560,7 @@ class NexaAgent:
                                 # 验证并返回 Pydantic 模型实例
                                 validated = self.protocol.model_validate(parsed_reply)
                                 self.messages.append({"role": "assistant", "content": reply})
-                                print(f"< [{self.name} replied (JSON)]: {reply}\n")
+                                _debug_print(f"< [{self.name} replied (JSON)]: {reply}\n")
                                 self._write_cache(kwargs, reply)
                                 self._save_memory()
                                 return self._check_ensures_contract(validated, old_values)  # 返回 Pydantic 模型实例，支持属性访问
@@ -561,13 +569,13 @@ class NexaAgent:
                                 retries -= 1
                                 if retries <= 0:
                                     raise ValueError(f"Agent {self.name} failed to conform to protocol {self.protocol.__name__}: {str(e)}")
-                                print(f"\n[{self.name} Schema Error, Retrying] {str(e)}")
+                                _debug_print(f"\n[{self.name} Schema Error, Retrying] {str(e)}")
                                 self.messages.append({"role": "assistant", "content": reply})
                                 self.messages.append({"role": "system", "content": f"Your last response failed schema validation. Please fix and return valid JSON. Error: {str(e)}"})
                                 continue
                         
                         self.messages.append({"role": "assistant", "content": reply})
-                        print(f"< [{self.name} replied]: {reply}\n")
+                        _debug_print(f"< [{self.name} replied]: {reply}\n")
                         self._write_cache(kwargs, reply)
                         self._save_memory()
                         return self._snapshot_context(self._check_ensures_contract(reply, old_values))
@@ -576,7 +584,7 @@ class NexaAgent:
                 retries -= 1
                 if retries <= 0:
                     raise
-                print(f"\n[{self.name} Timeout, Retrying... ({retries} attempts left)]")
+                _debug_print(f"\n[{self.name} Timeout, Retrying... ({retries} attempts left)]")
                 continue
 
     def _snapshot_context(self, result: Any) -> Any:

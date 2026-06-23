@@ -3636,6 +3636,83 @@ def execute_stdlib_tool(name: str, **kwargs) -> str:
 
 # ==================== 命名空间映射 ====================
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# v2.2.1: Terminal UI Functions (rich-based rendering)
+# ═══════════════════════════════════════════════════════════════════════
+
+def _std_ui_banner(title: str, subtitle: str = "") -> str:
+    """Print a startup banner."""
+    from .ui import print_banner
+    print_banner(title, subtitle)
+    return ""
+
+def _std_ui_markdown(text: str) -> str:
+    """Render text as markdown."""
+    from .ui import print_markdown
+    print_markdown(text)
+    return ""
+
+def _std_ui_code(code: str, language: str = "python") -> str:
+    """Render code with syntax highlighting."""
+    from .ui import print_code
+    print_code(code, language)
+    return ""
+
+def _std_ui_panel(text: str, title: str = "", style: str = "cyan") -> str:
+    """Render text in a styled panel."""
+    from .ui import print_panel
+    print_panel(text, title, style)
+    return ""
+
+def _std_ui_thinking(message: str = "Thinking", duration: float = 1.0) -> str:
+    """Show a thinking spinner animation."""
+    from .ui import thinking_spinner
+    thinking_spinner(message, duration)
+    return ""
+
+def _std_ui_success(msg: str) -> str:
+    """Print a success message."""
+    from .ui import print_success
+    print_success(msg)
+    return ""
+
+def _std_ui_error(msg: str) -> str:
+    """Print an error message."""
+    from .ui import print_error
+    print_error(msg)
+    return ""
+
+def _std_ui_warning(msg: str) -> str:
+    """Print a warning message."""
+    from .ui import print_warning
+    print_warning(msg)
+    return ""
+
+def _std_ui_info(msg: str) -> str:
+    """Print an info message."""
+    from .ui import print_info
+    print_info(msg)
+    return ""
+
+def _std_ui_input(prompt: str = "nexa> ") -> str:
+    """Styled input prompt."""
+    from .ui import input_prompt
+    return input_prompt(prompt)
+
+def _std_ui_agent_reply(agent_name: str, reply: str) -> str:
+    """Render an agent reply with markdown."""
+    from .ui import print_agent_reply
+    print_agent_reply(agent_name, reply)
+    return ""
+
+def _std_ui_tool_call(tool_name: str, args: str = "") -> str:
+    """Render a tool call notification."""
+    from .ui import print_tool_call
+    print_tool_call(tool_name, args)
+    return ""
+
+
 STD_NAMESPACE_MAP = {
     "std.fs": ["file_read", "file_write", "file_exists", "file_list", "file_append", "file_delete"],
     "std.http": ["http_get", "http_post", "http_put", "http_delete"],
@@ -3666,6 +3743,8 @@ STD_NAMESPACE_MAP = {
     "std.string": ["std_string_interpolate"],
     # P3-3: Pattern Matching (模式匹配)
     "std.match": ["std_match_pattern", "std_match_destructure", "std_match_variant"],
+    # v2.2.1: Terminal UI (rich-based rendering)
+    "std.ui": ["std_ui_banner", "std_ui_markdown", "std_ui_code", "std_ui_panel", "std_ui_thinking", "std_ui_success", "std_ui_error", "std_ui_warning", "std_ui_info", "std_ui_input", "std_ui_agent_reply", "std_ui_tool_call"],
     # P3-4: ADT — Struct/Enum/Trait/Impl (代数数据类型)
     "std.struct": ["std_adt_register_struct", "std_adt_make_struct", "std_adt_lookup"],
     "std.enum": ["std_adt_register_enum", "std_adt_make_variant", "std_adt_lookup"],

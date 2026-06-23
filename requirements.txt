@@ -20,3 +20,4 @@ typing_extensions==4.15.0
 PyJWT>=2.8.0
 requests>=2.31.0
 anthropic>=0.40.0  # optional: enables Anthropic Claude via provider="anthropic"
+rich>=13.0.0

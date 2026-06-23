@@ -34,6 +34,8 @@ from src.runtime.orchestrator import join_agents, nexa_pipeline, nexa_context_pi
 from src.runtime.dag_orchestrator import dag_fanout, dag_merge, dag_branch, dag_parallel_map, SmartRouter
 from src.runtime.memory import global_memory
 from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
+# v2.2.1: Terminal UI functions (rich-based rendering)
+from src.runtime.stdlib import (_std_ui_banner, _std_ui_markdown, _std_ui_code, _std_ui_panel, _std_ui_thinking, _std_ui_success, _std_ui_error, _std_ui_warning, _std_ui_info, _std_ui_input, _std_ui_agent_reply, _std_ui_tool_call)
 from src.runtime.secrets import nexa_secrets
 from src.runtime.core import nexa_fallback, nexa_img_loader
 from src.runtime.mcp_client import fetch_mcp_tools
@@ -2635,6 +2637,16 @@ def _get_pydantic_type(type_str: str):
                 return f"dag_merge({agents_list_str}, strategy=\"{strategy}\", merge_agent={merger_str})"
             return f"dag_merge({agents_list_str}, strategy=\"{strategy}\")"
         
+        elif ex_type == "StdCallExpression":
+            # std.namespace.function(args) → _std_namespace_function(args)
+            ns = expr.get("namespace", "")
+            fn = expr.get("function", "")
+            args = expr.get("arguments", [])
+            args_str = ", ".join([self._resolve_expression(a) for a in args])
+            # Map std.ui.X → _std_ui_X; other std.ns.X → ns_fn
+            if ns == "ui":
+                return f"_std_ui_{fn}({args_str})"
+            return f"{ns}_{fn}({args_str})"
         elif ex_type == "DAGBranchExpression":
             # 条件分支表达式: dag_branch(input, condition_fn, true_agent, false_agent)
             input_str = self._resolve_expression(expr["input"])

@@ -122,36 +122,37 @@ except Exception as e:
 // ─── Main Interactive REPL Flow ───
 
 flow nexa_code_repl {
-    // Print banner
-    print("╔════════════════════════════════════════════════╗");
-    print("║          Nexa Code v2.0.0                     ║");
-    print("║   The First Harness Native AI Coding Agent    ║");
-    print("╚════════════════════════════════════════════════╝");
-    print("Type your request, or /exit to quit.");
+    // v2.2.1: Rich-rendered banner (Claude Code style)
+    std.ui.banner("Nexa Code v2.2.1", "The First Harness Native AI Coding Agent — type /exit to quit");
 
     // E-dimension: autoloop — interactive REPL
     autoloop max_steps: 100, exit_when: "user typed /exit" {
-        // Read user input
-        user_input = input("nexa-code> ");
+        // v2.2.1: Styled input prompt
+        user_input = std.ui.input("nexa-code> ");
 
         // Check for exit command
         if (user_input == "/exit") {
-            print("Goodbye!");
+            std.ui.info("Goodbye!");
             exit(0);
         }
 
         // Check for /help
         if (user_input == "/help") {
-            print("Commands: /help /exit /clear /tools /snap /restore");
+            std.ui.markdown("## Commands\n\n- `/help` — Show this help\n- `/exit` — Quit REPL\n\nType any other text to chat with CodeAssistant.");
             break;
         }
 
+        // v2.2.1: Thinking spinner while agent processes
+        std.ui.thinking("Thinking", 0.5);
+
         // C-dimension: with_context — send to agent
         with_context max_tokens: 50000 {
-            // Call the CodeAssistant agent
+            // Call the CodeAssistant agent (NEXA_QUIET suppresses duplicate runtime prints)
             result = CodeAssistant.run(user_input);
-            print(result);
         }
+
+        // v2.2.1: Render agent reply as markdown in a styled panel
+        std.ui.agent_reply("CodeAssistant", result);
 
         // V-dimension: verify — check response quality
         verify result satisfies string;
@@ -161,7 +162,10 @@ flow nexa_code_repl {
 // ─── One-shot mode (non-interactive) ───
 
 flow nexa_code_oneshot(task: string) {
-    print("Task: " + task);
+    std.ui.info("Task: " + task);
+
+    // v2.2.1: Thinking spinner
+    std.ui.thinking("Processing", 0.5);
 
     // C-dimension: with_context
     with_context max_tokens: 50000 {
@@ -171,5 +175,6 @@ flow nexa_code_oneshot(task: string) {
     // V-dimension: verify
     verify result satisfies string;
 
-    print(result);
+    // v2.2.1: Render as markdown
+    std.ui.agent_reply("CodeAssistant", result);
 }
