@@ -1,39 +1,32 @@
 // ── Protocol ──
 protocol Result { summary: "string", score: "float" }
-
 // ── @tool 注解 (Harness T) ──
 @tool("搜索网页")
 fn web_search(query: string): string {
     python! """return f"Results for: {query}" """
-}
-
+}// T: @tool 使用Py宏
 // ── Agent ──
-agent Researcher uses web_search {
+agent Researcher uses web_search implements Result {
     role: "Researcher", model: "minimax-m2.5",
-    prompt: "You research topics and summarize findings."
+    prompt: "You research topics and return JSON: {summary, score}."
 }
-
 // ── Flow + Harness 六元组 ──
 flow main {
+    // H: hook
     before_step { print("[hook] starting..."); }
-
     // E: autoloop + C: with_context
     autoloop max_steps: 3, exit_when: "done" {
         with_context max_tokens: 50000 {
             // S: snapshot
             snap = snapshot();
-
-            // Pipeline >>
+            // DAG Pipeline >>
             result = "AI trends" >> Researcher;
-
             // V: verify
             verify result satisfies string;
-
             // S: fork（并行探索）
             fork [Researcher.run("A"), Researcher.run("B")] merge best;
         }
     }
-
     after_step { print("[hook] finished."); }
     print("Result: #{result}");
 }
