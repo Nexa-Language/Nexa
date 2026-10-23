@@ -1,0 +1,765 @@
+{
+  "schema_version": 1,
+  "name": "maintenance-fixtures.v1",
+  "fixture_license": "AGPL-3.0-or-later",
+  "baseline_source": "v2.4.0@c2162637236e4a73feea410c4183672411666521",
+  "image": "python@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704",
+  "trials": 3,
+  "variants": [
+    "legacy_2_4",
+    "open_programs",
+    "no_reuse",
+    "no_feedback"
+  ],
+  "budget": {
+    "max_model_calls": 4,
+    "max_tokens": 16000,
+    "timeout_seconds": 90
+  },
+  "global_budget": {
+    "max_model_calls": 1440,
+    "max_reported_tokens": 2000000
+  },
+  "tasks": [
+    {
+      "id": "sum",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "SCALE = 1\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Return the sum of a numeric list.",
+          "settings": "SCALE = 1\n",
+          "checks": [
+            {
+              "input": [
+                2,
+                3
+              ],
+              "expected": 5
+            },
+            {
+              "input": [],
+              "expected": 0
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Ignore None entries and multiply the sum by settings.SCALE.",
+          "settings": "SCALE = 1\n",
+          "checks": [
+            {
+              "input": [
+                2,
+                null,
+                3
+              ],
+              "expected": 5
+            },
+            {
+              "input": [],
+              "expected": 0
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Ignore None entries and multiply the sum by settings.SCALE.",
+          "settings": "SCALE = 3\n",
+          "checks": [
+            {
+              "input": [
+                2,
+                null,
+                3
+              ],
+              "expected": 15
+            },
+            {
+              "input": [
+                -2,
+                1
+              ],
+              "expected": -3
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "words",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "SEP = \",\"\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Split a string on whitespace into a list of words.",
+          "settings": "SEP = \",\"\n",
+          "checks": [
+            {
+              "input": "a b",
+              "expected": [
+                "a",
+                "b"
+              ]
+            },
+            {
+              "input": "   ",
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Split a string using settings.SEP and discard empty segments.",
+          "settings": "SEP = \",\"\n",
+          "checks": [
+            {
+              "input": "a,,b",
+              "expected": [
+                "a",
+                "b"
+              ]
+            },
+            {
+              "input": "",
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Split a string using settings.SEP and discard empty segments.",
+          "settings": "SEP = \"|\"\n",
+          "checks": [
+            {
+              "input": "a||b",
+              "expected": [
+                "a",
+                "b"
+              ]
+            },
+            {
+              "input": "x|y|z",
+              "expected": [
+                "x",
+                "y",
+                "z"
+              ]
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "clamp",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "MAX = 10\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Clamp an integer to the inclusive interval 0 to 10.",
+          "settings": "MAX = 10\n",
+          "checks": [
+            {
+              "input": 12,
+              "expected": 10
+            },
+            {
+              "input": -2,
+              "expected": 0
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Clamp an integer to the inclusive interval 0 to settings.MAX.",
+          "settings": "MAX = 10\n",
+          "checks": [
+            {
+              "input": 12,
+              "expected": 10
+            },
+            {
+              "input": 4,
+              "expected": 4
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Clamp an integer to the inclusive interval 0 to settings.MAX.",
+          "settings": "MAX = 5\n",
+          "checks": [
+            {
+              "input": 8,
+              "expected": 5
+            },
+            {
+              "input": -1,
+              "expected": 0
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "unique",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "FOLD = True\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Return the unique integers from a list, preserving first appearance.",
+          "settings": "FOLD = True\n",
+          "checks": [
+            {
+              "input": [
+                2,
+                1,
+                2
+              ],
+              "expected": [
+                2,
+                1
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Return unique strings preserving first appearance; if settings.FOLD is true, lowercase before deduplication.",
+          "settings": "FOLD = True\n",
+          "checks": [
+            {
+              "input": [
+                "A",
+                "a",
+                "B"
+              ],
+              "expected": [
+                "a",
+                "b"
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Return unique strings preserving first appearance; if settings.FOLD is true, lowercase before deduplication.",
+          "settings": "FOLD = False\n",
+          "checks": [
+            {
+              "input": [
+                "A",
+                "a",
+                "A"
+              ],
+              "expected": [
+                "A",
+                "a"
+              ]
+            },
+            {
+              "input": [
+                "b",
+                "B"
+              ],
+              "expected": [
+                "b",
+                "B"
+              ]
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "mean",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "EMPTY = -1\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Return the arithmetic mean of a nonempty numeric list.",
+          "settings": "EMPTY = -1\n",
+          "checks": [
+            {
+              "input": [
+                2,
+                4
+              ],
+              "expected": 3.0
+            },
+            {
+              "input": [
+                -2,
+                2
+              ],
+              "expected": 0.0
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Return the arithmetic mean as float; for an empty list return settings.EMPTY as float.",
+          "settings": "EMPTY = -1\n",
+          "checks": [
+            {
+              "input": [],
+              "expected": -1.0
+            },
+            {
+              "input": [
+                2,
+                4
+              ],
+              "expected": 3.0
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Return the arithmetic mean as float; for an empty list return settings.EMPTY as float.",
+          "settings": "EMPTY = 0\n",
+          "checks": [
+            {
+              "input": [],
+              "expected": 0.0
+            },
+            {
+              "input": [
+                1,
+                2
+              ],
+              "expected": 1.5
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "join",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "SEP = \",\"\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Join a list of strings using a comma separator.",
+          "settings": "SEP = \",\"\n",
+          "checks": [
+            {
+              "input": [
+                "a",
+                "b"
+              ],
+              "expected": "a,b"
+            },
+            {
+              "input": [],
+              "expected": ""
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Join a list of strings using settings.SEP.",
+          "settings": "SEP = \",\"\n",
+          "checks": [
+            {
+              "input": [
+                "a",
+                "b"
+              ],
+              "expected": "a,b"
+            },
+            {
+              "input": [],
+              "expected": ""
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Join a list of strings using settings.SEP.",
+          "settings": "SEP = \"|\"\n",
+          "checks": [
+            {
+              "input": [
+                "a",
+                "b"
+              ],
+              "expected": "a|b"
+            },
+            {
+              "input": [
+                "x"
+              ],
+              "expected": "x"
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "chunks",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "SIZE = 2\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Split a list into consecutive chunks of at most two elements.",
+          "settings": "SIZE = 2\n",
+          "checks": [
+            {
+              "input": [
+                1,
+                2,
+                3
+              ],
+              "expected": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  3
+                ]
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Split a list into consecutive chunks of at most settings.SIZE elements, which is a positive integer.",
+          "settings": "SIZE = 2\n",
+          "checks": [
+            {
+              "input": [
+                1,
+                2,
+                3
+              ],
+              "expected": [
+                [
+                  1,
+                  2
+                ],
+                [
+                  3
+                ]
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Split a list into consecutive chunks of at most settings.SIZE elements, which is a positive integer.",
+          "settings": "SIZE = 3\n",
+          "checks": [
+            {
+              "input": [
+                1,
+                2,
+                3,
+                4
+              ],
+              "expected": [
+                [
+                  1,
+                  2,
+                  3
+                ],
+                [
+                  4
+                ]
+              ]
+            },
+            {
+              "input": [
+                1
+              ],
+              "expected": [
+                [
+                  1
+                ]
+              ]
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "counts",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "LOWER = True\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Return a JSON object counting each character in the input string.",
+          "settings": "LOWER = True\n",
+          "checks": [
+            {
+              "input": "aba",
+              "expected": {
+                "a": 2,
+                "b": 1
+              }
+            },
+            {
+              "input": "",
+              "expected": {}
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Count characters in a string; first lowercase it when settings.LOWER is true.",
+          "settings": "LOWER = True\n",
+          "checks": [
+            {
+              "input": "Aa",
+              "expected": {
+                "a": 2
+              }
+            },
+            {
+              "input": "",
+              "expected": {}
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Count characters in a string; first lowercase it when settings.LOWER is true.",
+          "settings": "LOWER = False\n",
+          "checks": [
+            {
+              "input": "AaA",
+              "expected": {
+                "A": 2,
+                "a": 1
+              }
+            },
+            {
+              "input": "Bb",
+              "expected": {
+                "B": 1,
+                "b": 1
+              }
+            }
+          ]
+        }
+      ],
+      "split": "development"
+    },
+    {
+      "id": "reverse",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "LIMIT = 2\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Return a reversed copy of an input list.",
+          "settings": "LIMIT = 2\n",
+          "checks": [
+            {
+              "input": [
+                1,
+                2,
+                3
+              ],
+              "expected": [
+                3,
+                2,
+                1
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Return the first settings.LIMIT items of the reversed input list; LIMIT is positive.",
+          "settings": "LIMIT = 2\n",
+          "checks": [
+            {
+              "input": [
+                1,
+                2,
+                3
+              ],
+              "expected": [
+                3,
+                2
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Return the first settings.LIMIT items of the reversed input list; LIMIT is positive.",
+          "settings": "LIMIT = 3\n",
+          "checks": [
+            {
+              "input": [
+                1,
+                2,
+                3,
+                4
+              ],
+              "expected": [
+                4,
+                3,
+                2
+              ]
+            },
+            {
+              "input": [
+                1
+              ],
+              "expected": [
+                1
+              ]
+            }
+          ]
+        }
+      ],
+      "split": "held_out"
+    },
+    {
+      "id": "absolute",
+      "initial_files": {
+        "worker.py": "def transform(value):\n    return None\n",
+        "settings.py": "OFFSET = 0\n"
+      },
+      "stages": [
+        {
+          "name": "initial",
+          "requirement": "Return the absolute value of each numeric item in the input list.",
+          "settings": "OFFSET = 0\n",
+          "checks": [
+            {
+              "input": [
+                -2,
+                1
+              ],
+              "expected": [
+                2,
+                1
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "requirement",
+          "requirement": "Ignore None items and return abs(item) + settings.OFFSET for remaining numeric items.",
+          "settings": "OFFSET = 0\n",
+          "checks": [
+            {
+              "input": [
+                -2,
+                null,
+                1
+              ],
+              "expected": [
+                2,
+                1
+              ]
+            },
+            {
+              "input": [],
+              "expected": []
+            }
+          ]
+        },
+        {
+          "name": "dependency",
+          "requirement": "Ignore None items and return abs(item) + settings.OFFSET for remaining numeric items.",
+          "settings": "OFFSET = 10\n",
+          "checks": [
+            {
+              "input": [
+                -2,
+                null,
+                1
+              ],
+              "expected": [
+                12,
+                11
+              ]
+            },
+            {
+              "input": [
+                0
+              ],
+              "expected": [
+                10
+              ]
+            }
+          ]
+        }
+      ],
+      "split": "held_out"
+    }
+  ],
+  "limitations": [
+    "Synthetic small Python repositories; generalization to independent real projects remains unmeasured.",
+    "Eight development fixtures and two held-out fixtures; frozen oracle outputs are never included in model input.",
+    "The 2.4 baseline uses AgentRunner with a common external OCI evaluator and approval service.",
+    "The no-evidence-tracking ablation is a read-only counterfactual, never a production policy."
+  ]
+}

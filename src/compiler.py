@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast as python_ast
+import re
 from dataclasses import dataclass
 from importlib.resources import files
 from pathlib import Path
@@ -12,6 +13,7 @@ from .ast_utils import normalize_ast, walk_nodes
 from .code_generator import CodeGenerator
 from .harness_validator import HarnessMode, HarnessReport, HarnessValidator
 from .nexa_parser import parse
+from .open_programs.model import CheckReport, SourceBundle
 
 
 class CompilationError(ValueError):
@@ -88,6 +90,30 @@ def load_program(source: str, source_path: str | Path | None = None) -> tuple[di
     loader = SourceLoader()
     program = loader.load(source, Path(source_path) if source_path is not None else None)
     return program, tuple(loader.sources)
+
+
+def declared_language(source: str) -> str:
+    declaration = re.match(r'\s*(?://[^\n]*\n\s*)*language\s+"([^"]+)"', source)
+    return declaration.group(1) if declaration else "2.4"
+
+
+def compile_program(
+    source: str, *, source_path: str | Path | None = None, harness_mode: str = "warn", language_version: str | None = None,
+) -> Compilation | CheckReport:
+    declaration = re.match(r'\s*(?://[^\n]*\n\s*)*language\s+"([^"]+)"', source)
+    declared = declaration.group(1) if declaration else None
+    if declared and language_version and declared != language_version:
+        raise CompilationError("version_conflict: source and requested language versions differ")
+    version = language_version or declared or "2.4"
+    if version == "3.0":
+        from .open_programs.frontend import check
+
+        return check(SourceBundle(text=source, path=str(source_path or "<source>")))
+    if version != "2.4":
+        raise CompilationError(f"unsupported_language: {version}")
+    if declaration:
+        source = source[:declaration.start()] + source[declaration.end():]
+    return compile_source(source, source_path=source_path, harness_mode=harness_mode)
 
 
 def compile_source(source: str, *, source_path: str | Path | None = None, harness_mode: str = "warn") -> Compilation:

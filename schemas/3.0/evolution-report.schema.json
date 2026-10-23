@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "goal_digest": {
+          "title": "Goal Digest",
+          "type": "string"
+        },
+        "implementation": {
+          "$ref": "#/$defs/Implementation"
+        },
+        "capabilities": {
+          "default": [],
+          "items": {
+            "enum": [
+              "repo.read",
+              "sandbox.exec",
+              "sandbox.write",
+              "model.call"
+            ],
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "origin": {
+          "default": "author",
+          "title": "Origin",
+          "type": "string"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "goal_digest",
+        "implementation"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "CompilerIdentity": {
+      "additionalProperties": false,
+      "properties": {
+        "core_digest": {
+          "title": "Core Digest",
+          "type": "string"
+        },
+        "pass_candidate": {
+          "$ref": "#/$defs/Candidate"
+        },
+        "environment_digest": {
+          "title": "Environment Digest",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "core_digest",
+        "pass_candidate",
+        "environment_digest",
+        "version"
+      ],
+      "title": "CompilerIdentity",
+      "type": "object"
+    },
+    "Dependency": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "digest": {
+          "minLength": 1,
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "digest"
+      ],
+      "title": "Dependency",
+      "type": "object"
+    },
+    "Implementation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "value",
+            "python"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "body": {
+          "title": "Body",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "body"
+      ],
+      "title": "Implementation",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "proposal_digest": {
+      "title": "Proposal Digest",
+      "type": "string"
+    },
+    "accepted": {
+      "title": "Accepted",
+      "type": "boolean"
+    },
+    "reasons": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Reasons",
+      "type": "array"
+    },
+    "compiler": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/CompilerIdentity"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "seed_failures": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Seed Failures",
+      "type": "array"
+    },
+    "candidate_failures": {
+      "default": [],
+      "items": {
+        "type": "integer"
+      },
+      "title": "Candidate Failures",
+      "type": "array"
+    },
+    "c1_artifact_digest": {
+      "default": "",
+      "title": "C1 Artifact Digest",
+      "type": "string"
+    },
+    "c2_artifact_digest": {
+      "default": "",
+      "title": "C2 Artifact Digest",
+      "type": "string"
+    },
+    "c1_observations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "C1 Observations",
+      "type": "array"
+    },
+    "c2_observations": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "C2 Observations",
+      "type": "array"
+    },
+    "generation_requests": {
+      "default": 0,
+      "title": "Generation Requests",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "proposal_digest",
+    "accepted"
+  ],
+  "title": "EvolutionReport",
+  "type": "object"
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "actor": {
+      "minLength": 1,
+      "title": "Actor",
+      "type": "string"
+    },
+    "proposal_digest": {
+      "title": "Proposal Digest",
+      "type": "string"
+    },
+    "baseline_digest": {
+      "title": "Baseline Digest",
+      "type": "string"
+    },
+    "policy_digest": {
+      "title": "Policy Digest",
+      "type": "string"
+    },
+    "evidence_digests": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Evidence Digests",
+      "type": "array"
+    },
+    "scope": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Scope",
+      "type": "array"
+    },
+    "task_id": {
+      "title": "Task Id",
+      "type": "string"
+    },
+    "issued_at": {
+      "title": "Issued At",
+      "type": "number"
+    },
+    "expires_at": {
+      "title": "Expires At",
+      "type": "number"
+    }
+  },
+  "required": [
+    "actor",
+    "proposal_digest",
+    "baseline_digest",
+    "policy_digest",
+    "evidence_digests",
+    "scope",
+    "task_id",
+    "issued_at",
+    "expires_at"
+  ],
+  "title": "ApprovalGrant",
+  "type": "object"
+}

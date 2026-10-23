@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Nexa 2.4.0 — an agent-native language and reliable runtime with native model protocols, tool approvals and durable execution.">
+  <meta name="description" content="Nexa 3.0 Open Programs — an agent-native language where humans and models build persistent goals, evidence and revisions.">
   <meta name="theme-color" content="#0a0a1a">
-  <meta property="og:title" content="Nexa — Harness Native Agent Language">
-  <meta property="og:description" content="Nexa 2.4.0 connects .nx programs to reliable agent execution, native providers and checkpoints.">
+  <meta property="og:title" content="Nexa 3.0 — Open Programs">
+  <meta property="og:description" content="Programs own their goals, evidence and revisions. Models participate in compilation; current evidence and exact grants control execution.">
   <meta property="og:image" content="https://www.nexa-lang.com/assets/nexa-logo.png">
   <meta property="og:url" content="https://www.nexa-lang.com">
   <meta name="twitter:card" content="summary_large_image">
-  <title>Nexa — Harness Native Agent Language</title>
+  <title>Nexa 3.0 — Open Programs</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -41,7 +41,7 @@
         </li>
         <li class="nav-item"><a href="blog/">Blog</a></li>
         <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
-        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener">Docs</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/development.md" target="_blank" rel="noopener">Docs</a></li>
         <li class="nav-item">
           <button class="nav-plus-trigger">Nexa<span class="nav-plus">⁺</span> <span class="chevron">▾</span></button>
         </li>
@@ -53,7 +53,7 @@
   <!-- Nexa⁺ Mega Panel -->
   <div class="nexa-plus-panel">
     <div class="nexa-plus-inner">
-      <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener" class="nexa-plus-card">
+      <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/development.md" target="_blank" rel="noopener" class="nexa-plus-card">
         <div class="nexa-plus-icon"><i data-lucide="book-open"></i></div>
         <div class="nexa-plus-info"><h4>Documentation</h4><p>Full language reference, compiler architecture, and quick start guides.</p></div>
       </a>
@@ -87,73 +87,63 @@
     <div class="hero-inner">
       <div class="hero-left">
         <img src="assets/nexa-logo.svg" alt="Nexa" class="hero-logo">
-        <a class="hero-badge" href="blog/2026-10-v2.4-release.html"><span class="dot"></span> v2.4.0 — Reliable Agent Execution</a>
-        <h1>The <span class="gradient-text">Harness Native</span><br>Agent Language</h1>
-        <p class="hero-subtitle">Write agents, tools, protocols and flows in <strong>.nx</strong>. Nexa connects language declarations to a runtime with native model protocols, explicit approvals and durable execution.</p>
+        <a class="hero-badge" href="blog/2026-10-v3.0-release.html"><span class="dot"></span> v3.0.0 — Open Programs</a>
+        <h1>Programs that stay<br><span class="gradient-text">open to change.</span></h1>
+        <p class="hero-subtitle">Write goals and contracts in <strong>.nx</strong>. People and models collaborate through the compiler. Programs retain their implementations, evidence and revisions as requirements change.</p>
         <div class="hero-actions">
-          <a href="https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0" class="btn btn-primary">Get Nexa 2.4.0</a>
-          <a href="blog/2026-10-v2.4-release.html" class="btn btn-secondary">What’s new</a>
+          <a href="https://github.com/Nexa-Language/Nexa/releases/tag/v3.0.0" class="btn btn-primary">Get Nexa 3.0.0</a>
+          <a href="blog/2026-10-v3.0-release.html" class="btn btn-secondary">What’s new</a>
         </div>
-        <p class="install-note">Python 3.10+ · Run in an activated virtual environment.</p>
-        <div class="hero-install"><code>python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v2.4.0/nexa_lang-2.4.0-py3-none-any.whl</code><button class="copy-btn" aria-label="Copy install command">Copy</button></div>
-        <p class="install-note">Install this GitHub wheel directly. The PyPI name <code>nexa-lang</code> belongs to another project. <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md#install-a-release">Installation guide →</a></p>
+        <p class="install-note">Python 3.10+ · Linux/macOS · Docker/OCI for execution.</p>
+        <div class="hero-install"><code>python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v3.0.0/nexa_lang-3.0.0-py3-none-any.whl</code><button class="copy-btn" aria-label="Copy install command">Copy</button></div>
+        <p class="install-note">Install this GitHub wheel directly. The PyPI name <code>nexa-lang</code> belongs to another project. <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/development.md#install-a-release">Installation guide →</a></p>
       </div>
       <div class="hero-right">
         <div class="hero-code">
-          <div class="hero-code-header"><span class="hero-code-dot r"></span><span class="hero-code-dot y"></span><span class="hero-code-dot g"></span><span class="hero-code-label">calculator.nx · model + tool</span></div>
-          <pre data-language="nexa">@tool(&quot;Add two integers&quot;)
-fn add(a: int, b: int): int {
-    python! &quot;&quot;&quot;
-return a + b
-&quot;&quot;&quot;
-}
-
-agent Calculator uses add {
-    prompt: &quot;Use add to calculate the answer.&quot;
-    timeout: 60
-    max_tool_calls: 2
-}
-
-flow main {
-    result = Calculator.run(&quot;What is 23 + 19?&quot;);
-    verify result satisfies string;
-    print(result);
+          <div class="hero-code-header"><span class="hero-code-dot r"></span><span class="hero-code-dot y"></span><span class="hero-code-dot g"></span><span class="hero-code-label">answer.nx · an open goal</span></div>
+          <pre data-language="nexa">language "3.0"
+program Answer {
+    goal answer() -&gt; Int {
+        intent "Return the number 42"
+        ensure checks.answer
+        implementation open
+    }
 }</pre>
         </div>
-        <p class="install-note">Configure a provider, then run <code>nexa run calculator.nx</code>. The runtime checks the tool arguments and call budget.</p>
+        <p class="install-note"><code>nexa check answer.nx --json</code> checks the contract offline. A configured provider and frozen check can resolve the open implementation. <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/spec/3.0/usage.md">Start with a complete example →</a></p>
       </div>
     </div>
   </section>
 
   <section class="section" id="features">
     <div class="section-inner">
-      <div class="section-label reveal">Nexa 2.4.0</div>
-      <h2 class="section-title reveal">Language declarations.<br>Runtime guarantees you can inspect.</h2>
-      <p class="section-desc reveal">The Harness Native design brings execution, tools, context, state, lifecycle and verification into the language. Version 2.4 connects those declarations across the Python compiler and runtime.</p>
+      <div class="section-label reveal">Nexa 3.0.0</div>
+      <h2 class="section-title reveal">Goals, code and evidence.<br>One evolving program.</h2>
+      <p class="section-desc reveal">Open Programs extends the Harness Native foundation: the language owns what a program must achieve, the conditions under which it is accepted, and how its next revision becomes active.</p>
       <div class="features-grid">
         <div class="feature-card reveal reveal-delay-1">
           <div class="feature-icon"><i data-lucide="file-code"></i></div>
-          <h3>One compiler boundary</h3><p>CLI, SDK and embedded API share recursive includes, source diagnostics, Harness validation and generated-code checks.</p>
+          <h3>Compilation includes resolution</h3><p>Typed open goals can be implemented by a person or resolved by a model. The compiler enforces a shared budget and executes candidates and checks in OCI.</p>
         </div>
         <div class="feature-card reveal reveal-delay-2">
           <div class="feature-icon"><i data-lucide="workflow"></i></div>
-          <h3>One execution lifecycle</h3><p>Text, Protocol and streaming outputs share AgentRunner, explicit run states, call budgets, deadlines and cooperative cancellation.</p>
+          <h3>Revisions persist beyond a run</h3><p>Activities stay pinned to immutable revisions. Checkpoints admit new versions; durable events and process leases support restart and conflict detection.</p>
         </div>
         <div class="feature-card reveal reveal-delay-3">
           <div class="feature-icon"><i data-lucide="messages-square"></i></div>
-          <h3>Native model protocols</h3><p>Chat Completions, Responses and Anthropic adapters retain tool calls, usage and native reasoning or thinking state.</p>
+          <h3>Evidence has a current context</h3><p>Deterministic checks, model reviews and human decisions remain separate records. Changed inputs, policies or dependencies create new verification obligations.</p>
         </div>
         <div class="feature-card reveal reveal-delay-4">
           <div class="feature-icon"><i data-lucide="shield-check"></i></div>
-          <h3>Tools with explicit authority</h3><p>Tool exposure, argument schemas and approvals are checked before dispatch. Requested isolation requires an actual isolated executor.</p>
+          <h3>Exact authority for workspace edits</h3><p>Maintenance produces a reviewable patch. A grant binds its baseline, paths and evidence; a journal and retained originals protect edits during recovery.</p>
         </div>
         <div class="feature-card reveal reveal-delay-5">
           <div class="feature-icon"><i data-lucide="database"></i></div>
-          <h3>Durable, inspectable runs</h3><p>SQLite checkpoints, revision checks and a tool journal support recovery. Uncertain side effects pause for reconciliation.</p>
+          <h3>Reuse carries its conditions</h3><p>Local implementation capsules retain provenance, license, dependencies and evidence. A receiving task checks compatibility and revalidates under its current inputs.</p>
         </div>
         <div class="feature-card reveal reveal-delay-6">
           <div class="feature-icon"><i data-lucide="cpu"></i></div>
-          <h3>A measured Rust subset</h3><p>The AVM shares semantic fixtures with Python. Optional Wasmtime execution covers guest memory, fuel limits and instance state.</p>
+          <h3>The compiler can improve with you</h3><p>The author protocol supports clarification and diagnostics. A diagnostic advice pass is selected after frozen tests, locked bootstrap and explicit approval.</p>
         </div>
       </div>
     </div>
@@ -162,26 +152,30 @@ flow main {
   <section class="section" id="code">
     <div class="section-inner">
       <div class="section-label reveal">Start small. Keep the evidence.</div>
-      <h2 class="section-title reveal">From your first flow to a resumable agent</h2>
-      <p class="section-desc reveal">Humans and models use the same source files. Compile offline, configure a provider when needed, and inspect each run’s state and pending calls.</p>
+      <h2 class="section-title reveal">Start with a complete goal. Then open it.</h2>
+      <p class="section-desc reveal">Check a typed program offline. Build it with a configured execution environment, then replay its locked artifact without asking a model to generate it again.</p>
       <div class="code-demo">
         <div class="code-block reveal reveal-delay-1">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">hello.nx · no provider required</span></div>
-          <pre data-language="nexa">flow main {
-    result = 23 + 19;
-    print(result);
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">answer.nx · explicit implementation</span></div>
+          <pre data-language="nexa">language "3.0"
+program Answer {
+    goal answer() -&gt; Int {
+        intent "Return 42"
+        implementation value 42
+    }
 }</pre>
-          <div class="code-explain"><p><code>nexa run hello.nx</code> prints <strong>42</strong>. Use <code>nexa build hello.nx</code> to inspect generated Python, or <code>nexa inspect hello.nx --format json</code> for program structure.</p></div>
+          <div class="code-explain"><p><code>nexa check answer.nx --json</code> validates the source without Docker or credentials. The explicit value is the implementation; open goals let a configured model propose one.</p></div>
         </div>
         <div class="code-block reveal reveal-delay-2">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">Nexa Code · approval and resume</span></div>
-          <pre>nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
-  CodeAssistant "Fix the failing tests" --timeout 900
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">Build and replay · from a source checkout</span></div>
+          <pre>nexa build answer.nx \
+  --environment examples/open_programs/offline.json \
+  --state .nexa/demo.db --json
 
-# Inspect pending_calls, then approve a specific call:
-nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
-  CodeAssistant --resume RUN_ID --approve CALL_ID</pre>
-          <div class="code-explain"><p>Nexa Code reads files, requests approval for edits and commands, and saves checkpoints. Start it from the workspace you want to edit; the timeout includes approval waiting time. <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/examples/Nexa-Code/README.md">Setup and tool policy →</a></p></div>
+nexa build answer.nx \
+  --environment examples/open_programs/offline.json \
+  --state .nexa/demo.db --locked --json</pre>
+          <div class="code-explain"><p>Start Docker and pull the pinned image listed in the guide. Keep both the lock file and state database. Locked builds revalidate current evidence and make zero model requests. <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/spec/3.0/usage.md">Execution and maintenance guide →</a></p></div>
         </div>
       </div>
     </div>
@@ -190,14 +184,14 @@ nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
   <section class="section" id="architecture">
     <div class="section-inner">
       <div class="section-label reveal">Architecture</div>
-      <h2 class="section-title reveal">From source to recorded execution</h2>
-      <p class="section-desc reveal">Python is the reference implementation. Compiler diagnostics and runtime checks cooperate across a shared execution path; Rust evolves against an explicit semantic subset.</p>
+      <h2 class="section-title reveal">From an open goal to an accepted revision</h2>
+      <p class="section-desc reveal">The deterministic kernel owns identity, policy and lifecycle. Models propose implementations and reviews; isolated execution supplies evidence. Python is the 3.0 reference implementation.</p>
       <div class="arch-diagram reveal">
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="file-code"></i></div><h4>.nx Source</h4><p>Recursive includes</p></div><span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="git-branch"></i></div><h4>Shared Compiler</h4><p>AST + diagnostics</p></div><span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="code"></i></div><h4>Python</h4><p>Checked generation</p></div><span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="workflow"></i></div><h4>AgentRunner</h4><p>Providers + tools</p></div><span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="database"></i></div><h4>RunState</h4><p>Events + checkpoints</p></div>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="file-code"></i></div><h4>.nx Source</h4><p>Types + goals</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="git-branch"></i></div><h4>Compiler + Model</h4><p>Clarify + resolve</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="code"></i></div><h4>OCI Executor</h4><p>Fixed checks</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="workflow"></i></div><h4>Evidence</h4><p>Context + policy</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="database"></i></div><h4>Revision</h4><p>Admit + checkpoint</p></div>
       </div>
     </div>
   </section>
@@ -207,13 +201,13 @@ nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
       <div class="section-label reveal">Verification snapshot · October 23, 2026</div>
       <h2 class="section-title reveal">Published scope. Reproducible checks.</h2>
       <div class="stats-bar">
-        <div class="stat-item reveal"><div class="stat-number">2,187</div><div class="stat-label">Python tests passed</div></div>
-        <div class="stat-item reveal"><div class="stat-number">141 / 144</div><div class="stat-label">Rust default / WASM tests</div></div>
-        <div class="stat-item reveal"><div class="stat-number">63</div><div class="stat-label">Examples compile</div></div>
+        <div class="stat-item reveal"><div class="stat-number">133</div><div class="stat-label">Open Programs contract tests</div></div>
+        <div class="stat-item reveal"><div class="stat-number">360</div><div class="stat-label">Real-model experiment stages</div></div>
+        <div class="stat-item reveal"><div class="stat-number">67</div><div class="stat-label">Examples checked</div></div>
         <div class="stat-item reveal"><div class="stat-number">3.10+</div><div class="stat-label">Supported Python</div></div>
       </div>
-      <p class="section-desc reveal">Local snapshot: macOS arm64, Python 3.12.13, Rust 1.97.1. Five PostgreSQL cases were skipped; three benchmark cases run separately. Twelve historical examples remain documented drafts. CI covers Python 3.10, 3.12 and 3.14 on Linux.</p>
-      <p class="section-desc reveal">Real process tests cover MCP stdio, crash recovery, file edits and command verification. Model responses use deterministic fixtures; real-provider quality, cost and latency remain to be measured. <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/plan/evidence/2026-10-23-release-validation.md">Read the evidence →</a></p>
+      <p class="section-desc reveal">Validation covers current evidence, authorization, concurrent edits, crash recovery and locked replay. CI runs Python 3.10, 3.12 and 3.14 on Linux with real OCI execution. Five unconfigured PostgreSQL tests are skipped; timing benchmarks run separately.</p>
+      <p class="section-desc reveal">The six-stage Aliyun demonstration completed with 11 model requests. In fixed synthetic tasks, Open Programs accepted 73/90 stages and the adapted 2.4 baseline 70/90. The report includes failures, token totals and the baseline-schema correction. <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/plan/evidence/2026-10-23-open-programs-experiment.md">Read the evidence →</a></p>
     </div>
   </section>
 
@@ -222,19 +216,19 @@ nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
       <div class="section-label reveal">Migration and execution boundaries</div>
       <h2 class="section-title reveal">Make completion explicit</h2>
       <div class="features-grid">
-        <div class="feature-card reveal"><h3>Verification controls success</h3><p>Failed <code>verify</code> checks stop the success path. Loop exit conditions compare exact states. Intent checks distinguish pass, fail, skip and error.</p></div>
-        <div class="feature-card reveal"><h3>Recovery respects side effects</h3><p>Completed tool results can be reused. Unknown outcomes require reconciliation. Snapshots restore in-memory state and conversations; external effects retain their actual state.</p></div>
-        <div class="feature-card reveal"><h3>Isolation is an execution property</h3><p>Ordinary Python tools run on the host and cancel cooperatively. A tool requesting a sandbox requires an isolated executor. The Rust WASM feature covers a documented subset.</p></div>
+        <div class="feature-card reveal"><h3>A versioned language boundary</h3><p><code>language "3.0"</code> selects Open Programs. Existing Agent and flow sources retain their 2.4 entry point. Legacy state exports into an inert archive with an explicit conversion report.</p></div>
+        <div class="feature-card reveal"><h3>Recovery respects side effects</h3><p>Unknown non-idempotent effects require reconciliation. Patch application preserves original files in recovery directories. Cross-file updates use a journal and require storage for retained originals.</p></div>
+        <div class="feature-card reveal"><h3>Isolation is an execution property</h3><p>Open Programs candidates run as non-root in offline, resource-limited OCI containers without host mounts or credentials. Legacy Python tools keep their documented host semantics; Rust retains its 2.4 subset.</p></div>
       </div>
-      <p class="section-desc"><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/runtime-v2.4.md">Read the full runtime contract and migration guide →</a></p>
+      <p class="section-desc"><a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/migration/2.4-to-3.0.md">Read the migration guide and supported scope →</a></p>
     </div>
   </section>
 
   <section class="cta-section">
     <div class="section-inner">
-      <h2 class="reveal">Build your next agent in Nexa</h2>
-      <p class="reveal">Download 2.4.0, inspect the release notes, and start with a working .nx program.</p>
-      <div class="cta-actions reveal"><a href="https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0" class="btn btn-primary">Release and checksums</a><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" class="btn btn-secondary">Build from source</a></div>
+      <h2 class="reveal">Give your program a goal worth maintaining</h2>
+      <p class="reveal">Download 3.0.0, start with a typed goal, and keep the evidence behind every accepted revision.</p>
+      <div class="cta-actions reveal"><a href="https://github.com/Nexa-Language/Nexa/releases/tag/v3.0.0" class="btn btn-primary">Release and checksums</a><a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/development.md" class="btn btn-secondary">Build from source</a></div>
     </div>
   </section>
 
@@ -249,7 +243,7 @@ nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
       </div>
       <div class="footer-col">
         <h4>Ecosystem</h4>
-        <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener">Documentation</a>
+        <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/development.md" target="_blank" rel="noopener">Documentation</a>
         <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a>
         <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">EvoBench</a>
         <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">EpiContext</a>

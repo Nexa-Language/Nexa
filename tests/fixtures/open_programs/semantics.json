@@ -1,0 +1,49 @@
+{
+  "program": {
+    "name": "Maintain",
+    "parameters": [
+      {
+        "name": "repo",
+        "type": "Repository"
+      }
+    ],
+    "goals": [
+      {
+        "name": "repair",
+        "return_type": "Patch",
+        "intent": "Repair a repository",
+        "stage": "runtime",
+        "capabilities": [
+          "repo.read",
+          "sandbox.exec",
+          "sandbox.write"
+        ],
+        "checks": [
+          "checks.regression"
+        ]
+      }
+    ]
+  },
+  "events": [
+    {
+      "event": "initial_request",
+      "goal_state": "open"
+    },
+    {
+      "event": "resolve",
+      "goal_state": "solving"
+    },
+    {
+      "event": "candidate_checked",
+      "goal_state": "evaluating"
+    },
+    {
+      "event": "evidence_accepted",
+      "goal_state": "satisfied"
+    },
+    {
+      "event": "dependency_changed",
+      "goal_state": "stale"
+    }
+  ]
+}

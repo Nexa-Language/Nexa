@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "package_version": "Nexa v2.4.0",
+  "release_status": "unreleased development build; published 2.4 artifacts unchanged",
+  "checks": [
+    "installed-version",
+    "installed-import",
+    "installed-schema",
+    "offline-check",
+    "installed-build",
+    "locked-build",
+    "locked-runtime",
+    "bundled-stdlib",
+    "legacy-hello",
+    "sdist-rebuild",
+    "rebuilt-runtime-byte-equality"
+  ],
+  "locked_output": "43",
+  "locked_model_calls": 0,
+  "artifacts": {
+    "nexa_lang-2.4.0-py3-none-any.whl": "6ed98bf908ffcc6ea68fbf4f2904df8e9c329ad7dc2fc3b9741dbaaa9dda8349",
+    "nexa_lang-2.4.0.tar.gz": "95dd12c85f2a9974fe0988f80e595b9dbcc20a194612e8d81e5c270e68c07110"
+  },
+  "installation": "Fresh uv environment outside checkout; module imported from site-packages"
+}

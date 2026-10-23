@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "PreservedFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "recovery_path": {
+          "title": "Recovery Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "recovery_path"
+      ],
+      "title": "PreservedFile",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "proposal_digest": {
+      "title": "Proposal Digest",
+      "type": "string"
+    },
+    "grant_digest": {
+      "title": "Grant Digest",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "applying",
+        "applied",
+        "interrupted",
+        "conflict"
+      ],
+      "title": "State",
+      "type": "string"
+    },
+    "written": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Written",
+      "type": "array"
+    },
+    "pending_path": {
+      "default": "",
+      "title": "Pending Path",
+      "type": "string"
+    },
+    "pending_temporary": {
+      "default": "",
+      "title": "Pending Temporary",
+      "type": "string"
+    },
+    "preserved": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PreservedFile"
+      },
+      "title": "Preserved",
+      "type": "array"
+    },
+    "reason": {
+      "default": "",
+      "title": "Reason",
+      "type": "string"
+    }
+  },
+  "required": [
+    "proposal_digest",
+    "grant_digest",
+    "state"
+  ],
+  "title": "ApplyResult",
+  "type": "object"
+}

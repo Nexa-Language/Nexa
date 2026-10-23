@@ -1,17 +1,19 @@
-# Nexa 2.4.0 安装与第一个程序
+# Nexa 3.0.0 安装与第一个程序
 
 需要 Python 3.10+。使用 uv 创建独立环境并安装官方发行物：
 
 ```sh
 uv venv --python 3.12
-uv pip install "nexa-lang[anthropic,terminal,mcp] @ https://github.com/Nexa-Language/Nexa/releases/download/v2.4.0/nexa_lang-2.4.0-py3-none-any.whl"
+uv pip install "nexa-lang[anthropic,terminal,mcp] @ https://github.com/Nexa-Language/Nexa/releases/download/v3.0.0/nexa_lang-3.0.0-py3-none-any.whl"
 source .venv/bin/activate
 nexa --version
 ```
 
-Windows PowerShell 使用 `.venv\Scripts\Activate.ps1` 激活。已有虚拟环境也可通过 `python -m pip install` 安装同一 wheel URL。PyPI 的 `nexa-lang` 属于另一项目，安装时使用完整发行物地址。版本应显示 `Nexa v2.4.0`。
+Windows PowerShell 使用 `.venv\Scripts\Activate.ps1` 激活。已有虚拟环境也可通过 `python -m pip install` 安装同一 wheel URL。PyPI 的 `nexa-lang` 属于另一项目，安装时使用完整发行物地址。版本应显示 `Nexa v3.0.0`。
 
-将以下内容保存为 `hello.nx`：
+3.0 Open Programs 从 [使用指南](../docs/spec/3.0/usage.md) 开始：显式声明 `language "3.0"`，通过 `nexa check` 离线检查，通过 Docker/OCI 构建与运行。3.0 控制器支持 Linux/macOS，Windows 可使用 Linux 环境。
+
+以下 Hello World 使用保留的 2.4 flow 语法。将内容保存为 `hello.nx`：
 
 ```nexa
 flow main {
@@ -41,7 +43,7 @@ nexa inspect hello.nx --format json
 需要完整示例或 Rust AVM 时，检出源码 tag 并建立锁定开发环境：
 
 ```sh
-git clone --branch v2.4.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
+git clone --branch v3.0.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
 cd Nexa
 uv sync --locked --all-extras
 uv run nexa --version

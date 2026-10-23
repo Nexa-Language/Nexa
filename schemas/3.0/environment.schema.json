@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "CheckCase": {
+      "additionalProperties": false,
+      "properties": {
+        "input_json": {
+          "default": "{}",
+          "title": "Input Json",
+          "type": "string"
+        },
+        "expected_json": {
+          "title": "Expected Json",
+          "type": "string"
+        }
+      },
+      "required": [
+        "expected_json"
+      ],
+      "title": "CheckCase",
+      "type": "object"
+    },
+    "Dependency": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "digest": {
+          "minLength": 1,
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "digest"
+      ],
+      "title": "Dependency",
+      "type": "object"
+    },
+    "OutputCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/CheckCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "cases"
+      ],
+      "title": "OutputCheck",
+      "type": "object"
+    },
+    "ProviderBinding": {
+      "additionalProperties": false,
+      "properties": {
+        "protocol": {
+          "const": "chat",
+          "default": "chat",
+          "title": "Protocol",
+          "type": "string"
+        },
+        "api_key_env": {
+          "default": "OPENAI_API_KEY",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "title": "Api Key Env",
+          "type": "string"
+        },
+        "base_url_env": {
+          "default": "OPENAI_BASE_URL",
+          "pattern": "^[A-Z][A-Z0-9_]*$",
+          "title": "Base Url Env",
+          "type": "string"
+        },
+        "enable_thinking": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Enable Thinking"
+        }
+      },
+      "title": "ProviderBinding",
+      "type": "object"
+    },
+    "RepositoryCase": {
+      "additionalProperties": false,
+      "properties": {
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 32,
+          "minItems": 1,
+          "title": "Argv",
+          "type": "array"
+        },
+        "input_text": {
+          "default": "",
+          "title": "Input Text",
+          "type": "string"
+        },
+        "expected_output": {
+          "title": "Expected Output",
+          "type": "string"
+        },
+        "expected_exit": {
+          "default": 0,
+          "title": "Expected Exit",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "argv",
+        "expected_output"
+      ],
+      "title": "RepositoryCase",
+      "type": "object"
+    },
+    "RepositoryCheck": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "cases": {
+          "items": {
+            "$ref": "#/$defs/RepositoryCase"
+          },
+          "minItems": 1,
+          "title": "Cases",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "cases"
+      ],
+      "title": "RepositoryCheck",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "image": {
+      "pattern": "^[a-zA-Z0-9./:_-]+@sha256:[a-f0-9]{64}$",
+      "title": "Image",
+      "type": "string"
+    },
+    "model": {
+      "default": "unconfigured",
+      "title": "Model",
+      "type": "string"
+    },
+    "model_pinned": {
+      "default": false,
+      "title": "Model Pinned",
+      "type": "boolean"
+    },
+    "allow_model": {
+      "default": false,
+      "title": "Allow Model",
+      "type": "boolean"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ProviderBinding"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "checks": {
+      "default": [],
+      "items": {
+        "anyOf": [
+          {
+            "$ref": "#/$defs/OutputCheck"
+          },
+          {
+            "$ref": "#/$defs/RepositoryCheck"
+          }
+        ]
+      },
+      "title": "Checks",
+      "type": "array"
+    },
+    "dependencies": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/Dependency"
+      },
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "capabilities": {
+      "default": [
+        "repo.read",
+        "sandbox.exec",
+        "sandbox.write"
+      ],
+      "items": {
+        "enum": [
+          "repo.read",
+          "sandbox.exec",
+          "sandbox.write",
+          "model.call"
+        ],
+        "type": "string"
+      },
+      "title": "Capabilities",
+      "type": "array"
+    }
+  },
+  "required": [
+    "image"
+  ],
+  "title": "CompilerEnvironment",
+  "type": "object"
+}

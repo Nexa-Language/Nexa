@@ -1,0 +1,455 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "AcceptancePolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/Requirement"
+          },
+          "title": "Requirements",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "requirements"
+      ],
+      "title": "AcceptancePolicy",
+      "type": "object"
+    },
+    "Candidate": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "goal_digest": {
+          "title": "Goal Digest",
+          "type": "string"
+        },
+        "implementation": {
+          "$ref": "#/$defs/Implementation"
+        },
+        "capabilities": {
+          "default": [],
+          "items": {
+            "enum": [
+              "repo.read",
+              "sandbox.exec",
+              "sandbox.write",
+              "model.call"
+            ],
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "origin": {
+          "default": "author",
+          "title": "Origin",
+          "type": "string"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "goal_digest",
+        "implementation"
+      ],
+      "title": "Candidate",
+      "type": "object"
+    },
+    "ContextSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_digest": {
+          "title": "Subject Digest",
+          "type": "string"
+        },
+        "policy_digest": {
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "now": {
+          "minimum": 0,
+          "title": "Now",
+          "type": "number"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "revoked": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Revoked",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject_digest",
+        "policy_digest",
+        "dependencies",
+        "now",
+        "task_id"
+      ],
+      "title": "ContextSnapshot",
+      "type": "object"
+    },
+    "Dependency": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "digest": {
+          "minLength": 1,
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "digest"
+      ],
+      "title": "Dependency",
+      "type": "object"
+    },
+    "EvidenceRecord": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "requirement": {
+          "title": "Requirement",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "deterministic",
+            "model_review",
+            "human_decision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "subject_digest": {
+          "title": "Subject Digest",
+          "type": "string"
+        },
+        "policy_digest": {
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "checker_digest": {
+          "title": "Checker Digest",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "passed": {
+          "title": "Passed",
+          "type": "boolean"
+        },
+        "issued_at": {
+          "minimum": 0,
+          "title": "Issued At",
+          "type": "number"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "model_pinned": {
+          "default": true,
+          "title": "Model Pinned",
+          "type": "boolean"
+        },
+        "detail": {
+          "default": "",
+          "title": "Detail",
+          "type": "string"
+        },
+        "artifact_digests": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Artifact Digests",
+          "type": "array"
+        }
+      },
+      "required": [
+        "requirement",
+        "kind",
+        "subject_digest",
+        "policy_digest",
+        "checker_digest",
+        "dependencies",
+        "passed",
+        "issued_at",
+        "task_id"
+      ],
+      "title": "EvidenceRecord",
+      "type": "object"
+    },
+    "Implementation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "value",
+            "python"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "body": {
+          "title": "Body",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "body"
+      ],
+      "title": "Implementation",
+      "type": "object"
+    },
+    "Requirement": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "deterministic",
+            "model_review",
+            "human_decision"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "checker_digest": {
+          "minLength": 1,
+          "title": "Checker Digest",
+          "type": "string"
+        },
+        "dependencies": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name",
+        "kind",
+        "checker_digest"
+      ],
+      "title": "Requirement",
+      "type": "object"
+    },
+    "ResolutionResult": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "accepted",
+            "blocked",
+            "rejected",
+            "cancelled"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "goal_name": {
+          "title": "Goal Name",
+          "type": "string"
+        },
+        "candidate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Candidate"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "evidence": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EvidenceRecord"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AcceptancePolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "context": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSnapshot"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "output_json": {
+          "default": "null",
+          "title": "Output Json",
+          "type": "string"
+        },
+        "reason": {
+          "default": "",
+          "title": "Reason",
+          "type": "string"
+        },
+        "clarification": {
+          "default": "",
+          "title": "Clarification",
+          "type": "string"
+        },
+        "model_calls": {
+          "default": 0,
+          "title": "Model Calls",
+          "type": "integer"
+        },
+        "input_tokens": {
+          "default": 0,
+          "title": "Input Tokens",
+          "type": "integer"
+        },
+        "output_tokens": {
+          "default": 0,
+          "title": "Output Tokens",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "status",
+        "goal_name"
+      ],
+      "title": "ResolutionResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "language_version": {
+      "const": "3.0",
+      "default": "3.0",
+      "title": "Language Version",
+      "type": "string"
+    },
+    "compiler_version": {
+      "const": "3.0.reference.1",
+      "default": "3.0.reference.1",
+      "title": "Compiler Version",
+      "type": "string"
+    },
+    "program_digest": {
+      "title": "Program Digest",
+      "type": "string"
+    },
+    "environment_digest": {
+      "title": "Environment Digest",
+      "type": "string"
+    },
+    "results": {
+      "items": {
+        "$ref": "#/$defs/ResolutionResult"
+      },
+      "title": "Results",
+      "type": "array"
+    },
+    "runtime_goals": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Runtime Goals",
+      "type": "array"
+    }
+  },
+  "required": [
+    "program_digest",
+    "environment_digest",
+    "results"
+  ],
+  "title": "BuildArtifact",
+  "type": "object"
+}
