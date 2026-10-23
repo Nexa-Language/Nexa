@@ -1,6 +1,7 @@
 # Nexa 语法参考手册 (v1.3)
 
-本手册涵盖了 Nexa 语言从基础语法到 v1.3 引入的全部高级特性，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流、Intent-Driven Development、Design by Contract 以及 Agent-Native Tooling。所有符合本手册规范的代码皆可由 Nexa Compiler 直接转译并在 Nexa Runtime 中执行。
+> 2.4 的统一编译入口、运行契约和迁移说明见 [runtime-v2.4.md](runtime-v2.4.md)。本文保留语言与历史架构细节，运行行为以 2.4 契约和执行测试为准。
+本手册记录从基础语法到 v1.3 的语言设计，包括智能体声明、路由协作、语义分支、测试断言、MCP 扩展、传统控制流、Intent-Driven Development、Design by Contract 以及 Agent-Native Tooling。2.4 中 struct/enum 构造、flow 的 requires/ensures 和 defer 仍存在生成代码执行缺口；具体复现和受支持边界见 [2.4 运行契约](runtime-v2.4.md#语言执行范围)。
 
 ## 🆕 v1.3 新特性
 

@@ -301,28 +301,8 @@ class HarnessKernel:
         return result
 
     def _check_exit_condition(self, condition: str, step: StepResult) -> bool:
-        """
-        Check if the exit_when condition is met.
-
-        Simple implementation: substring match in observation.
-        Full implementation (M4): LLM-based semantic evaluation.
-        """
-        if not condition or not step.observation:
-            return False
-
-        # Simple substring match
-        condition_lower = condition.lower()
-        observation_lower = step.observation.lower()
-
-        # Check for common resolution signals
-        resolution_signals = ["resolved", "completed", "done", "success", "finished"]
-        if condition_lower in resolution_signals:
-            return any(sig in observation_lower for sig in resolution_signals)
-
-        # Direct substring match
-        return condition_lower in observation_lower
-
-    # ─── Context ───
+        from .flow_runtime import exit_condition
+        return exit_condition(condition, step.observation)
 
     def enter_context_scope(self, scope_name: str, config: Dict) -> ContextScope:
         """Enter a with_context scope."""

@@ -81,3 +81,7 @@ examples/out_*.py
 
 # 实验课 / 内部课件
 /Labs
+
+# Lock the executable AVM dependency graph for reproducible CI.
+!avm/Cargo.lock
+.nexa/

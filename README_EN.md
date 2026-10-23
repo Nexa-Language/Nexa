@@ -1,259 +1,110 @@
 <div align="center">
   <img src="docs/img/nexa-logo-noframe.png" alt="Nexa Logo" width="100" />
-  <h1>Nexa Language</h1>
-  <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
-  <p>
-    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.3.1-brightgreen.svg" alt="Version"/>
-    <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
-  </p>
-  
-  **[中文版](README.md)** | **English**
-  
-  📚 **Docs**: [中文](https://docs.nexa-lang.com/) | [English](https://docs.nexa-lang.com/en/)
+  <h1>Nexa</h1>
+  <p>An agent-native language and reliable runtime for humans and models authoring .nx programs.</p>
 </div>
 
----
+[中文](README.md) | **English** · Python 3.10+ · AGPL-3.0-or-later
 
-## ⚡ What is Nexa?
+Nexa expresses agents, tools, protocols, context, and control flow in one language. Its Python compiler produces executable programs; its runtime owns provider protocols, tool policy, budgets, approvals, checkpoints, and events. The Rust AVM grows against a shared semantic test suite.
 
-**Nexa** is **the first Harness Native Agent Language** — a programming language designed specifically for Large Language Models (LLMs) and Agentic Systems, where agent safety is a language property, not a runtime convention.
+## Getting started
 
-Modern AI application development is plagued by massive Prompt concatenation, bloated JSON parsing suites, unreliable regex belts, and complex frameworks. Nexa elevates high-level intent routing, multi-agent concurrent assembly, pipeline streaming, and tool execution sandboxing as first-class syntax citizens. Through the underlying `Transpiler`, it transforms into stable, reliable Python Runtime, allowing you to define the most hardcore LLM computation graphs (DAGs) with the most elegant syntax.
+With Python 3.10+ in an activated virtual environment, install the wheel from the [2.4.0 release](https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0):
 
----
-
-## 🔥 v2.1: Production Hardening for Nexa Code
-
-Nexa v2.1 adds **agent-level properties** parsed by the compiler and enforced at runtime — not framework configurations, but **language primitives**:
-
-| Property | Type | Default | Description |
-|----------|------|---------|-------------|
-| `stream` | `true` / `false` | `false` | Stream output token-by-token |
-| `output_format` | `"json"` / `""` | `""` | Force OpenAI response_format JSON |
-| `output_schema` | `{...}` | — | JSON Schema; compiler auto-generates Pydantic |
-| `max_tool_calls` | `int` | `10` | Max tool call rounds per request |
-| `tool_call_strategy` | `"auto"` / `"required"` / `"none"` | `"auto"` | Control tool call behavior |
-
-```nexa
-agent Coder {
-    prompt: "You are a coding assistant.",
-    stream: true,
-    max_tool_calls: 5,
-    tool_call_strategy: "auto"
-}
+```sh
+python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v2.4.0/nexa_lang-2.4.0-py3-none-any.whl
+nexa --version
 ```
 
-**Backward compatible**: all v1.x and v2.0 code runs unchanged.
+The `nexa-lang` name on PyPI belongs to another project. Use the full release URL above. Compilation and pure computation work without provider credentials. See the [installation guide](docs/development.md#install-a-release).
 
----
+For development and examples, check out the matching tag:
 
-## 🔥 v2.0: Harness Native Runtime
-
-Nexa v2.0 introduces the **Harness Native Runtime** — transforming the Harness six-tuple H=(E,T,C,S,L,V) from compile-time validation into runtime first-class primitives:
-
-| Dimension | Primitive | Runtime Component | Tests |
-|-----------|-----------|-------------------|-------|
-| **E** (Execution) | `autoloop` | HarnessKernel + AutoLoopConfig | 52 |
-| **T** (Tool) | `@tool` | ToolRegistry + ToolSchema | 53 |
-| **C** (Context) | `with_context` | ContextManager + importance_weighted | 52 |
-| **S** (State) | `snapshot/restore` | StateStore + fork/merge | 45 |
-| **L** (Lifecycle) | `before_step/after_step/reflect` | LifecycleHookManager | 53 |
-| **V** (Verify) | `verify ... satisfies` | EvaluationInterface + LLMRouter | 59 |
-| **Actor** | `spawn/pass/await` | ActorSystem | 18 |
-| **WASM** | sandbox integration | WASM Sandbox + full harness | 15 |
-
-**Total 296 new tests**, plus v1.x 1500+ tests = **1935+ tests**.
-
-### v2.0 Examples
-
-12 complete examples covering all Harness dimensions:
-
-```
-examples/v2.0/
-  01_autoloop.nx          — E-dimension: autonomous ReAct loop
-  02_with_context.nx      — C-dimension: context management
-  03_try_agent.nx         — E+L: fault-tolerant execution + reflection
-  04_tool_annotation.nx   — T-dimension: zero-cost tool binding
-  05_snapshot_restore.nx  — S-dimension: state snapshots
-  06_fork_merge.nx        — S-dimension: branch exploration
-  07_verify.nx            — V-dimension: output verification
-  08_reflect.nx           — L-dimension: reflection injection
-  09_lifecycle_hooks.nx   — L-dimension: lifecycle interception
-  10_actor_system.nx      — Actor: multi-agent orchestration
-  11_well_harnessed.nx    — full-dimension example
-  12_harness_cli.nx       — Claude Code-like CLI framework
-```
-
----
-
-## 🔥 v1.1-v1.3.7 Feature Overview
-
-Nexa released **16 core features** from v1.1.0 to v1.3.7, covering 4 priority tiers (P0-P3), with **1500+ tests** total.
-
-### 🏆 P0: Core Differentiation Features
-
-| Version | Feature | Tests | Highlights |
-|---------|---------|-------|------------|
-| **v1.1.0** | Intent-Driven Development (IDD) | 104 | `.nxintent` files + IAL term rewriting engine + `@implements` annotations |
-| **v1.2.0** | Design by Contract (DbC) | 47 | `requires`/`ensures`/`invariant` + ContractViolation cross-module integration |
-| **v1.3.0** | Agent-Native Tooling | 41 | `nexa inspect`/`validate`/`lint` CLI commands |
-
-### 📦 P1: Essential Features
-
-| Version | Feature | Tests | Highlights |
-|---------|---------|-------|------------|
-| **v1.3.1** | Gradual Type System | 79 | `Int`/`String`/`Bool`/`List[T]`/`Option[T]`/`Result[T,E]` + 3-level mode |
-| **v1.3.2** | Error Propagation | 82 | `?` operator + `otherwise` + `NexaResult`/`NexaOption` |
-| **v1.3.3** | Background Job System | 73 | `job` DSL + priority queues + cron + backoff strategies |
-| **v1.3.4** | Built-In HTTP Server | 94 | `server` DSL + CORS/CSP + route guards + hot reload |
-| **v1.3.5** | Database Integration | 79+5 | `db` DSL + SQLite/PostgreSQL + Agent memory API |
-
-### 🎯 P2: Advanced Features
-
-| Version | Feature | Tests | Highlights |
-|---------|---------|-------|------------|
-| **v1.3.6** | Auth & OAuth | 79+5 | 3-layer auth (API Key + JWT + OAuth PKCE) |
-| **v1.3.6** | Structured Concurrency | 172 | `spawn`/`parallel`/`race`/`channel` + 18 API functions |
-| **v1.3.6** | KV Store | 81 | SQLite backend + TTL + Agent semantic queries |
-| **v1.3.6** | Template System | 209 | `template"""..."""` + 30+ filters + Agent templates |
-
-### ✨ P3: Language Expressiveness
-
-| Version | Feature | Tests | Highlights |
-|---------|---------|-------|------------|
-| **v1.3.7** | Pipe Operator `|>` | 84 | `x |> f` → `f(x)` left-to-right data flow |
-| **v1.3.7** | defer Statement | 84 | LIFO cleanup on scope exit |
-| **v1.3.7** | Null Coalescing `??` | 84 | `expr ?? fallback` safe fallback |
-| **v1.3.7** | String Interpolation `#{}` | 100 | Ruby-style string interpolation |
-| **v1.3.7** | Pattern Matching | 91 | 7 pattern types + `match`/`let`/`for` destructuring |
-| **v1.3.7** | ADT (Struct/Enum/Trait) | 100 | Algebraic data types + handle-as-dict pattern |
-
----
-
-## 🦀 Rust AVM Foundation (v1.0-alpha)
-
-Nexa v1.0-alpha introduced the revolutionary **Agent Virtual Machine (AVM)** — a high-performance, securely isolated agent execution engine written in Rust:
-
-- **High-performance bytecode interpreter** — Natively executes compiled Nexa bytecode
-- **WASM Security Sandbox** — wasmtime integration + 4-level permission model
-- **Smart Scheduler** — DAG topological sort + automatic dependency resolution
-- **Vector Virtual Memory Paging** — LRU/LFU/Hybrid eviction + semantic relevance loading
-
----
-
-## 🚀 Quick Start
-
-### 1. Global Installation
-```bash
-git clone https://github.com/ouyangyipeng/Nexa.git
+```sh
+git clone --branch v2.4.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
 cd Nexa
-pip install -e .
+uv sync --locked --all-extras
+uv run nexa --version
+uv run nexa build examples/v2.0/07_verify.nx
 ```
 
-### 2. Agent Tool Installation 🤖
-If you're using AI Agent tools (Claude Code, Cursor, Copilot, etc.), simply enter:
+Follow [first-model setup](docs/development.md#configure-your-first-model) to configure your endpoint, model ID and credential before making model calls. Compilation works without credentials. Run flows with `uv run nexa run FILE.nx`.
 
-```
-Follow the instructions at https://github.com/ouyangyipeng/Nexa/AGENT_LEARN to install and try this language
-```
-
-Your Agent will automatically access `AGENT_LEARN/` to complete installation and learn Nexa syntax.
-
-**Agent-specific docs**:
-- [`AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md`](AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md)
-- [`AGENT_LEARN/AGENT_GUIDE.md`](AGENT_LEARN/AGENT_GUIDE.md)
-
-### 3. Execute and Test Workflow
-```bash
-# Run flow
-python -m src.cli run examples/01_hello_world.nx
-
-# Semantic assertion tests
-python -m src.cli test examples/12_v0.9_features.nx
-
-# Audit generated Python code stack
-python -m src.cli build examples/01_hello_world.nx
-
-# Agent-Native tooling (v1.3+)
-python -m src.cli inspect examples/01_hello_world.nx
-python -m src.cli validate examples/01_hello_world.nx
-python -m src.cli lint examples/01_hello_world.nx
-```
-
----
-
-## 📖 Syntax Examples
-
-### Agent Declaration + Pipeline
 ```nexa
-agent ChatBot {
-    role: "Helpful Assistant",
-    model: "deepseek-chat",
-    prompt: "Answer user questions concisely"
+@tool("Add two integers")
+fn add(a: int, b: int): int {
+    python! """
+return a + b
+"""
 }
-
+agent Calculator uses add {
+    prompt: "Use the add tool to calculate the answer."
+    timeout: 60
+    max_tool_calls: 2
+}
 flow main {
-    result = user_input |> ChatBot |> format_output;
+    result = Calculator.run("What is 23 + 19?");
+    verify result satisfies string;
+    print(result);
 }
 ```
 
-### Design by Contract (v1.2)
-```nexa
-agent SecureBot {
-    requires: input != None and input.length < 1000
-    ensures: "response is helpful and accurate"
-}
+## Version 2.4
+
+- One compiler boundary for CLI, SDK, and embedded API: recursive includes, normalized AST, Harness diagnostics, and Python syntax validation. Distributions include the `.nx` standard library.
+- One AgentRunner for text, Protocol, streaming, and exact-cache results. `execute()` creates an isolated RunState; `run()` retains a serialized conversation.
+- Native Chat Completions, Responses, and Anthropic adapters preserve tool calls, usage, and opaque reasoning or signed thinking state.
+- Tool exposure, JSON Schema validation, explicit approvals, and truthful isolation status share one dispatch boundary.
+- Versioned SQLite checkpoints use optimistic concurrency and a tool journal. Completed tool results are reused; uncertain side effects require operator reconciliation.
+- `continue_run()` starts a new turn from settled history, retaining native provider state with fresh budgets, deadlines and approvals, linked by parent and session identifiers.
+- Bounded parallel execution, cancellation signals, deadlines, call and token budgets, and bounded tool-output artifacts.
+- IAL checks distinguish pass, fail, skip, and error. Failed `verify` statements stop the success path.
+- Official MCP SDK connections, shared Python/Rust fixtures, and real Wasmtime 48 LTS execution with resource limits.
+
+See the [2.4.0 release notes](docs/release_notes/v2.4.0.md) for artifacts and verification scope, and the [runtime contract and migration guide](docs/runtime-v2.4.md) for detailed behavior.
+
+## Durable agent execution
+
+```sh
+uv run nexa agent examples/Nexa-Code/main.nx CodeAssistant "Fix the failing test" --timeout 900
+# Inspect pending_calls, then approve the specific call:
+uv run nexa agent examples/Nexa-Code/main.nx CodeAssistant --resume RUN_ID --approve CALL_ID
 ```
 
-### Type Annotations + Error Propagation (v1.3.1-v1.3.2)
-```nexa
-let count: Int = parse(input) ?
-let result = risky_operation() otherwise 0
+Use `--deny CALL_ID` to reject a tool call and `--checkpoint PATH` to select a database. The default is `.nexa/runs.sqlite3`. Exit codes are 0 for completion, 2 for approval, and 1 for other stopped states. Source, provider, workspace and budgets must match when resuming. Deadlines include approval waiting time.
+
+```python
+from src.runtime.agent import NexaAgent
+from src.runtime.checkpoints import SQLiteCheckpointStore
+from src.runtime.run_state import RunConfig
+
+agent = NexaAgent("Analyst", prompt="Explain the evidence")
+store = SQLiteCheckpointStore(".nexa/runs.sqlite3")
+state = agent.execute("Analyze this result", config=RunConfig(timeout=120), save=store.save)
+print(state.status, state.output)
 ```
 
-### HTTP Server (v1.3.4)
-```nexa
-server 8080 {
-    cors { origins: ["*"], methods: ["GET", "POST"] }
-    route GET "/chat" => ChatBot
-    route POST "/analyze" => Analyzer
-}
+The existing `src.nexa_sdk.compile()` / `run()` and public `src.*` import paths remain available. Provider API selection accepts `chat`, `responses`, and `anthropic`; native Anthropic uses `ANTHROPIC_API_KEY` and optional `ANTHROPIC_BASE_URL`.
+
+## Development and verification
+
+```sh
+uv run pytest -m "not benchmark"
+uv build --no-build-isolation
+cargo test --manifest-path avm/Cargo.toml --locked --lib --test conformance --test wasm_execution
+cargo test --manifest-path avm/Cargo.toml --locked --features wasm --lib --test conformance --test wasm_execution
 ```
 
-### Pattern Matching + ADT (v1.3.7)
-```nexa
-enum Option { Some(value), None }
-struct Point { x: Int, y: Int }
+Python is the reference runtime. Rust supports an explicit subset, returning errors for unsupported instructions. Python tools execute on the host; requesting a sandbox without an isolated executor fails. WASM execution requires the `wasm` feature. Cancellation of arbitrary Python handlers is cooperative. Context limits use a conservative UTF-8 byte bound; native provider history is retained and oversized requests fail explicitly.
 
-match result {
-    Option::Some(answer) => answer
-    Option::None => "no response"
-}
-```
+Offline provider fixtures verify runtime behavior. Real-provider quality, cost, and latency require a separately configured evaluation. [Nexa Code](examples/Nexa-Code/README.md) and the versioned [evaluation tasks](evals/tasks) exercise actual file edits and subprocess verification in temporary workspaces.
 
----
+The [example manifest](examples/manifest.json) records 63 compilation cases and 12 historical drafts with explicit failure reasons. `uv run pytest tests/test_examples.py -q` checks every supported file. Execution of examples with model, database or server dependencies requires the corresponding environment.
 
-## ✅ Documentation & Test Validation
-
-- **Python Tests**: 1935 tests passed (v1.x 16 features + v2.0 Harness Runtime + v2.1 Agent Properties)
-- **Rust AVM**: 0 errors, 0 warnings — `cargo check` clean build
-- **v2.0+2.1 Examples**: 16/16 all compile with `nexa build --harness=warn`
-
----
-
-## 📖 Documentation
-
-- [x] [Nexa Syntax Reference v1.3.7](docs/01_nexa_syntax_reference.md) — 25 chapters full syntax coverage
-- [x] [Compiler & Runtime Architecture v1.3](docs/02_compiler_architecture.md) — AST scoring, BOILERPLATE, handle-as-dict
-- [x] [Roadmap & Vision](docs/03_roadmap_and_vision.md) — v0.1 to v1.3.7 complete milestones
-- [x] [Architecture Evolution Plan](docs/05_architecture_evolution.md) — Rust AVM design blueprint
-- [x] [Quick Start Guide](docs/06_quick_start_guide.md) — 5-minute introduction
-- [x] [IDD Complete Reference](docs/idd_reference.md) — Intent-Driven Development deep dive
-- [x] [Feature Changelog v1.1-v1.3.x](docs/changelog_v1.1.0-v1.3.x_features.md) — 16 feature change records
-- [x] [Release Notes](docs/release_notes/) — Per-version release announcements
-
-<div align="center">
-  <sub>Built with ❤️ by the Nexa Genesis Team for the next era of automation.</sub>
-</div>
+- [Development guide](docs/development.md)
+- [Runtime contract](docs/runtime-v2.4.md)
+- [Syntax reference](docs/01_nexa_syntax_reference.md)
+- [Compiler architecture](docs/02_compiler_architecture.md)
+- [Implementation record](plan/01-v1-execution.md)
+- [License](LICENSE)

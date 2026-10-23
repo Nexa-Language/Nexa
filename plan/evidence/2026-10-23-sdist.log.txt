@@ -1,0 +1,105 @@
+running sdist
+running egg_info
+creating nexa_lang.egg-info
+writing nexa_lang.egg-info/PKG-INFO
+writing dependency_links to nexa_lang.egg-info/dependency_links.txt
+writing entry points to nexa_lang.egg-info/entry_points.txt
+writing requirements to nexa_lang.egg-info/requires.txt
+writing top-level names to nexa_lang.egg-info/top_level.txt
+writing manifest file 'nexa_lang.egg-info/SOURCES.txt'
+reading manifest file 'nexa_lang.egg-info/SOURCES.txt'
+adding license file 'LICENSE'
+writing manifest file 'nexa_lang.egg-info/SOURCES.txt'
+running check
+creating nexa-lang-2.3.1
+creating nexa-lang-2.3.1/nexa_lang.egg-info
+creating nexa-lang-2.3.1/src
+creating nexa-lang-2.3.1/src/ial
+creating nexa-lang-2.3.1/src/runtime
+copying files to nexa-lang-2.3.1...
+copying LICENSE -> nexa-lang-2.3.1
+copying README.md -> nexa-lang-2.3.1
+copying setup.py -> nexa-lang-2.3.1
+copying nexa_lang.egg-info/PKG-INFO -> nexa-lang-2.3.1/nexa_lang.egg-info
+copying nexa_lang.egg-info/SOURCES.txt -> nexa-lang-2.3.1/nexa_lang.egg-info
+copying nexa_lang.egg-info/dependency_links.txt -> nexa-lang-2.3.1/nexa_lang.egg-info
+copying nexa_lang.egg-info/entry_points.txt -> nexa-lang-2.3.1/nexa_lang.egg-info
+copying nexa_lang.egg-info/requires.txt -> nexa-lang-2.3.1/nexa_lang.egg-info
+copying nexa_lang.egg-info/top_level.txt -> nexa-lang-2.3.1/nexa_lang.egg-info
+copying src/__init__.py -> nexa-lang-2.3.1/src
+copying src/_version.py -> nexa-lang-2.3.1/src
+copying src/api.py -> nexa-lang-2.3.1/src
+copying src/ast_transformer.py -> nexa-lang-2.3.1/src
+copying src/cli.py -> nexa-lang-2.3.1/src
+copying src/code_generator.py -> nexa-lang-2.3.1/src
+copying src/harness_validator.py -> nexa-lang-2.3.1/src
+copying src/nexa_parser.py -> nexa-lang-2.3.1/src
+copying src/nexa_sdk.py -> nexa-lang-2.3.1/src
+copying src/ial/__init__.py -> nexa-lang-2.3.1/src/ial
+copying src/ial/execute.py -> nexa-lang-2.3.1/src/ial
+copying src/ial/primitives.py -> nexa-lang-2.3.1/src/ial
+copying src/ial/resolve.py -> nexa-lang-2.3.1/src/ial
+copying src/ial/standard.py -> nexa-lang-2.3.1/src/ial
+copying src/ial/vocabulary.py -> nexa-lang-2.3.1/src/ial
+copying src/runtime/__init__.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/actor_system.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/adt.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/agent.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/agent_context.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/auth.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/cache_manager.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/compactor.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/concurrent.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/config.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/context_manager.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/contracts.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/core.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/cow_state.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/dag_orchestrator.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/database.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/debugger.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/evaluation_interface.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/evaluator.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/execution_engine.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/harness_kernel.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/hitl.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/http_server.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/inspector.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/intent.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/jobs.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/knowledge_graph.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/kv_store.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/lifecycle_hooks.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/llm_router.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/long_term_memory.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/mcp_client.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/memory.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/memory_backend.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/meta.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/opencli.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/orchestrator.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/pattern_matching.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/profiler.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/rbac.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/reason.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/result_types.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/safe_eval.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/secrets.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/state_store.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/stdlib.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/template.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/tool_output_store.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/tool_registry.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/tools_registry.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/trace_system.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/type_system.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/ui.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/validator.py -> nexa-lang-2.3.1/src/runtime
+copying src/runtime/wasm_sandbox.py -> nexa-lang-2.3.1/src/runtime
+Writing nexa-lang-2.3.1/setup.cfg
+creating /private/tmp/nexa-packaging-audit-3qw4m8ik/dist
+Creating tar archive
+removing 'nexa-lang-2.3.1' (and everything under it)
+warning: check: missing required meta-data: url
+
+warning: check: missing meta-data: if 'author' supplied, 'author_email' should be supplied too

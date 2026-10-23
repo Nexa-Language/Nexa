@@ -126,8 +126,8 @@ def validate_nexa_file(file_path: str) -> Dict[str, Any]:
 
     ast = None
     try:
-        from nexa_parser import parse
-        ast = parse(source_code)
+        from src.compiler import load_program
+        ast, _ = load_program(source_code, source_path=input_path)
     except Exception as e:
         # Parse error — extract location info if available
         parse_error = _parse_error_to_validation_error(e, file_path, source_code)

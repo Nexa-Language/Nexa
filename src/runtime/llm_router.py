@@ -197,7 +197,7 @@ class LLMRouter:
         self._fallback_chain: List[str] = []  # Ordered fallback model IDs
         self._route_count = 0
         self._fallback_count = 0
-        self._mock = mock if mock is not None else os.environ.get("NEXA_LLMROUTER_MOCK", "1").lower() in {"1", "true", "yes", "on"}
+        self._mock = mock if mock is not None else os.environ.get("NEXA_LLMROUTER_MOCK", "0").lower() in {"1", "true", "yes", "on"}
 
         for model in DEFAULT_MODELS:
             self.register_model(model)

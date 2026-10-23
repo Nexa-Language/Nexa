@@ -179,6 +179,9 @@ body {
   display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center;
 }
 .hero-left { display: flex; flex-direction: column; }
+.hero-left, .hero-right, .code-block { min-width: 0; }
+.install-note { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.6; margin: 12px 0; }
+.install-note a, .section-desc a, .code-explain a { color: var(--text-accent); }
 .hero-logo { width: 80px; height: auto; margin-bottom: 28px; filter: drop-shadow(0 0 30px var(--accent-primary-glow)); }
 .hero-badge {
   display: inline-flex; align-items: center; gap: 8px;
@@ -209,8 +212,10 @@ body {
   padding: 10px 20px; border-radius: 10px;
   background: rgba(0, 0, 0, 0.5); border: 1px solid var(--glass-border);
   font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-secondary);
-  width: fit-content;
+  width: fit-content; max-width: 100%;
 }
+.hero-install code { overflow-wrap: anywhere; min-width: 0; }
+.hero-install .copy-btn { flex-shrink: 0; }
 .hero-install .copy-btn {
   background: none; border: none; color: var(--accent-primary);
   cursor: pointer; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px;
@@ -564,6 +569,10 @@ body {
   .footer-grid { grid-template-columns: 1fr; }
   .nexa-plus-inner { grid-template-columns: 1fr; }
   .hero h1 { font-size: 2rem; }
+  .blog-layout, .blog-grid { grid-template-columns: minmax(0, 1fr); }
+  .blog-timeline-side { position: static; }
+  .blog-toolbar { flex-direction: column; align-items: stretch; }
+  .blog-search { min-width: 0; }
   .blog-card { flex-direction: column; }
 }
 

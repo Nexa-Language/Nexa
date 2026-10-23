@@ -1,7 +1,7 @@
 /* 
   Nexa v2.0 — fork/merge 多分支探索示例
   演示 Harness S-dimension: Tree-of-Thoughts
-  Grammar: fork [expr1, expr2] merge best_of;
+  Grammar: fork [expr1, expr2] merge all;
 */
 
 agent ExploreAgent {
@@ -11,7 +11,7 @@ agent ExploreAgent {
 flow main {
     print "=== v2.0 fork/merge Demo ===";
     
-    fork [ExploreAgent.run("Try approach A"), ExploreAgent.run("Try approach B")] merge best_of;
+    fork [ExploreAgent.run("Try approach A"), ExploreAgent.run("Try approach B")] merge all;
     
-    print "Fork merged with best_of strategy.";
+    print "Fork merged with all strategy.";
 }

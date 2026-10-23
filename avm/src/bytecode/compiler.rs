@@ -21,9 +21,9 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 //! 字节码编译器
 //! 将 AST 编译为字节码
 
+use super::instructions::*;
 use crate::compiler::ast::*;
 use crate::utils::error::{AvmError, AvmResult};
-use super::instructions::*;
 use std::collections::HashMap;
 
 /// 字节码编译器
@@ -71,8 +71,13 @@ impl BytecodeCompiler {
         }
 
         // 编译入口 flow
-        if let Some(main_flow) = program.flows.first() {
-            self.module.entry_point = self.module.current_offset();
+        if let Some(main_flow) = program
+            .flows
+            .iter()
+            .find(|flow| flow.name == "main")
+            .or_else(|| program.flows.first())
+        {
+            self.module.entry_point = 0;
             self.compile_flow(main_flow)?;
         } else {
             // 如果没有 flow，设置默认入口
@@ -121,7 +126,9 @@ impl BytecodeCompiler {
             Declaration::Agent(agent) => self.compile_agent(agent),
             // v1.1: TypeAlias 声明 — 暂不生成字节码（类型在 AST 级别检查）
             Declaration::TypeAlias(_) => Ok(()),
-            Declaration::Job(_) => Ok(()), // P1-3: Job declarations compiled separately
+            Declaration::Job(_) => Err(AvmError::CompilationError(
+                "Jobs are not supported by AVM bytecode".into(),
+            )),
         }
     }
 
@@ -129,7 +136,7 @@ impl BytecodeCompiler {
     fn compile_tool(&mut self, tool: &ToolDeclaration) -> AvmResult<()> {
         // 工具注册
         let name_idx = self.add_constant(Constant::String(tool.name.clone()));
-        
+
         // 描述
         let desc_idx = if let Some(desc) = &tool.description {
             self.add_constant(Constant::String(desc.clone()))
@@ -144,25 +151,35 @@ impl BytecodeCompiler {
             self.add_constant(Constant::Null)
         };
 
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(desc_idx)), None);
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(params_idx)), None);
-        self.module.emit(OpCode::RegisterTool, Some(Operand::U8(3)), None);
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(desc_idx)), None);
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(params_idx)), None);
+        self.module
+            .emit(OpCode::RegisterTool, Some(Operand::U8(3)), None);
 
         Ok(())
     }
 
     /// 编译 protocol
     fn compile_protocol(&mut self, protocol: &ProtocolDeclaration) -> AvmResult<()> {
-        let _name_idx = self.add_constant(Constant::String(protocol.name.clone()));
-        // Protocol 编译逻辑（简化）
-        Ok(())
+        Err(AvmError::CompilationError(format!(
+            "Protocol {} requires the Python runtime",
+            protocol.name
+        )))
     }
 
     /// 编译 agent
     fn compile_agent(&mut self, agent: &AgentDeclaration) -> AvmResult<()> {
+        if agent.contracts.is_some() || agent.protocol.is_some() {
+            return Err(AvmError::CompilationError(
+                "Agent contracts and protocols require the Python runtime".into(),
+            ));
+        }
         let name_idx = self.add_constant(Constant::String(agent.name.clone()));
-        
+
         // 编译 prompt
         let prompt_idx = if let Some(prompt) = &agent.prompt {
             self.add_constant(Constant::String(prompt.clone()))
@@ -185,31 +202,43 @@ impl BytecodeCompiler {
         };
 
         // 压入参数
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(prompt_idx)), None);
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(role_idx)), None);
-        self.module.emit(OpCode::PushConst, Some(Operand::U32(model_idx)), None);
-        
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(prompt_idx)), None);
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(role_idx)), None);
+        self.module
+            .emit(OpCode::PushConst, Some(Operand::U32(model_idx)), None);
+
         // 编译工具列表
         let tool_count = agent.tools.len() as u8;
         for tool in &agent.tools {
             self.compile_expression(tool)?;
         }
 
-        self.module.emit(OpCode::CreateAgent, Some(Operand::U8(4 + tool_count)), None);
+        self.module
+            .emit(OpCode::CreateAgent, Some(Operand::U8(4 + tool_count)), None);
+        self.module.emit(OpCode::Pop, None, None);
 
         Ok(())
     }
 
     /// 编译 flow
     fn compile_flow(&mut self, flow: &FlowDeclaration) -> AvmResult<()> {
+        if flow.contracts.is_some() {
+            return Err(AvmError::CompilationError(
+                "Flow contracts require the Python runtime".into(),
+            ));
+        }
         // 进入新的作用域
         self.push_scope();
 
         // v1.1: 编译参数（parameters 现在是 Vec<(String, TypeExpr)>）
         for (_i, (param_name, _param_type)) in flow.parameters.iter().enumerate() {
             let local_idx = self.declare_local(param_name);
-            self.module.emit(OpCode::StoreLocal, Some(Operand::U32(local_idx)), None);
+            self.module
+                .emit(OpCode::StoreLocal, Some(Operand::U32(local_idx)), None);
         }
 
         // 编译 body
@@ -217,6 +246,17 @@ impl BytecodeCompiler {
             self.compile_statement(stmt)?;
         }
 
+        // Preserve the Python flow's implicit last-assignment result.
+        if let Some(Statement::Assignment {
+            target: Expression::Identifier(name),
+            ..
+        }) = flow.body.last()
+        {
+            if let Some(index) = self.lookup_local(name) {
+                self.module
+                    .emit(OpCode::LoadLocal, Some(Operand::U32(index)), None);
+            }
+        }
         // 离开作用域
         self.pop_scope();
 
@@ -241,16 +281,30 @@ impl BytecodeCompiler {
                 // 表达式语句的结果弹出
                 self.module.emit(OpCode::Pop, None, None);
             }
-            Statement::Assignment { target, value, is_semantic: _ } => {
+            Statement::Assignment {
+                target,
+                value,
+                is_semantic: _,
+            } => {
                 self.compile_assignment(target, value)?;
             }
-            Statement::TryCatch { try_body, catch_var, catch_body } => {
-                self.compile_try_catch(try_body, catch_var, catch_body)?;
+            Statement::TryCatch {
+                try_body,
+                catch_var,
+                catch_body,
+            } => {
+                let _ = (try_body, catch_var, catch_body);
+                return Err(AvmError::CompilationError(
+                    "try/catch requires the Python runtime".into(),
+                ));
             }
             Statement::Assert { condition, message } => {
                 self.compile_assert(condition, message)?;
             }
-            Statement::SemanticIf { branches, else_body } => {
+            Statement::SemanticIf {
+                branches,
+                else_body,
+            } => {
                 self.compile_semantic_if(branches, else_body)?;
             }
             Statement::Loop { condition, body } => {
@@ -275,21 +329,29 @@ impl BytecodeCompiler {
                 self.compile_expression(expression)?;
                 // 将结果存储到 target 变量（暂不实现 unwrap）
                 if let Some(idx) = self.globals.get(target) {
-                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(*idx)), None);
+                    self.module
+                        .emit(OpCode::StoreGlobal, Some(Operand::U32(*idx)), None);
                 } else {
                     let idx = self.add_constant(Constant::String(target.clone()));
-                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
                 }
             }
-            Statement::OtherwiseAssignment { target, expression, handler: _ } => {
+            Statement::OtherwiseAssignment {
+                target,
+                expression,
+                handler: _,
+            } => {
                 // x = expr otherwise handler → 编译表达式，fallback 处理
                 // 简化实现：编译表达式后存储到 target
                 self.compile_expression(expression)?;
                 if let Some(idx) = self.globals.get(target) {
-                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(*idx)), None);
+                    self.module
+                        .emit(OpCode::StoreGlobal, Some(Operand::U32(*idx)), None);
                 } else {
                     let idx = self.add_constant(Constant::String(target.clone()));
-                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
                 }
             }
             Statement::TryExpression(expr) => {
@@ -308,7 +370,8 @@ impl BytecodeCompiler {
             Statement::Continue => {
                 if let Some(loop_info) = self.loop_stack.last() {
                     let offset = loop_info.start;
-                    self.module.emit(OpCode::Jump, Some(Operand::U32(offset)), None);
+                    self.module
+                        .emit(OpCode::Jump, Some(Operand::U32(offset)), None);
                 }
             }
         }
@@ -323,13 +386,16 @@ impl BytecodeCompiler {
         match target {
             Expression::Identifier(name) => {
                 if let Some(idx) = self.lookup_local(name) {
-                    self.module.emit(OpCode::StoreLocal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::StoreLocal, Some(Operand::U32(idx)), None);
                 } else if let Some(&idx) = self.globals.get(name) {
-                    self.module.emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::StoreGlobal, Some(Operand::U32(idx)), None);
                 } else {
                     // 新建局部变量
                     let idx = self.declare_local(name);
-                    self.module.emit(OpCode::StoreLocal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::StoreLocal, Some(Operand::U32(idx)), None);
                 }
             }
             Expression::Index { object, index } => {
@@ -340,67 +406,28 @@ impl BytecodeCompiler {
             Expression::PropertyAccess { object, property } => {
                 self.compile_expression(object)?;
                 let prop_idx = self.add_constant(Constant::String(property.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(prop_idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(prop_idx)), None);
                 self.module.emit(OpCode::SetAttr, None, None);
             }
             _ => {
-                return Err(AvmError::CompilationError("Invalid assignment target".to_string()));
+                return Err(AvmError::CompilationError(
+                    "Invalid assignment target".to_string(),
+                ));
             }
         }
-
-        Ok(())
-    }
-
-    /// 编译 try-catch
-    fn compile_try_catch(
-        &mut self,
-        try_body: &[Statement],
-        catch_var: &str,
-        catch_body: &[Statement],
-    ) -> AvmResult<()> {
-        // 简化的 try-catch 实现
-        // 在实际实现中需要异常表
-        
-        let try_start = self.module.current_offset();
-        
-        self.push_scope();
-        for stmt in try_body {
-            self.compile_statement(stmt)?;
-        }
-        self.pop_scope();
-
-        let try_end = self.module.current_offset();
-        
-        // 跳过 catch 块
-        let jump_over_catch = self.module.current_offset();
-        self.module.emit(OpCode::Jump, None, None);
-
-        // Catch 块
-        let catch_start = self.module.current_offset();
-        
-        self.push_scope();
-        let var_idx = self.declare_local(catch_var);
-        self.module.emit(OpCode::StoreLocal, Some(Operand::U32(var_idx)), None);
-        
-        for stmt in catch_body {
-            self.compile_statement(stmt)?;
-        }
-        self.pop_scope();
-
-        // 修复跳转
-        let catch_end = self.module.current_offset();
-        self.patch_jump(jump_over_catch, catch_end);
-
-        // 记录异常处理范围（简化）
-        let _ = (try_start, try_end, catch_start);
 
         Ok(())
     }
 
     /// 编译 assert
-    fn compile_assert(&mut self, condition: &Expression, message: &Option<String>) -> AvmResult<()> {
+    fn compile_assert(
+        &mut self,
+        condition: &Expression,
+        message: &Option<String>,
+    ) -> AvmResult<()> {
         self.compile_expression(condition)?;
-        
+
         // 反转条件，如果为假则触发断言失败
         let jump_offset = self.module.current_offset();
         self.module.emit(OpCode::JumpIfTrue, None, None);
@@ -408,7 +435,8 @@ impl BytecodeCompiler {
         // 断言失败
         if let Some(msg) = message {
             let msg_idx = self.add_constant(Constant::String(msg.clone()));
-            self.module.emit(OpCode::PushConst, Some(Operand::U32(msg_idx)), None);
+            self.module
+                .emit(OpCode::PushConst, Some(Operand::U32(msg_idx)), None);
         } else {
             self.module.emit(OpCode::PushNull, None, None);
         }
@@ -499,7 +527,8 @@ impl BytecodeCompiler {
         self.pop_scope();
 
         // 跳回循环开始
-        self.module.emit(OpCode::Jump, Some(Operand::U32(loop_start)), None);
+        self.module
+            .emit(OpCode::Jump, Some(Operand::U32(loop_start)), None);
 
         // 修复退出跳转
         let loop_end = self.module.current_offset();
@@ -537,14 +566,16 @@ impl BytecodeCompiler {
                     // 绑定变量
                     let idx = self.declare_local(name);
                     self.module.emit(OpCode::Dup, None, None);
-                    self.module.emit(OpCode::StoreLocal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::StoreLocal, Some(Operand::U32(idx)), None);
                     self.module.emit(OpCode::PushTrue, None, None);
                 }
                 Pattern::Constructor { name, fields } => {
                     // 简化：检查类型名
                     let name_idx = self.add_constant(Constant::String(name.clone()));
                     self.module.emit(OpCode::Dup, None, None);
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
                     self.module.emit(OpCode::Eq, None, None);
                     let _ = fields; // 忽略字段匹配
                 }
@@ -601,45 +632,62 @@ impl BytecodeCompiler {
             }
             Expression::Integer(n) => {
                 let idx = self.add_constant(Constant::Integer(*n));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
             }
             Expression::Float(f) => {
                 let idx = self.add_constant(Constant::Float(*f));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
             }
             Expression::String(s) => {
                 let idx = self.add_constant(Constant::String(s.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
             }
             // v1.2: TryOp — ? 操作符表达式（错误传播）
             // 简化实现：编译内部表达式（暂不实现 unwrap opcode）
-            Expression::TryOp { expression } => {
-                self.compile_expression(expression)?;
+            Expression::TryOp { .. } => {
+                return Err(AvmError::CompilationError(
+                    "Try propagation is not supported by AVM bytecode".into(),
+                ))
             }
             Expression::Identifier(name) => {
                 if let Some(idx) = self.lookup_local(name) {
-                    self.module.emit(OpCode::LoadLocal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::LoadLocal, Some(Operand::U32(idx)), None);
                 } else if let Some(&idx) = self.globals.get(name) {
-                    self.module.emit(OpCode::LoadGlobal, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::LoadGlobal, Some(Operand::U32(idx)), None);
                 } else {
                     // 作为字符串常量处理
                     let idx = self.add_constant(Constant::String(name.clone()));
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(idx)), None);
                 }
             }
             Expression::List(elements) => {
                 for elem in elements {
                     self.compile_expression(elem)?;
                 }
-                self.module.emit(OpCode::MakeList, Some(Operand::U32(elements.len() as u32)), None);
+                self.module.emit(
+                    OpCode::MakeList,
+                    Some(Operand::U32(elements.len() as u32)),
+                    None,
+                );
             }
             Expression::Dict(pairs) => {
                 for (key, value) in pairs {
                     let key_idx = self.add_constant(Constant::String(key.clone()));
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(key_idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(key_idx)), None);
                     self.compile_expression(value)?;
                 }
-                self.module.emit(OpCode::MakeDict, Some(Operand::U32(pairs.len() as u32)), None);
+                self.module.emit(
+                    OpCode::MakeDict,
+                    Some(Operand::U32(pairs.len() as u32)),
+                    None,
+                );
             }
             Expression::BinaryOp { left, op, right } => {
                 self.compile_expression(left)?;
@@ -656,39 +704,60 @@ impl BytecodeCompiler {
                 self.module.emit(OpCode::PipeAgent, None, None);
             }
             Expression::AgentCall { name, args, kwargs } => {
+                if !kwargs.is_empty() {
+                    return Err(AvmError::CompilationError(
+                        "Keyword agent arguments are not supported".into(),
+                    ));
+                }
                 // 压入参数
                 for arg in args {
                     self.compile_expression(arg)?;
                 }
                 for (key, value) in kwargs {
                     let key_idx = self.add_constant(Constant::String(key.clone()));
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(key_idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(key_idx)), None);
                     self.compile_expression(value)?;
                 }
 
                 let name_idx = self.add_constant(Constant::String(name.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
-                
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
+
                 let total_args = args.len() as u8 + (kwargs.len() * 2) as u8 + 1;
-                self.module.emit(OpCode::CallAgent, Some(Operand::U8(total_args)), None);
+                self.module
+                    .emit(OpCode::CallAgent, Some(Operand::U8(total_args)), None);
             }
-            Expression::MethodCall { object, method, args, kwargs } => {
+            Expression::MethodCall {
+                object,
+                method,
+                args,
+                kwargs,
+            } => {
+                if !kwargs.is_empty() {
+                    return Err(AvmError::CompilationError(
+                        "Keyword method arguments are not supported".into(),
+                    ));
+                }
                 self.compile_expression(object)?;
-                
+
                 for arg in args {
                     self.compile_expression(arg)?;
                 }
                 for (key, value) in kwargs {
                     let key_idx = self.add_constant(Constant::String(key.clone()));
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(key_idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(key_idx)), None);
                     self.compile_expression(value)?;
                 }
 
                 let method_idx = self.add_constant(Constant::String(method.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(method_idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(method_idx)), None);
 
                 let total_args = 1 + args.len() as u8 + (kwargs.len() * 2) as u8 + 1;
-                self.module.emit(OpCode::Call, Some(Operand::U8(total_args)), None);
+                self.module
+                    .emit(OpCode::Call, Some(Operand::U8(total_args)), None);
             }
             Expression::Index { object, index } => {
                 self.compile_expression(object)?;
@@ -698,54 +767,76 @@ impl BytecodeCompiler {
             Expression::PropertyAccess { object, property } => {
                 self.compile_expression(object)?;
                 let prop_idx = self.add_constant(Constant::String(property.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(prop_idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(prop_idx)), None);
                 self.module.emit(OpCode::GetAttr, None, None);
             }
-            Expression::JoinCall { agents, merge_strategy, merge_agent } => {
+            Expression::JoinCall {
+                agents,
+                merge_strategy,
+                merge_agent,
+            } => {
                 for agent in agents {
                     self.compile_expression(agent)?;
                 }
-                
+
                 let strategy_idx = self.add_constant(Constant::String(merge_strategy.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(strategy_idx)), None);
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(strategy_idx)), None);
 
                 if let Some(agent_name) = merge_agent {
                     let agent_idx = self.add_constant(Constant::String(agent_name.clone()));
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(agent_idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(agent_idx)), None);
                 } else {
                     self.module.emit(OpCode::PushNull, None, None);
                 }
 
-                self.module.emit(OpCode::JoinAgents, Some(Operand::U32(agents.len() as u32)), None);
+                self.module.emit(
+                    OpCode::JoinAgents,
+                    Some(Operand::U32(agents.len() as u32)),
+                    None,
+                );
             }
             Expression::DagFork(fork) => {
                 self.compile_expression(&fork.input)?;
                 for target in &fork.targets {
                     self.compile_expression(target)?;
                 }
-                self.module.emit(OpCode::ForkAgent, Some(Operand::U32(fork.targets.len() as u32)), None);
+                self.module.emit(
+                    OpCode::ForkAgent,
+                    Some(Operand::U32(fork.targets.len() as u32)),
+                    None,
+                );
             }
             Expression::DagMerge(merge) => {
                 for input in &merge.inputs {
                     self.compile_expression(input)?;
                 }
-                let strategy_idx = self.add_constant(Constant::String(merge.merge_strategy.clone()));
-                self.module.emit(OpCode::PushConst, Some(Operand::U32(strategy_idx)), None);
-                
+                let strategy_idx =
+                    self.add_constant(Constant::String(merge.merge_strategy.clone()));
+                self.module
+                    .emit(OpCode::PushConst, Some(Operand::U32(strategy_idx)), None);
+
                 if let Some(agent_name) = &merge.merge_agent {
                     let agent_idx = self.add_constant(Constant::String(agent_name.clone()));
-                    self.module.emit(OpCode::PushConst, Some(Operand::U32(agent_idx)), None);
+                    self.module
+                        .emit(OpCode::PushConst, Some(Operand::U32(agent_idx)), None);
                 } else {
                     self.module.emit(OpCode::PushNull, None, None);
                 }
 
-                self.module.emit(OpCode::MergeAgent, Some(Operand::U32(merge.inputs.len() as u32)), None);
+                self.module.emit(
+                    OpCode::MergeAgent,
+                    Some(Operand::U32(merge.inputs.len() as u32)),
+                    None,
+                );
             }
             Expression::DagBranch(branch) => {
                 self.compile_expression(&branch.input)?;
                 self.compile_expression(&branch.condition)?;
                 self.compile_expression(&branch.true_branch)?;
-                
+
                 if let Some(false_branch) = &branch.false_branch {
                     self.compile_expression(false_branch)?;
                 } else {
@@ -777,7 +868,12 @@ impl BytecodeCompiler {
             "||" => self.module.emit(OpCode::Or, None, None),
             "?=" => self.module.emit(OpCode::SemanticEq, None, None),
             "~=" => self.module.emit(OpCode::SemanticMatch, None, None),
-            _ => return Err(AvmError::CompilationError(format!("Unknown binary operator: {}", op))),
+            _ => {
+                return Err(AvmError::CompilationError(format!(
+                    "Unknown binary operator: {}",
+                    op
+                )))
+            }
         }
         Ok(())
     }
@@ -787,7 +883,12 @@ impl BytecodeCompiler {
         match op {
             "-" => self.module.emit(OpCode::Neg, None, None),
             "!" => self.module.emit(OpCode::Not, None, None),
-            _ => return Err(AvmError::CompilationError(format!("Unknown unary operator: {}", op))),
+            _ => {
+                return Err(AvmError::CompilationError(format!(
+                    "Unknown unary operator: {}",
+                    op
+                )))
+            }
         }
         Ok(())
     }

@@ -523,18 +523,14 @@ agent TestAgent requires "input is valid" {
     prompt: "Do something"
 }
 '''
-        try:
-            ast = parse(code)
-            # 检查 AST 中包含 requires 信息
-            agents = [node for node in ast.get("body", []) if node.get("type") == "AgentDeclaration"]
-            if agents:
-                assert "requires" in agents[0]
-                assert len(agents[0]["requires"]) > 0
-                assert agents[0]["requires"][0]["is_semantic"] is True
-        except Exception as e:
-            # 如果解析失败，可能是语法还不完整
-            pytest.skip(f"Parser not fully configured for contracts: {e}")
-    
+        ast = parse(code)
+        # 检查 AST 中包含 requires 信息
+        agents = [node for node in ast.get("body", []) if node.get("type") == "AgentDeclaration"]
+        assert agents
+        assert "requires" in agents[0]
+        assert len(agents[0]["requires"]) > 0
+        assert agents[0]["requires"][0]["is_semantic"] is True
+
     def test_parse_flow_with_requires_ensures(self):
         """解析带 requires 和 ensures 的 flow"""
         from src.nexa_parser import parse
@@ -546,14 +542,11 @@ flow process_payment(amount: float)
     result = amount
 }
 '''
-        try:
-            ast = parse(code)
-            flows = [node for node in ast.get("body", []) if node.get("type") == "FlowDeclaration"]
-            if flows:
-                assert "requires" in flows[0]
-                assert "ensures" in flows[0]
-        except Exception as e:
-            pytest.skip(f"Parser not fully configured for contracts: {e}")
+        ast = parse(code)
+        flows = [node for node in ast.get("body", []) if node.get("type") == "FlowDeclaration"]
+        assert flows
+        assert "requires" in flows[0]
+        assert "ensures" in flows[0]
 
 
 class TestBackwardCompatibility:

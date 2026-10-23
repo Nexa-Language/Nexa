@@ -88,21 +88,11 @@ class ForkNode(DAGNode):
     def execute(self, input_data: Any, context: Dict = None) -> List[Any]:
         """分叉执行 - 并行分发到所有下游节点"""
         context = context or {}
-        results = []
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.next_nodes)) as executor:
-            futures = {
-                executor.submit(node.execute, input_data, context): node
-                for node in self.next_nodes
-            }
-            for future in concurrent.futures.as_completed(futures):
-                try:
-                    result = future.result()
-                    results.append(result)
-                except Exception as e:
-                    results.append(f"Error in {futures[future].id}: {e}")
-        
-        return results
+        if not self.next_nodes:
+            return []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, len(self.next_nodes))) as executor:
+            futures = [executor.submit(node.execute, input_data, context) for node in self.next_nodes]
+            return [future.result() for future in futures]
 
 
 @dataclass
@@ -175,20 +165,31 @@ class DAGExecutor:
     
     def run(self, initial_input: Any) -> Any:
         """执行整个DAG"""
+        self.node_results = {}
         return self._execute_node(self.entry_node, initial_input)
     
     def _execute_node(self, node: DAGNode, input_data: Any) -> Any:
         """递归执行节点"""
-        result = node.execute(input_data, self.execution_context)
+        if node.node_type == DAGNodeType.FORK:
+            if not node.next_nodes:
+                self.node_results[node.id] = []
+                return []
+            with concurrent.futures.ThreadPoolExecutor(max_workers=min(8, len(node.next_nodes))) as executor:
+                futures = [executor.submit(self._execute_node, child, input_data) for child in node.next_nodes]
+                result = [future.result() for future in futures]
+            self.node_results[node.id] = result
+            return result
+        if node.node_type == DAGNodeType.CONDITION and node.condition_fn:
+            if not node.condition_fn(input_data, self.execution_context):
+                self.node_results[node.id] = None
+                return None
+            result = input_data
+        else:
+            result = node.execute(input_data, self.execution_context)
         self.node_results[node.id] = result
         
         if node.next_nodes:
-            if isinstance(result, list) and node.node_type == DAGNodeType.FORK:
-                # 分叉结果已收集，每个下游节点收一个
-                for i, next_node in enumerate(node.next_nodes):
-                    if i < len(result):
-                        self._execute_node(next_node, result[i])
-            elif len(node.next_nodes) == 1:
+            if len(node.next_nodes) == 1:
                 return self._execute_node(node.next_nodes[0], result)
             else:
                 # 多下游节点，并行执行
@@ -204,30 +205,9 @@ class DAGExecutor:
 
 
 def dag_fanout(input_data: Any, agents: List[NexaAgent]) -> List[str]:
-    """
-    DAG分叉执行 - 将同一输入并行发送到多个Agent
-    
-    用法示例:
-    result = dag_fanout(user_query, [Researcher, Analyst, Writer])
-    # result 为三个Agent输出的列表
-    """
-    print(f"\n[DAG Fan-out] Distributing to {len(agents)} agents...")
-    
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(agents)) as executor:
-        futures = {executor.submit(agent.run, str(input_data)): agent for agent in agents}
-        results = []
-        
-        for future in concurrent.futures.as_completed(futures):
-            agent = futures[future]
-            try:
-                result = future.result()
-                results.append(result)
-                print(f"  ✓ {agent.name}: {result[:100]}...")
-            except Exception as e:
-                results.append(f"Error from {agent.name}: {e}")
-                print(f"  ✗ {agent.name}: {e}")
-    
-    return results
+    """Execute isolated sessions in input order with at most eight active agents."""
+    from .parallel_runs import run_many
+    return [state.output for state in run_many([(agent, str(input_data)) for agent in agents])]
 
 
 def dag_merge(inputs: List[Any], strategy: str = "concat", merge_agent: NexaAgent = None) -> str:
@@ -298,18 +278,11 @@ def dag_parallel_map(input_data: Any, agents: List[NexaAgent], reducer: str = "c
     else:
         parts = [input_data]
     
-    # 分配任务
-    results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(agents)) as executor:
-        futures = []
-        for i, part in enumerate(parts):
-            agent = agents[i % len(agents)]
-            futures.append(executor.submit(agent.run, str(part)))
-        
-        for future in concurrent.futures.as_completed(futures):
-            results.append(future.result())
-    
-    return dag_merge(results, strategy=reducer)
+    if not agents:
+        raise ValueError("Parallel map requires at least one agent")
+    from .parallel_runs import run_many
+    states = run_many([(agents[index % len(agents)], str(part)) for index, part in enumerate(parts)])
+    return dag_merge([state.output for state in states], strategy=reducer)
 
 
 class SmartRouter:

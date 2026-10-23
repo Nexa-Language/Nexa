@@ -52,7 +52,7 @@ impl Value {
         }
     }
 
-    pub fn to_string(&self) -> String {
+    fn display_value(&self) -> String {
         match self {
             Value::Null => "null".to_string(),
             Value::Bool(b) => b.to_string(),
@@ -64,7 +64,8 @@ impl Value {
                 format!("[{}]", items.join(", "))
             }
             Value::Dict(d) => {
-                let items: Vec<String> = d.iter()
+                let items: Vec<String> = d
+                    .iter()
                     .map(|(k, v)| format!("{}: {}", k, v.to_string()))
                     .collect();
                 format!("{{{}}}", items.join(", "))
@@ -84,7 +85,7 @@ impl Default for Value {
 
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        write!(f, "{}", self.display_value())
     }
 }
 
@@ -99,7 +100,12 @@ pub struct CallFrame {
 
 impl CallFrame {
     pub fn new(name: String, return_address: u32, local_base: usize, arg_count: u8) -> Self {
-        Self { name, return_address, local_base, arg_count }
+        Self {
+            name,
+            return_address,
+            local_base,
+            arg_count,
+        }
     }
 }
 

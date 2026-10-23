@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "task_id": "fix-addition-v1",
+  "instruction": "Fix add(a, b) so that it returns the sum, then run check.py to verify the change.",
+  "files": {
+    "calculator.py": "def add(a, b):\n    return a - b\n",
+    "check.py": "from calculator import add\nassert add(2, 3) == 5\nassert add(-2, 3) == 1\nprint('verified')\n"
+  },
+  "expected_file": "def add(a, b):\n    return a + b\n",
+  "expected_verification": "verified"
+}

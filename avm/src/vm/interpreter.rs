@@ -35,6 +35,8 @@ use crate::runtime::result_types::{propagate_or_else, NexaResult, PropagationRes
 use crate::utils::error::{AvmError, AvmResult};
 use std::collections::HashMap;
 
+type AgentExecutor = dyn FnMut(&HashMap<String, Value>, &[Value]) -> AvmResult<Value> + Send;
+
 /// 解释器配置
 #[derive(Debug, Clone)]
 pub struct InterpreterConfig {
@@ -79,6 +81,9 @@ pub struct Interpreter {
     module: Option<BytecodeModule>,
     state: InterpreterState,
     instructions_executed: u64,
+    locals: HashMap<u32, Value>,
+    instruction_limit: u64,
+    agent_executor: Option<Box<AgentExecutor>>,
 }
 
 impl Interpreter {
@@ -90,6 +95,9 @@ impl Interpreter {
             module: None,
             state: InterpreterState::Ready,
             instructions_executed: 0,
+            locals: HashMap::new(),
+            instruction_limit: 1_000_000,
+            agent_executor: None,
             config,
         }
     }
@@ -98,6 +106,20 @@ impl Interpreter {
         self.module = Some(module);
         self.ip = 0;
         self.state = InterpreterState::Ready;
+        self.stack = Stack::new(self.config.max_stack_depth);
+        self.globals.clear();
+        self.locals.clear();
+    }
+
+    pub fn set_agent_executor<F>(&mut self, executor: F)
+    where
+        F: FnMut(&HashMap<String, Value>, &[Value]) -> AvmResult<Value> + Send + 'static,
+    {
+        self.agent_executor = Some(Box::new(executor));
+    }
+
+    pub fn set_instruction_limit(&mut self, limit: u64) {
+        self.instruction_limit = limit;
     }
 
     pub fn run(&mut self) -> AvmResult<ExecutionResult> {
@@ -110,8 +132,22 @@ impl Interpreter {
         self.instructions_executed = 0;
 
         while self.state == InterpreterState::Running {
-            let instr = self.fetch_instruction()?;
-            let should_halt = self.execute_instruction(&instr)?;
+            if self.instructions_executed >= self.instruction_limit {
+                self.state = InterpreterState::Error;
+                return Err(AvmError::RuntimeError(
+                    "Instruction budget exhausted".into(),
+                ));
+            }
+            let step = self
+                .fetch_instruction()
+                .and_then(|instr| self.execute_instruction(&instr));
+            let should_halt = match step {
+                Ok(halt) => halt,
+                Err(error) => {
+                    self.state = InterpreterState::Error;
+                    return Err(error);
+                }
+            };
             self.instructions_executed += 1;
             if should_halt {
                 break;
@@ -152,6 +188,7 @@ impl Interpreter {
         match instr.opcode {
             OpCode::Nop => Ok(false),
             OpCode::Halt => Ok(true),
+            OpCode::Return => Ok(true),
             OpCode::PushConst => self.exec_push_const(&instr.operand),
             OpCode::PushNull => {
                 self.stack.push(Value::Null)?;
@@ -169,16 +206,27 @@ impl Interpreter {
                 self.stack.pop()?;
                 Ok(false)
             }
-            OpCode::Add => self.exec_binary_op(|a, b| a + b),
-            OpCode::Sub => self.exec_binary_op(|a, b| a - b),
-            OpCode::Mul => self.exec_binary_op(|a, b| a * b),
-            OpCode::Div => self.exec_binary_op(|a, b| a / b),
+            OpCode::Dup => {
+                self.stack.dup()?;
+                Ok(false)
+            }
+            OpCode::Swap => {
+                self.stack.swap()?;
+                Ok(false)
+            }
+            OpCode::LoadLocal | OpCode::StoreLocal | OpCode::LoadGlobal | OpCode::StoreGlobal => {
+                self.exec_variable(instr)
+            }
+            OpCode::Add | OpCode::Sub | OpCode::Mul | OpCode::Div => {
+                self.exec_arithmetic(instr.opcode)
+            }
             OpCode::Eq => self.exec_compare(|a, b| a == b),
             OpCode::Ne => self.exec_compare(|a, b| a != b),
             OpCode::Jump => self.exec_jump(&instr.operand),
             OpCode::JumpIfTrue => self.exec_jump_if(true, &instr.operand),
             OpCode::JumpIfFalse => self.exec_jump_if(false, &instr.operand),
             OpCode::CreateAgent => self.exec_create_agent(&instr.operand),
+            OpCode::CallAgent | OpCode::Call => self.exec_agent_call(instr),
             _ => Err(AvmError::RuntimeError(format!(
                 "Unimplemented opcode: {:?}",
                 instr.opcode
@@ -201,24 +249,131 @@ impl Interpreter {
         let constant = module.constants.get(idx as usize).ok_or_else(|| {
             AvmError::RuntimeError(format!("Constant index out of bounds: {}", idx))
         })?;
-        let value = self.constant_to_value(constant);
+        let value = self.constant_to_value(constant)?;
         self.stack.push(value)?;
         Ok(false)
     }
 
-    fn exec_binary_op<F>(&mut self, op: F) -> AvmResult<bool>
-    where
-        F: Fn(f64, f64) -> f64,
-    {
-        let b = self.stack.pop()?;
-        let a = self.stack.pop()?;
-        let result = match (a, b) {
-            (Value::Int(a), Value::Int(b)) => Value::Int(op(a as f64, b as f64) as i64),
-            (Value::Float(a), Value::Float(b)) => Value::Float(op(a, b)),
-            (Value::Int(a), Value::Float(b)) => Value::Float(op(a as f64, b)),
-            (Value::Float(a), Value::Int(b)) => Value::Float(op(a, b as f64)),
-            _ => return Err(AvmError::RuntimeError("Invalid operands".to_string())),
+    fn operand_index(operand: &Option<Operand>) -> AvmResult<u32> {
+        match operand {
+            Some(Operand::U8(value)) => Ok(*value as u32),
+            Some(Operand::U16(value)) => Ok(*value as u32),
+            Some(Operand::U32(value)) => Ok(*value),
+            _ => Err(AvmError::RuntimeError(
+                "Expected an unsigned operand".into(),
+            )),
+        }
+    }
+
+    fn exec_variable(&mut self, instr: &Instruction) -> AvmResult<bool> {
+        let index = Self::operand_index(&instr.operand)?;
+        match instr.opcode {
+            OpCode::LoadLocal => {
+                let value = self
+                    .locals
+                    .get(&index)
+                    .ok_or_else(|| AvmError::RuntimeError(format!("Undefined local {index}")))?;
+                self.stack.push(value.clone())?;
+            }
+            OpCode::StoreLocal => {
+                self.locals.insert(index, self.stack.pop()?);
+            }
+            opcode => {
+                let name = match self
+                    .module
+                    .as_ref()
+                    .and_then(|module| module.constants.get(index as usize))
+                {
+                    Some(Constant::String(name)) => name.clone(),
+                    _ => return Err(AvmError::RuntimeError("Invalid global name".into())),
+                };
+                if opcode == OpCode::LoadGlobal {
+                    let value = self.globals.get(&name).ok_or_else(|| {
+                        AvmError::RuntimeError(format!("Undefined global {name}"))
+                    })?;
+                    self.stack.push(value.clone())?;
+                } else {
+                    self.globals.insert(name, self.stack.pop()?);
+                }
+            }
+        }
+        Ok(false)
+    }
+
+    fn exec_arithmetic(&mut self, opcode: OpCode) -> AvmResult<bool> {
+        let right = self.stack.pop()?;
+        let left = self.stack.pop()?;
+        let result = match (&left, &right) {
+            (Value::String(a), Value::String(b)) if opcode == OpCode::Add => {
+                Value::String(format!("{a}{b}"))
+            }
+            (Value::Int(a), Value::Int(b)) if opcode != OpCode::Div => {
+                let value = match opcode {
+                    OpCode::Add => a.checked_add(*b),
+                    OpCode::Sub => a.checked_sub(*b),
+                    _ => a.checked_mul(*b),
+                };
+                Value::Int(value.ok_or_else(|| AvmError::RuntimeError("Integer overflow".into()))?)
+            }
+            _ => {
+                let number = |value: Value| match value {
+                    Value::Int(n) => Ok(n as f64),
+                    Value::Float(n) => Ok(n),
+                    _ => Err(AvmError::RuntimeError("Invalid arithmetic operands".into())),
+                };
+                let (a, b) = (number(left)?, number(right)?);
+                if opcode == OpCode::Div && b == 0.0 {
+                    return Err(AvmError::RuntimeError("Division by zero".into()));
+                }
+                Value::Float(match opcode {
+                    OpCode::Add => a + b,
+                    OpCode::Sub => a - b,
+                    OpCode::Mul => a * b,
+                    _ => a / b,
+                })
+            }
         };
+        self.stack.push(result)?;
+        Ok(false)
+    }
+
+    fn exec_agent_call(&mut self, instr: &Instruction) -> AvmResult<bool> {
+        let count = Self::operand_index(&instr.operand)? as usize;
+        if count == 0 {
+            return Err(AvmError::RuntimeError(
+                "Agent call requires a target".into(),
+            ));
+        }
+        let mut arguments = Vec::new();
+        for _ in 0..count {
+            arguments.push(self.stack.pop()?);
+        }
+        arguments.reverse();
+        let target = if instr.opcode == OpCode::Call {
+            if arguments.pop() != Some(Value::String("run".into())) || arguments.is_empty() {
+                return Err(AvmError::RuntimeError(
+                    "Only Agent.run method calls are supported".into(),
+                ));
+            }
+            arguments.remove(0)
+        } else {
+            match arguments.pop().unwrap() {
+                Value::String(name) => self
+                    .globals
+                    .get(&name)
+                    .cloned()
+                    .ok_or_else(|| AvmError::RuntimeError(format!("Unknown agent {name}")))?,
+                _ => return Err(AvmError::RuntimeError("Expected agent name".into())),
+            }
+        };
+        let definition = match target {
+            Value::Dict(definition) => definition,
+            _ => return Err(AvmError::RuntimeError("Target is not an agent".into())),
+        };
+        let executor = self.agent_executor.as_mut().ok_or_else(|| {
+            AvmError::RuntimeError("Agent execution requires a configured provider executor".into())
+        })?;
+        let result = executor(&definition, &arguments)?;
         self.stack.push(result)?;
         Ok(false)
     }
@@ -292,15 +447,34 @@ impl Interpreter {
         Ok(false)
     }
 
-    fn constant_to_value(&self, constant: &Constant) -> Value {
-        match constant {
-            Constant::Int(v) => Value::Int(*v),
+    fn constant_to_value(&self, constant: &Constant) -> AvmResult<Value> {
+        Ok(match constant {
+            Constant::Int(v) | Constant::Integer(v) => Value::Int(*v),
             Constant::Float(v) => Value::Float(*v),
             Constant::String(v) => Value::String(v.clone()),
             Constant::Bool(v) => Value::Bool(*v),
             Constant::Null => Value::Null,
-            _ => Value::Null,
-        }
+            Constant::List(items) => Value::List(
+                items
+                    .iter()
+                    .map(|item| self.constant_to_value(item))
+                    .collect::<AvmResult<_>>()?,
+            ),
+            Constant::Dict(items) => Value::Dict(
+                items
+                    .iter()
+                    .map(|(key, item)| {
+                        self.constant_to_value(item)
+                            .map(|value| (key.clone(), value))
+                    })
+                    .collect::<AvmResult<_>>()?,
+            ),
+            Constant::Json(_) => {
+                return Err(AvmError::NotImplemented(
+                    "JSON constants are not supported by AVM".into(),
+                ))
+            }
+        })
     }
 
     pub fn state(&self) -> InterpreterState {
@@ -572,7 +746,7 @@ impl Interpreter {
                     ))),
                 }
             }
-            _ => Ok(Value::Null), // 其他表达式类型暂不支持
+            _ => Err(AvmError::RuntimeError("Unsupported AST expression".into())),
         }
     }
 }

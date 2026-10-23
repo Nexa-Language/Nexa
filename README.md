@@ -1,380 +1,119 @@
 <div align="center">
   <img src="docs/img/nexa-logo-noframe.png" alt="Nexa Logo" width="100" />
-  <h1>Nexa Language</h1>
-  <p><b><i>The First Harness Native Agent Language. Write flows, not glue code.</i></b></p>
-  <p>
-    <img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License"/>
-    <img src="https://img.shields.io/badge/Version-v2.3.1-brightgreen.svg" alt="Version"/>
-    <img src="https://img.shields.io/badge/Python-%3E%3D3.10-blue.svg" alt="Python"/>
-    <img src="https://img.shields.io/badge/Tests-1935+-orange.svg" alt="Tests"/>
-  </p>
-  
-  **中文版** | **[English](README_EN.md)**
-  
-  📚 **文档**: [中文](https://docs.nexa-lang.com/) | [English](https://docs.nexa-lang.com/en/)
+  <h1>Nexa</h1>
+  <p>Agent 原生语言与可靠运行时，供人和模型共同编写 .nx 程序。</p>
 </div>
 
----
+**中文** | [English](README_EN.md) · Python 3.10+ · AGPL-3.0-or-later
 
-## ⚡ What is Nexa?
+Nexa 将 Agent、工具、Protocol、上下文和执行流程写进同一种语言。Python 编译器将声明转为可执行程序，运行时负责模型协议、工具策略、预算、审批、状态恢复和事件记录。Rust AVM 通过共同语义测试推进能力子集。
 
-**Nexa** 是 **the first Harness Native Agent Language**——一门为大语言模型（LLM）与智能体系统（Agentic Systems）量身定制的编程语言，将 Agent 安全从运行时框架下沉为语言级原语。
+## 开始使用
 
-当代 AI 应用开发充斥着大量的 Prompt 拼接、臃肿的 JSON 解析套件、不可靠的正则皮带，以及复杂的框架。Nexa 将高层级的意图路由、多智能体并发组装、管道流传输以及工具执行沙盒提权为核心语法一等公民，直接通过底层的 `Transpiler` 转换为稳定可靠的 Python Runtime，让你能够用最优雅的语法定义最硬核的 LLM 计算图（DAG）。
+需要 Python 3.10+。在虚拟环境中安装 [2.4.0 Release](https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0) 的 wheel：
 
----
-
-## 🔥 v2.3.1: Terminal UI + CJK Input
-
-Nexa v2.3.1 引入基于 `rich` 的终端 UI 渲染库和 `prompt_toolkit` 的 CJK 宽字符输入支持。
-
-### `std.ui` 终端 UI DSL
-
-在 `.nx` 文件中直接调用 UI 函数：
-
-```nexa
-flow main {
-    std.ui.banner("My App", "Subtitle");
-    std.ui.markdown("# Hello\n\nThis is **bold**.");
-    std.ui.code("print('hello')", "python");
-    std.ui.thinking("Analyzing...", 1.0);
-    std.ui.success("Done!");
-    std.ui.agent_reply("Agent", "Reply as **markdown**");
-}
+```sh
+python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v2.4.0/nexa_lang-2.4.0-py3-none-any.whl
+nexa --version
 ```
 
-### 中文输入修复
+PyPI 的 `nexa-lang` 属于另一项目，请使用上面的完整发行物 URL。编译与纯计算无需模型凭据；从 [安装与 Hello World](AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md) 开始。
 
-`prompt_toolkit` 替代 Python 内置 `input()`，正确处理 CJK 宽字符的回退（backspace）。
+开发环境与示例固定到同一 tag：
 
-### 向后兼容
-
-未安装 `rich` / `prompt_toolkit` 时自动降级为纯文本输出。
-
----
-
-## 🔥 v2.2.1: Context-as-Structure
-
-Nexa v2.2.1 把 **Context** 提升为 agent 声明的结构属性（与 model、tools 同级），让每个 agent 的上下文行为在**声明时**被完全定义，而不是在使用点（`A >> B`）临时决定。
-
-### 设计动机
-
-设计动机：把 Context 提升为 Agent 声明的结构属性，与 model、tools 同级。Agent 的行为应由其声明结构完全定义，而非在使用点临时决定。
-
-- v2.1 及之前：model 和 tools 在 `agent` 声明里定义，但 **context 缺失**（运行时 `self.messages = []` 硬编码），导致 pipeline `A >> B` 只能传字符串。
-- v2.2.1：在 agent 声明里增加 `context { ... }` 子块，让 context 行为像 model/tools 一样在结构上完全定义。
-
-### 语法
-
-```nexa
-agent Researcher {
-    model: "deepseek/deepseek-chat",
-    uses: [web_search],
-    context {
-        source: upstream,                    // "upstream" | "shared:name" | "fresh"
-        sink: downstream,                     // "downstream" | "shared:name" | "discard"
-        output_schema: ResearchOutput,        // Protocol 类型
-        max_history_turns: 20,
-        inherit: [messages, artifacts]        // 从上游继承的字段
-    }
-    prompt: "..."
-}
-```
-
-### 编译期类型检查（C-004）
-
-Harness Validator 在编译期检查 pipeline `A >> B` 中，A 的 `output_schema` 是否匹配 B 的 `input_schema`。不匹配则编译失败：
-
-```
-C-004: Context incompatible in pipeline 'A >> B':
-       output_schema='ResearchOutput' is not a subtype of input_schema='WeatherInput'
-```
-
-### 向后兼容
-
-- 不加 `context { ... }` 块的 agent 行为**完全不变**（保持 v2.1 的字符串传递语义）
-- `context` 块是可选的，旧代码无需修改
-
-详见 [`examples/v2.2/01_context_handoff.nx`](examples/v2.2/01_context_handoff.nx)。
-
----
-
-## 🔥 v2.1.2: Config Selection & Standard Library
-
-Nexa v2.1.2 引入了多配置切换和标准库系统，让不同环境（开发/测试/生产）使用不同的 API 密钥和模型配置。
-
-### `use config` 多配置切换
-
-在 `secrets.nxs` 中定义多个 config block，在 `.nx` 文件中用 `use config <name>` 选择：
-
-```nexa
-// secrets.nxs
-config default {
-    BASE_URL = "https://aihub.arcsysu.cn/v1"
-    API_KEY = "<provider-api-key>"
-}
-
-config ali {
-    BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    API_KEY = "<dashscope-api-key>"
-    NEWS_API_KEY = "your-newsapi-key"
-}
-```
-
-```nexa
-// your_program.nx
-include "stdlib/news.nx";   // 引入标准库新闻搜索工具
-use config ali;              // 使用 ali 配置
-
-agent SearchAgent uses search_news {
-    model: "deepseek-v4-pro",
-    prompt: "Search for news using the search_news tool."
-}
-```
-
-### 标准库 (`stdlib/`)
-
-通过 `include` 引入标准库工具，Agent 只看到 `uses` 声明的工具：
-
-```nexa
-include "stdlib/news.nx";
-
-agent MyAgent uses search_news {
-    prompt: "Search for news."
-}
-```
-
-### Harness Validator strict/warn 模式
-
-```bash
-# warn 模式（默认）：警告但编译继续
-nexa build program.nx --harness=warn
-
-# strict 模式：所有 warnings 升级为 errors，阻断编译
-nexa build program.nx --harness=strict
-```
-
----
-
-## 🔥 v2.1: Production Hardening + v2.0: Harness Native Runtime
-
-Nexa v2.0 将 Harness 六元组 H=(E,T,C,S,L,V) 从编译期验证下沉为**运行时一等公民**。v2.1 在此基础上为 Nexa Code（首个 Harness Native AI 编程助手）新增了 Agent 级别属性，让它能用纯 Nexa 语法运行，不再依赖 `python!` escape hatch。
-
-### v2.1 新增 Agent 属性
-
-这些属性不是框架层面的配置，而是**语言原语**——编译器解析、运行时执行、Harness Validator 检查：
-
-```nexa
-agent Coder {
-    prompt: "You are a coding assistant.",
-    stream: true,                    // 流式输出，逐 token 实时返回
-    max_tool_calls: 5,              // 单次请求最多 5 轮工具调用
-    tool_call_strategy: "auto"      // auto: 模型自行决定 | required: 强制调用 | none: 禁用工具
-}
-
-agent Planner {
-    output_format: "json",          // 强制 OpenAI response_format JSON
-    output_schema: {                // JSON Schema → 编译器自动生成 Pydantic 模型
-        "steps": "string",
-        "estimated_time": "string"
-    }
-}
-```
-
-**向后兼容**: 所有 v1.x-v2.0 代码无需修改即可在 v2.1 上运行。
-
-### v2.0 Harness 六元组
-
-| 维度 | 原语 | 运行时组件 | 测试数 |
-|------|------|-----------|--------|
-| **E** (Execution) | `autoloop`/`try_agent` | HarnessKernel + AutoLoopConfig | 52 |
-| **T** (Tool) | `@tool` | ToolRegistry + ToolSchema | 53 |
-| **C** (Context) | `with_context` | ContextManager + importance_weighted | 52 |
-| **S** (State) | `snapshot/restore` | StateStore + fork/merge | 45 |
-| **L** (Lifecycle) | `before_step`/`reflect` | LifecycleHookManager | 53 |
-| **V** (Verify) | `verify ... satisfies` | EvaluationInterface + LLMRouter | 59 |
-| **Actor** | `spawn/pass/await` | ActorSystem | 18 |
-| **WASM** | sandbox integration | WASM Sandbox + full harness | 15 |
-
-### 完整示例目录
-
-```
-examples/v2.0/                     examples/v2.1/
-  01_autoloop.nx    (E)              01_streaming_agent.nx     流式输出
-  02_with_context.nx (C)             02_structured_output.nx   JSON 结构化
-  03_try_agent.nx   (E+L)            03_tool_call_control.nx   工具调用控制
-  ... (共12个)                       04_spawn_pipeline.nx      DAG |>> 并行
-```
-
----
-
-## 🔥 v1.1-v1.3.7 特性总览
-
-Nexa 从 v1.1.0 到 v1.3.7 共发布了 **16 个核心特性**，涵盖 4 个优先级层级（P0-P3），总计 **1500+ 测试**。
-
-### 🏆 P0: 核心差异化特性
-
-| 版本 | 特性 | 测试数 | 亮点 |
-|------|------|--------|------|
-| **v1.1.0** | Intent-Driven Development (IDD) | 104 | `.nxintent` 文件 + IAL 术语重写引擎 + `@implements` 注解 |
-| **v1.2.0** | Design by Contract (DbC) | 47 | `requires`/`ensures`/`invariant` + ContractViolation 跨模块集成 |
-| **v1.3.0** | Agent-Native Tooling | 41 | `nexa inspect`/`validate`/`lint` CLI 命令 |
-
-### 📦 P1: 必要特性
-
-| 版本 | 特性 | 测试数 | 亮点 |
-|------|------|--------|------|
-| **v1.3.1** | Gradual Type System | 79 | `Int`/`String`/`Bool`/`List[T]`/`Option[T]`/`Result[T,E]` + 三级模式 |
-| **v1.3.2** | Error Propagation | 82 | `?` 操作符 + `otherwise` + `NexaResult`/`NexaOption` |
-| **v1.3.3** | Background Job System | 73 | `job` DSL + 优先级队列 + Cron + 退避策略 |
-| **v1.3.4** | Built-In HTTP Server | 94 | `server` DSL + CORS/CSP + 路由守卫 + 热重载 |
-| **v1.3.5** | Database Integration | 79+5 | `db` DSL + SQLite/PostgreSQL + Agent 记忆 API |
-
-### 🎯 P2: 高级特性
-
-| 版本 | 特性 | 测试数 | 亮点 |
-|------|------|--------|------|
-| **v1.3.6** | Auth & OAuth | 79+5 | 3层认证 (API Key + JWT + OAuth PKCE) |
-| **v1.3.6** | Structured Concurrency | 172 | `spawn`/`parallel`/`race`/`channel` + 18 API |
-| **v1.3.6** | KV Store | 81 | SQLite 后端 + TTL + Agent 语义查询 |
-| **v1.3.6** | Template System | 209 | `template"""..."""` + 30+ 滤镜 + Agent 模板 |
-
-### ✨ P3: 语言表达力
-
-| 版本 | 特性 | 测试数 | 亮点 |
-|------|------|--------|------|
-| **v1.3.7** | Pipe Operator `|>` | 84 | `x |> f` → `f(x)` 左到右数据流 |
-| **v1.3.7** | defer Statement | 84 | LIFO 清理，scope exit 自动执行 |
-| **v1.3.7** | Null Coalescing `??` | 84 | `expr ?? fallback` 安全回退 |
-| **v1.3.7** | String Interpolation `#{}` | 100 | Ruby 风格字符串插值 |
-| **v1.3.7** | Pattern Matching | 91 | 7 pattern types + `match`/`let`/`for` 解构 |
-| **v1.3.7** | ADT (Struct/Enum/Trait) | 100 | 代数数据类型 + handle-as-dict |
-
----
-
-## 🦀 Rust AVM 底座 (v1.0-alpha)
-
-Nexa v1.0-alpha 引入了革命性的 **Agent Virtual Machine (AVM)** — 用 Rust 编写的高性能、安全隔离的智能体执行引擎：
-
-- **高性能字节码解释器** — 原生执行编译后的 Nexa 字节码
-- **WASM 安全沙盒** — wasmtime 集成 + 四级权限模型
-- **智能调度器** — DAG 拓扑排序 + 自动依赖解析
-- **向量虚存分页** — LRU/LFU/Hybrid 淘汰 + 语义相关性加载
-
----
-
-## 🚀 Quick Start
-
-### 1. 全局安装
-```bash
-git clone https://github.com/ouyangyipeng/Nexa.git
+```sh
+git clone --branch v2.4.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
 cd Nexa
-pip install -e .
+uv sync --locked --all-extras
+uv run nexa --version
+uv run nexa build examples/v2.0/07_verify.nx
 ```
 
-### 2. Agent 工具安装法 🤖
-如果你正在使用 AI Agent 工具（如 Claude Code、Cursor、Copilot 等），只需输入：
+运行模型前按 [首次模型配置](docs/development.md#configure-your-first-model) 设置项目的 endpoint、model ID 和凭据。凭据只在实际调用时读取。使用 `uv run nexa run FILE.nx` 执行 flow。
 
-```
-按照 https://github.com/ouyangyipeng/Nexa/AGENT_LEARN 的指引，安装并试运行这门语言
-```
-
-你的 Agent 将会自动访问 `AGENT_LEARN/` 完成安装并掌握 Nexa 语法。
-
-**Agent 专用文档**:
-- [`AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md`](AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md)
-- [`AGENT_LEARN/AGENT_GUIDE.md`](AGENT_LEARN/AGENT_GUIDE.md)
-
-### 3. 执行与测试工作流
-```bash
-# 执行流
-python -m src.cli run examples/01_hello_world.nx
-
-# 语义断言测试
-python -m src.cli test examples/12_v0.9_features.nx
-
-# 审计生成的 Python 代码栈
-python -m src.cli build examples/01_hello_world.nx
-
-# Agent-Native 工具 (v1.3+)
-python -m src.cli inspect examples/01_hello_world.nx
-python -m src.cli validate examples/01_hello_world.nx
-python -m src.cli lint examples/01_hello_world.nx
-```
-
----
-
-## 📖 语法示例
-
-### Agent 声明 + 管道流
 ```nexa
-agent ChatBot {
-    role: "Helpful Assistant",
-    model: "deepseek-chat",
-    prompt: "Answer user questions concisely"
+@tool("Add two integers")
+fn add(a: int, b: int): int {
+    python! """
+return a + b
+"""
+}
+
+agent Calculator uses add {
+    prompt: "Use the add tool to calculate the answer."
+    timeout: 60
+    max_tool_calls: 2
 }
 
 flow main {
-    result = user_input |> ChatBot |> format_output;
+    result = Calculator.run("What is 23 + 19?");
+    verify result satisfies string;
+    print(result);
 }
 ```
 
-### Contract 契约式编程 (v1.2)
-```nexa
-agent SecureBot {
-    requires: input != None and input.length < 1000
-    ensures: "response is helpful and accurate"
-}
+## 2.4 升级
+
+- **统一编译**：CLI、SDK、嵌入式 API 共用递归 include、AST 规范化、Harness 诊断和生成物语法检查；wheel 包含标准库资源。
+- **统一执行**：文本、Protocol、流式输出与精确缓存共用 AgentRunner。`execute()` 返回独立 RunState，`run()` 保留连续会话。
+- **原生协议**：Chat Completions、Responses、Anthropic；保留工具调用、usage 和原生 reasoning / thinking 状态。
+- **工具策略**：工具暴露集、JSON Schema、显式审批和实际 sandbox 状态共用检查入口。工具调用预算按实际调用计数。
+- **持久化**：SQLite checkpoint、revision 冲突检测、工具执行日志与大输出 artifact。未知副作用结果须核实后恢复。
+- **连续任务**：`continue_run()` 保留已结算历史及原生 provider 状态，为新一轮创建独立预算、期限、审批和可追踪的 run_id。
+- **执行约束**：模型及工具预算、超时、协作取消、有界并行、上下文限额和稳定结果顺序。
+- **可核验结果**：`.nxintent` 区分 pass、fail、skip、error；`verify` 失败终止当前成功路径。
+- **MCP 与 Rust**：官方 MCP SDK 的真实 stdio/HTTP 连接；Rust 共同语义用例，以及 Wasmtime 48 LTS 的实际执行与资源限制。
+
+发行物、验证范围与兼容变化见 [2.4.0 发行说明](docs/release_notes/v2.4.0.md)，完整行为见 [运行契约与迁移](docs/runtime-v2.4.md)。
+
+## 长任务与审批
+
+```sh
+uv run nexa agent examples/Nexa-Code/main.nx CodeAssistant "Fix the failing test" --timeout 900
+# 核对返回的 pending_calls，再批准指定调用：
+uv run nexa agent examples/Nexa-Code/main.nx CodeAssistant --resume RUN_ID --approve CALL_ID
 ```
 
-### 类型注解 + 错误传播 (v1.3.1-v1.3.2)
-```nexa
-let count: Int = parse(input) ?
-let result = risky_operation() otherwise 0
+结果包含 run_id、status、output、error、usage 和待审批调用。默认 checkpoint 位于 `.nexa/runs.sqlite3`。拒绝调用使用 `--deny CALL_ID`。恢复会检查程序、provider、工作目录与预算的一致性。
+
+[Nexa Code](examples/Nexa-Code/README.md) 使用同一运行时完成文件读取、审批修改和执行验证。离线评测任务位于 [evals/tasks](evals/tasks)，真实模型评测需要另外配置凭据与预算。
+
+## Python API
+
+```python
+from src.runtime.agent import NexaAgent
+from src.runtime.checkpoints import SQLiteCheckpointStore
+from src.runtime.run_state import RunConfig
+
+agent = NexaAgent("Analyst", prompt="Explain the evidence")
+store = SQLiteCheckpointStore(".nexa/runs.sqlite3")
+state = agent.execute("Analyze this result", config=RunConfig(timeout=120), save=store.save)
+print(state.status, state.output)
 ```
 
-### HTTP Server (v1.3.4)
-```nexa
-server 8080 {
-    cors { origins: ["*"], methods: ["GET", "POST"] }
-    route GET "/chat" => ChatBot
-    route POST "/analyze" => Analyzer
-}
+`src.nexa_sdk.compile()` / `run()` 提供 `.nx` 编译与执行接口。公开的 `src.*` 导入路径保持兼容。
+
+## 验证与能力边界
+
+```sh
+uv run pytest -m "not benchmark"
+uv build --no-build-isolation
+cargo test --manifest-path avm/Cargo.toml --locked --lib --test conformance --test wasm_execution
+cargo test --manifest-path avm/Cargo.toml --locked --features wasm --lib --test conformance --test wasm_execution
 ```
 
-### Pattern Matching + ADT (v1.3.7)
-```nexa
-enum Option { Some(value), None }
-struct Point { x: Int, y: Int }
+Python 是参考运行时；Rust 支持的指令见 [能力说明](docs/runtime-v2.4.md#rust-能力子集)。普通 Python 工具在宿主进程运行；声明 sandbox 而未配置隔离执行器时，运行明确失败。WASM 功能需通过 `wasm` feature 启用。离线测试验证执行机制，真实 provider 的效果、成本和延迟单独评测。
 
-match result {
-    Option::Some(answer) => answer
-    Option::None => "no response"
-}
-```
+当前测试与升级记录见 [实施清单](plan/01-v1-execution.md) 和 [证据目录](plan/evidence)。性能实验使用 `benchmark` 标记，与正确性测试分开运行。
 
----
+[示例清单](examples/manifest.json) 逐项登记了 63 个通过编译检查的示例和 12 个保留的历史草案。模型、数据库或服务依赖的实际执行需要对应环境；统一编译门禁使用 `uv run pytest tests/test_examples.py -q`。
 
-## ✅ 文档与测试验证
+## 文档
 
-- **Python 测试**: 1935 tests 全部通过 (v1.x 16 特性 + v2.0 Harness Runtime + v2.1 Agent Properties)
-- **Rust AVM**: 0 errors, 0 warnings — `cargo check` clean build
-- **v2.0+2.1 示例**: 16/16 全部编译通过 (Harness Validator + `--harness=warn`)
-
----
-
-## 📖 Documentation
-
-- [x] [Nexa 语法参考手册 v1.3.7](docs/01_nexa_syntax_reference.md) — 25 章节完整语法覆盖
-- [x] [编译器与运行时架构 v1.3](docs/02_compiler_architecture.md) — AST scoring、BOILERPLATE、handle-as-dict
-- [x] [路线图与愿景](docs/03_roadmap_and_vision.md) — v0.1 到 v2.0 完整里程碑
-- [x] [架构演进规划](docs/05_architecture_evolution.md) — Rust AVM 设计蓝图
-- [x] [极速上手指南](docs/06_quick_start_guide.md) — 5 分钟入门
-- [x] [IDD 完整参考](docs/idd_reference.md) — Intent-Driven Development 详解
-- [x] [Harness Agent 设计文档](docs/others/Harness_Agent.md) — Harness 六元组 H=(E,T,C,S,L,V) 详解
-- [x] [Feature Changelog v1.1-v1.3.x](docs/others/changelog_v1.1.0-v1.3.x_features.md) — 16 特性变更记录
-- [x] [Release Notes](docs/release_notes/) — 每版本独立发布说明
-
-<div align="center">
-  <sub>Built with ❤️ by the Nexa Genesis Team for the next era of automation.</sub>
-</div>
+- [运行契约与迁移](docs/runtime-v2.4.md)
+- [开发与分发](docs/development.md)
+- [语法参考](docs/01_nexa_syntax_reference.md)
+- [编译器架构](docs/02_compiler_architecture.md)
+- [Harness 设计背景](docs/others/Harness_Agent.md)
+- [版本记录](docs/release_notes/)
+- [许可证](LICENSE)

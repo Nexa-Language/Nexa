@@ -1,0 +1,479 @@
+Building source distribution...
+running sdist
+running egg_info
+writing nexa_lang.egg-info/PKG-INFO
+writing dependency_links to nexa_lang.egg-info/dependency_links.txt
+writing entry points to nexa_lang.egg-info/entry_points.txt
+writing requirements to nexa_lang.egg-info/requires.txt
+writing top-level names to nexa_lang.egg-info/top_level.txt
+reading manifest file 'nexa_lang.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+adding license file 'LICENSE'
+writing manifest file 'nexa_lang.egg-info/SOURCES.txt'
+running check
+creating nexa_lang-2.4.0
+creating nexa_lang-2.4.0/nexa_lang.egg-info
+creating nexa_lang-2.4.0/src
+creating nexa_lang-2.4.0/src/ial
+creating nexa_lang-2.4.0/src/runtime
+creating nexa_lang-2.4.0/stdlib
+creating nexa_lang-2.4.0/tests
+copying files to nexa_lang-2.4.0...
+copying LICENSE -> nexa_lang-2.4.0
+copying MANIFEST.in -> nexa_lang-2.4.0
+copying README.md -> nexa_lang-2.4.0
+copying VERSION -> nexa_lang-2.4.0
+copying pyproject.toml -> nexa_lang-2.4.0
+copying requirements.txt -> nexa_lang-2.4.0
+copying setup.py -> nexa_lang-2.4.0
+copying nexa_lang.egg-info/PKG-INFO -> nexa_lang-2.4.0/nexa_lang.egg-info
+copying nexa_lang.egg-info/SOURCES.txt -> nexa_lang-2.4.0/nexa_lang.egg-info
+copying nexa_lang.egg-info/dependency_links.txt -> nexa_lang-2.4.0/nexa_lang.egg-info
+copying nexa_lang.egg-info/entry_points.txt -> nexa_lang-2.4.0/nexa_lang.egg-info
+copying nexa_lang.egg-info/requires.txt -> nexa_lang-2.4.0/nexa_lang.egg-info
+copying nexa_lang.egg-info/top_level.txt -> nexa_lang-2.4.0/nexa_lang.egg-info
+copying src/__init__.py -> nexa_lang-2.4.0/src
+copying src/_version.py -> nexa_lang-2.4.0/src
+copying src/agent_cli.py -> nexa_lang-2.4.0/src
+copying src/api.py -> nexa_lang-2.4.0/src
+copying src/ast_transformer.py -> nexa_lang-2.4.0/src
+copying src/ast_utils.py -> nexa_lang-2.4.0/src
+copying src/cli.py -> nexa_lang-2.4.0/src
+copying src/code_generator.py -> nexa_lang-2.4.0/src
+copying src/compiler.py -> nexa_lang-2.4.0/src
+copying src/harness_validator.py -> nexa_lang-2.4.0/src
+copying src/nexa_parser.py -> nexa_lang-2.4.0/src
+copying src/nexa_sdk.py -> nexa_lang-2.4.0/src
+copying src/ial/__init__.py -> nexa_lang-2.4.0/src/ial
+copying src/ial/execute.py -> nexa_lang-2.4.0/src/ial
+copying src/ial/primitives.py -> nexa_lang-2.4.0/src/ial
+copying src/ial/resolve.py -> nexa_lang-2.4.0/src/ial
+copying src/ial/standard.py -> nexa_lang-2.4.0/src/ial
+copying src/ial/vocabulary.py -> nexa_lang-2.4.0/src/ial
+copying src/runtime/__init__.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/actor_system.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/adt.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/agent.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/agent_context.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/agent_execution.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/agent_runner.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/artifacts.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/auth.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/cache_manager.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/checkpoints.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/compactor.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/concurrent.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/config.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/context_manager.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/contracts.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/core.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/cow_state.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/dag_orchestrator.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/database.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/debugger.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/evaluation_interface.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/evaluator.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/execution_engine.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/flow_actors.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/flow_runtime.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/harness_kernel.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/hitl.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/http_server.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/inspector.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/intent.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/jobs.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/knowledge_graph.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/kv_store.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/lifecycle_hooks.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/llm_router.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/long_term_memory.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/mcp_client.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/memory.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/memory_backend.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/meta.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/native_providers.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/opencli.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/orchestrator.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/output_schema.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/parallel_runs.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/pattern_matching.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/profiler.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/providers.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/rbac.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/reason.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/result_types.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/run_state.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/safe_eval.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/secrets.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/state_store.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/stdlib.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/template.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/tool_dispatch.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/tool_output_store.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/tool_registry.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/tools_registry.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/trace_system.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/type_system.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/ui.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/validator.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/wasm_sandbox.py -> nexa_lang-2.4.0/src/runtime
+copying src/runtime/workspace_tools.py -> nexa_lang-2.4.0/src/runtime
+copying stdlib/__init__.py -> nexa_lang-2.4.0/stdlib
+copying stdlib/news.nx -> nexa_lang-2.4.0/stdlib
+copying tests/test_actor_system.py -> nexa_lang-2.4.0/tests
+copying tests/test_adt.py -> nexa_lang-2.4.0/tests
+copying tests/test_agent_execution.py -> nexa_lang-2.4.0/tests
+copying tests/test_auth.py -> nexa_lang-2.4.0/tests
+copying tests/test_batch_a.py -> nexa_lang-2.4.0/tests
+copying tests/test_checkpoints.py -> nexa_lang-2.4.0/tests
+copying tests/test_compiler_integration.py -> nexa_lang-2.4.0/tests
+copying tests/test_concurrent.py -> nexa_lang-2.4.0/tests
+copying tests/test_conformance.py -> nexa_lang-2.4.0/tests
+copying tests/test_context_handoff.py -> nexa_lang-2.4.0/tests
+copying tests/test_contracts.py -> nexa_lang-2.4.0/tests
+copying tests/test_database.py -> nexa_lang-2.4.0/tests
+copying tests/test_doc_examples.py -> nexa_lang-2.4.0/tests
+copying tests/test_error_propagation.py -> nexa_lang-2.4.0/tests
+copying tests/test_evaluation_interface.py -> nexa_lang-2.4.0/tests
+copying tests/test_examples.py -> nexa_lang-2.4.0/tests
+copying tests/test_execution_engine.py -> nexa_lang-2.4.0/tests
+copying tests/test_harness_execution.py -> nexa_lang-2.4.0/tests
+copying tests/test_harness_validator.py -> nexa_lang-2.4.0/tests
+copying tests/test_http_server.py -> nexa_lang-2.4.0/tests
+copying tests/test_ial.py -> nexa_lang-2.4.0/tests
+copying tests/test_inspector.py -> nexa_lang-2.4.0/tests
+copying tests/test_integration.py -> nexa_lang-2.4.0/tests
+copying tests/test_intent.py -> nexa_lang-2.4.0/tests
+copying tests/test_jobs.py -> nexa_lang-2.4.0/tests
+copying tests/test_kv_store.py -> nexa_lang-2.4.0/tests
+copying tests/test_mcp_execution.py -> nexa_lang-2.4.0/tests
+copying tests/test_native_providers.py -> nexa_lang-2.4.0/tests
+copying tests/test_nexa_code_eval.py -> nexa_lang-2.4.0/tests
+copying tests/test_nexa_sdk.py -> nexa_lang-2.4.0/tests
+copying tests/test_packaging.py -> nexa_lang-2.4.0/tests
+copying tests/test_paper_features.py -> nexa_lang-2.4.0/tests
+copying tests/test_parallel_runs.py -> nexa_lang-2.4.0/tests
+copying tests/test_pattern_matching.py -> nexa_lang-2.4.0/tests
+copying tests/test_real_cache_hit_rate.py -> nexa_lang-2.4.0/tests
+copying tests/test_real_cow_performance.py -> nexa_lang-2.4.0/tests
+copying tests/test_review_regressions.py -> nexa_lang-2.4.0/tests
+copying tests/test_runtime_model_config.py -> nexa_lang-2.4.0/tests
+copying tests/test_runtime_reliability.py -> nexa_lang-2.4.0/tests
+copying tests/test_safe_eval.py -> nexa_lang-2.4.0/tests
+copying tests/test_state_store.py -> nexa_lang-2.4.0/tests
+copying tests/test_string_interpolation.py -> nexa_lang-2.4.0/tests
+copying tests/test_template.py -> nexa_lang-2.4.0/tests
+copying tests/test_tool_policy.py -> nexa_lang-2.4.0/tests
+copying tests/test_tool_registry.py -> nexa_lang-2.4.0/tests
+copying tests/test_type_system.py -> nexa_lang-2.4.0/tests
+copying tests/test_v097_features.py -> nexa_lang-2.4.0/tests
+copying tests/test_v097_validation.py -> nexa_lang-2.4.0/tests
+copying tests/test_verification_truthfulness.py -> nexa_lang-2.4.0/tests
+copying tests/test_wasm_sandbox.py -> nexa_lang-2.4.0/tests
+Writing nexa_lang-2.4.0/setup.cfg
+Creating tar archive
+removing 'nexa_lang-2.4.0' (and everything under it)
+Building wheel from source distribution...
+running bdist_wheel
+running build
+running build_py
+creating build/lib/stdlib
+copying stdlib/__init__.py -> build/lib/stdlib
+creating build/lib/src
+copying src/nexa_sdk.py -> build/lib/src
+copying src/compiler.py -> build/lib/src
+copying src/nexa_parser.py -> build/lib/src
+copying src/_version.py -> build/lib/src
+copying src/__init__.py -> build/lib/src
+copying src/api.py -> build/lib/src
+copying src/ast_transformer.py -> build/lib/src
+copying src/cli.py -> build/lib/src
+copying src/ast_utils.py -> build/lib/src
+copying src/agent_cli.py -> build/lib/src
+copying src/harness_validator.py -> build/lib/src
+copying src/code_generator.py -> build/lib/src
+creating build/lib/src/runtime
+copying src/runtime/validator.py -> build/lib/src/runtime
+copying src/runtime/intent.py -> build/lib/src/runtime
+copying src/runtime/auth.py -> build/lib/src/runtime
+copying src/runtime/result_types.py -> build/lib/src/runtime
+copying src/runtime/dag_orchestrator.py -> build/lib/src/runtime
+copying src/runtime/pattern_matching.py -> build/lib/src/runtime
+copying src/runtime/state_store.py -> build/lib/src/runtime
+copying src/runtime/run_state.py -> build/lib/src/runtime
+copying src/runtime/output_schema.py -> build/lib/src/runtime
+copying src/runtime/trace_system.py -> build/lib/src/runtime
+copying src/runtime/compactor.py -> build/lib/src/runtime
+copying src/runtime/concurrent.py -> build/lib/src/runtime
+copying src/runtime/wasm_sandbox.py -> build/lib/src/runtime
+copying src/runtime/context_manager.py -> build/lib/src/runtime
+copying src/runtime/config.py -> build/lib/src/runtime
+copying src/runtime/evaluation_interface.py -> build/lib/src/runtime
+copying src/runtime/hitl.py -> build/lib/src/runtime
+copying src/runtime/memory.py -> build/lib/src/runtime
+copying src/runtime/execution_engine.py -> build/lib/src/runtime
+copying src/runtime/llm_router.py -> build/lib/src/runtime
+copying src/runtime/cache_manager.py -> build/lib/src/runtime
+copying src/runtime/ui.py -> build/lib/src/runtime
+copying src/runtime/knowledge_graph.py -> build/lib/src/runtime
+copying src/runtime/database.py -> build/lib/src/runtime
+copying src/runtime/tool_registry.py -> build/lib/src/runtime
+copying src/runtime/flow_runtime.py -> build/lib/src/runtime
+copying src/runtime/opencli.py -> build/lib/src/runtime
+copying src/runtime/tool_dispatch.py -> build/lib/src/runtime
+copying src/runtime/agent_runner.py -> build/lib/src/runtime
+copying src/runtime/inspector.py -> build/lib/src/runtime
+copying src/runtime/rbac.py -> build/lib/src/runtime
+copying src/runtime/__init__.py -> build/lib/src/runtime
+copying src/runtime/lifecycle_hooks.py -> build/lib/src/runtime
+copying src/runtime/core.py -> build/lib/src/runtime
+copying src/runtime/tools_registry.py -> build/lib/src/runtime
+copying src/runtime/http_server.py -> build/lib/src/runtime
+copying src/runtime/checkpoints.py -> build/lib/src/runtime
+copying src/runtime/debugger.py -> build/lib/src/runtime
+copying src/runtime/reason.py -> build/lib/src/runtime
+copying src/runtime/jobs.py -> build/lib/src/runtime
+copying src/runtime/providers.py -> build/lib/src/runtime
+copying src/runtime/cow_state.py -> build/lib/src/runtime
+copying src/runtime/tool_output_store.py -> build/lib/src/runtime
+copying src/runtime/secrets.py -> build/lib/src/runtime
+copying src/runtime/workspace_tools.py -> build/lib/src/runtime
+copying src/runtime/parallel_runs.py -> build/lib/src/runtime
+copying src/runtime/orchestrator.py -> build/lib/src/runtime
+copying src/runtime/flow_actors.py -> build/lib/src/runtime
+copying src/runtime/type_system.py -> build/lib/src/runtime
+copying src/runtime/agent.py -> build/lib/src/runtime
+copying src/runtime/contracts.py -> build/lib/src/runtime
+copying src/runtime/template.py -> build/lib/src/runtime
+copying src/runtime/adt.py -> build/lib/src/runtime
+copying src/runtime/mcp_client.py -> build/lib/src/runtime
+copying src/runtime/harness_kernel.py -> build/lib/src/runtime
+copying src/runtime/artifacts.py -> build/lib/src/runtime
+copying src/runtime/safe_eval.py -> build/lib/src/runtime
+copying src/runtime/stdlib.py -> build/lib/src/runtime
+copying src/runtime/agent_execution.py -> build/lib/src/runtime
+copying src/runtime/profiler.py -> build/lib/src/runtime
+copying src/runtime/agent_context.py -> build/lib/src/runtime
+copying src/runtime/native_providers.py -> build/lib/src/runtime
+copying src/runtime/evaluator.py -> build/lib/src/runtime
+copying src/runtime/long_term_memory.py -> build/lib/src/runtime
+copying src/runtime/memory_backend.py -> build/lib/src/runtime
+copying src/runtime/kv_store.py -> build/lib/src/runtime
+copying src/runtime/actor_system.py -> build/lib/src/runtime
+copying src/runtime/meta.py -> build/lib/src/runtime
+creating build/lib/src/ial
+copying src/ial/resolve.py -> build/lib/src/ial
+copying src/ial/primitives.py -> build/lib/src/ial
+copying src/ial/standard.py -> build/lib/src/ial
+copying src/ial/execute.py -> build/lib/src/ial
+copying src/ial/__init__.py -> build/lib/src/ial
+copying src/ial/vocabulary.py -> build/lib/src/ial
+running egg_info
+writing nexa_lang.egg-info/PKG-INFO
+writing dependency_links to nexa_lang.egg-info/dependency_links.txt
+writing entry points to nexa_lang.egg-info/entry_points.txt
+writing requirements to nexa_lang.egg-info/requires.txt
+writing top-level names to nexa_lang.egg-info/top_level.txt
+reading manifest file 'nexa_lang.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+adding license file 'LICENSE'
+writing manifest file 'nexa_lang.egg-info/SOURCES.txt'
+copying stdlib/news.nx -> build/lib/stdlib
+installing to build/bdist.macosx-11.0-arm64/wheel
+running install
+running install_lib
+creating build/bdist.macosx-11.0-arm64/wheel
+creating build/bdist.macosx-11.0-arm64/wheel/stdlib
+copying build/lib/stdlib/news.nx -> build/bdist.macosx-11.0-arm64/wheel/./stdlib
+copying build/lib/stdlib/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./stdlib
+creating build/bdist.macosx-11.0-arm64/wheel/src
+copying build/lib/src/nexa_sdk.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/compiler.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/nexa_parser.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/_version.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+creating build/bdist.macosx-11.0-arm64/wheel/src/runtime
+copying build/lib/src/runtime/validator.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/intent.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/auth.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/result_types.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/dag_orchestrator.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/pattern_matching.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/state_store.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/run_state.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/output_schema.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/trace_system.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/compactor.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/concurrent.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/wasm_sandbox.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/context_manager.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/config.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/evaluation_interface.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/hitl.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/memory.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/execution_engine.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/llm_router.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/cache_manager.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/ui.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/knowledge_graph.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/database.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/tool_registry.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/flow_runtime.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/opencli.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/tool_dispatch.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/agent_runner.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/inspector.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/rbac.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/lifecycle_hooks.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/core.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/tools_registry.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/http_server.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/checkpoints.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/debugger.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/reason.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/jobs.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/providers.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/cow_state.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/tool_output_store.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/secrets.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/workspace_tools.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/parallel_runs.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/orchestrator.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/flow_actors.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/type_system.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/agent.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/contracts.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/template.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/adt.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/mcp_client.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/harness_kernel.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/artifacts.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/safe_eval.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/stdlib.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/agent_execution.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/profiler.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/agent_context.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/native_providers.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/evaluator.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/long_term_memory.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/memory_backend.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/kv_store.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/actor_system.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/runtime/meta.py -> build/bdist.macosx-11.0-arm64/wheel/./src/runtime
+copying build/lib/src/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+creating build/bdist.macosx-11.0-arm64/wheel/src/ial
+copying build/lib/src/ial/resolve.py -> build/bdist.macosx-11.0-arm64/wheel/./src/ial
+copying build/lib/src/ial/primitives.py -> build/bdist.macosx-11.0-arm64/wheel/./src/ial
+copying build/lib/src/ial/standard.py -> build/bdist.macosx-11.0-arm64/wheel/./src/ial
+copying build/lib/src/ial/execute.py -> build/bdist.macosx-11.0-arm64/wheel/./src/ial
+copying build/lib/src/ial/__init__.py -> build/bdist.macosx-11.0-arm64/wheel/./src/ial
+copying build/lib/src/ial/vocabulary.py -> build/bdist.macosx-11.0-arm64/wheel/./src/ial
+copying build/lib/src/api.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/ast_transformer.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/cli.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/ast_utils.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/agent_cli.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/harness_validator.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+copying build/lib/src/code_generator.py -> build/bdist.macosx-11.0-arm64/wheel/./src
+running install_egg_info
+Copying nexa_lang.egg-info to build/bdist.macosx-11.0-arm64/wheel/./nexa_lang-2.4.0-py3.12.egg-info
+running install_scripts
+creating build/bdist.macosx-11.0-arm64/wheel/nexa_lang-2.4.0.dist-info/WHEEL
+creating '/private/tmp/nexa-dist-final/.tmp-v5ef8ov4/nexa_lang-2.4.0-py3-none-any.whl' and adding 'build/bdist.macosx-11.0-arm64/wheel' to it
+adding 'nexa_lang-2.4.0.dist-info/licenses/LICENSE'
+adding 'src/__init__.py'
+adding 'src/_version.py'
+adding 'src/agent_cli.py'
+adding 'src/api.py'
+adding 'src/ast_transformer.py'
+adding 'src/ast_utils.py'
+adding 'src/cli.py'
+adding 'src/code_generator.py'
+adding 'src/compiler.py'
+adding 'src/harness_validator.py'
+adding 'src/nexa_parser.py'
+adding 'src/nexa_sdk.py'
+adding 'src/ial/__init__.py'
+adding 'src/ial/execute.py'
+adding 'src/ial/primitives.py'
+adding 'src/ial/resolve.py'
+adding 'src/ial/standard.py'
+adding 'src/ial/vocabulary.py'
+adding 'src/runtime/__init__.py'
+adding 'src/runtime/actor_system.py'
+adding 'src/runtime/adt.py'
+adding 'src/runtime/agent.py'
+adding 'src/runtime/agent_context.py'
+adding 'src/runtime/agent_execution.py'
+adding 'src/runtime/agent_runner.py'
+adding 'src/runtime/artifacts.py'
+adding 'src/runtime/auth.py'
+adding 'src/runtime/cache_manager.py'
+adding 'src/runtime/checkpoints.py'
+adding 'src/runtime/compactor.py'
+adding 'src/runtime/concurrent.py'
+adding 'src/runtime/config.py'
+adding 'src/runtime/context_manager.py'
+adding 'src/runtime/contracts.py'
+adding 'src/runtime/core.py'
+adding 'src/runtime/cow_state.py'
+adding 'src/runtime/dag_orchestrator.py'
+adding 'src/runtime/database.py'
+adding 'src/runtime/debugger.py'
+adding 'src/runtime/evaluation_interface.py'
+adding 'src/runtime/evaluator.py'
+adding 'src/runtime/execution_engine.py'
+adding 'src/runtime/flow_actors.py'
+adding 'src/runtime/flow_runtime.py'
+adding 'src/runtime/harness_kernel.py'
+adding 'src/runtime/hitl.py'
+adding 'src/runtime/http_server.py'
+adding 'src/runtime/inspector.py'
+adding 'src/runtime/intent.py'
+adding 'src/runtime/jobs.py'
+adding 'src/runtime/knowledge_graph.py'
+adding 'src/runtime/kv_store.py'
+adding 'src/runtime/lifecycle_hooks.py'
+adding 'src/runtime/llm_router.py'
+adding 'src/runtime/long_term_memory.py'
+adding 'src/runtime/mcp_client.py'
+adding 'src/runtime/memory.py'
+adding 'src/runtime/memory_backend.py'
+adding 'src/runtime/meta.py'
+adding 'src/runtime/native_providers.py'
+adding 'src/runtime/opencli.py'
+adding 'src/runtime/orchestrator.py'
+adding 'src/runtime/output_schema.py'
+adding 'src/runtime/parallel_runs.py'
+adding 'src/runtime/pattern_matching.py'
+adding 'src/runtime/profiler.py'
+adding 'src/runtime/providers.py'
+adding 'src/runtime/rbac.py'
+adding 'src/runtime/reason.py'
+adding 'src/runtime/result_types.py'
+adding 'src/runtime/run_state.py'
+adding 'src/runtime/safe_eval.py'
+adding 'src/runtime/secrets.py'
+adding 'src/runtime/state_store.py'
+adding 'src/runtime/stdlib.py'
+adding 'src/runtime/template.py'
+adding 'src/runtime/tool_dispatch.py'
+adding 'src/runtime/tool_output_store.py'
+adding 'src/runtime/tool_registry.py'
+adding 'src/runtime/tools_registry.py'
+adding 'src/runtime/trace_system.py'
+adding 'src/runtime/type_system.py'
+adding 'src/runtime/ui.py'
+adding 'src/runtime/validator.py'
+adding 'src/runtime/wasm_sandbox.py'
+adding 'src/runtime/workspace_tools.py'
+adding 'stdlib/__init__.py'
+adding 'stdlib/news.nx'
+adding 'nexa_lang-2.4.0.dist-info/METADATA'
+adding 'nexa_lang-2.4.0.dist-info/WHEEL'
+adding 'nexa_lang-2.4.0.dist-info/entry_points.txt'
+adding 'nexa_lang-2.4.0.dist-info/top_level.txt'
+adding 'nexa_lang-2.4.0.dist-info/RECORD'
+removing build/bdist.macosx-11.0-arm64/wheel
+Successfully built /private/tmp/nexa-dist-final/nexa_lang-2.4.0.tar.gz
+Successfully built /private/tmp/nexa-dist-final/nexa_lang-2.4.0-py3-none-any.whl

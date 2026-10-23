@@ -129,8 +129,8 @@ class TestSemanticCheck:
         check = SemanticCheck(actual="clear weather", intent="weather information")
         result = execute_primitive(check)
 
-        assert result.passed is True
-        assert "heuristic" in result.message
+        assert not result.passed and result.status.value == "skip"
+        assert "unavailable" in result.message
 
 
 # ========================================
@@ -463,7 +463,7 @@ class TestExecute:
         context = {}
         
         result = execute_primitive(assertion, context)
-        assert result.passed  # skipped counts as not failed
+        assert not result.passed and result.status.value == "skip"
         assert "skipped" in result.message.lower()
     
     def test_execute_protocol_check_basic(self):
@@ -472,7 +472,7 @@ class TestExecute:
         context = {"output": {"city": "Beijing"}}
         
         result = execute_primitive(check, context)
-        assert result.passed  # basic check: data exists
+        assert not result.passed and result.status.value == "skip"
     
     def test_execute_protocol_check_no_data(self):
         """Protocol 检查 — 无数据"""
@@ -488,8 +488,8 @@ class TestExecute:
         context = {}
         
         result = execute_primitive(check, context)
-        # 启发式匹配应该能找到关键词
-        assert result.passed
+        # Missing a judge is an explicit skip, even when keywords match.
+        assert not result.passed and result.status.value == "skip"
     
     def test_execute_primitives_list(self):
         """执行原语列表"""

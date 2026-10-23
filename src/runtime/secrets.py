@@ -270,7 +270,8 @@ class NexaSecrets:
         all_block_configs = {}
         all_flat_configs = {}
         
-        for nxs_file in nxs_files:
+        # Apply parents first so the nearest workspace retains precedence.
+        for nxs_file in reversed(nxs_files):
             try:
                 with open(nxs_file, "r", encoding="utf-8") as f:
                     content = f.read()
@@ -320,7 +321,7 @@ class NexaSecrets:
                 break
             current_dir = parent
         
-        for nxs_file in nxs_files:
+        for nxs_file in reversed(nxs_files):
             try:
                 with open(nxs_file, "r", encoding="utf-8") as f:
                     content = f.read()

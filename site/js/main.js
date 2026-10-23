@@ -172,7 +172,7 @@
 
   if (blogSort && blogCards.length > 0) {
     blogSort.addEventListener('change', () => {
-      const container = document.querySelector('.blog-list');
+      const container = document.querySelector('.blog-grid');
       const cards = Array.from(blogCards);
       const order = blogSort.value;
       cards.sort((a, b) => {

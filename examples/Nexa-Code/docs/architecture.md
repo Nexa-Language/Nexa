@@ -1,162 +1,44 @@
-# Nexa Code — Architecture & Design
+# Nexa Code — Architecture
 
-## Overview
+Nexa Code declares its agent and tools in `.nx`. Python bodies in `@tool`
+declarations delegate filesystem and process operations to the maintained
+workspace tool module. The durable CLI compiles declarations and invokes
+`CodeAssistant.execute()` with a checkpoint store.
 
-Nexa Code is the first self-hosted AI coding assistant written entirely in Nexa syntax. It demonstrates how Nexa's Harness Native primitives can compose a real-world autonomous agent without any framework boilerplate.
-
-## Data Flow
-
-```
-User Input (REPL/oneshot)
-    │
-    ▼
-flow nexa_code_repl / flow nexa_code_oneshot
-    │
-    ├── autoloop (E-dimension) ─── loops for interactive REPL
-    ├── with_context (C-dimension) ─── manages token budget
-    │
-    ▼
-CodeAssistant.run(task)
-    │
-    ├── Sends task + tool schemas to OpenAI API
-    │
-    ▼
-LLM Decision
-    │
-    ├── tool_calls? ─── YES ─── execute_tool()
-    │   │                         │
-    │   │                         ▼
-    │   │                    LOCAL_TOOLS dict
-    │   │                         │
-    │   │                    Python fn from @tool
-    │   │                         │
-    │   └───── tool result ─── back to LLM
-    │
-    └── NO ─── final answer
-                   │
-                   ▼
-            verify result satisfies string (V-dimension)
-                   │
-                   ▼
-              return result
+```mermaid
+flowchart TD
+    Source[main.nx + agent.nx + tools.nx] --> Compiler[Shared compiler]
+    Compiler --> Agent[CodeAssistant definition]
+    CLI[nexa agent: task or resume] --> Agent
+    Agent --> Runner[AgentRunner + RunState]
+    Runner --> Provider[Provider adapter]
+    Provider --> Runner
+    Runner --> Policy[Exposed tools + schema + approval]
+    Policy --> Pause[waiting_approval]
+    Pause --> CLI
+    Policy --> Tools[Workspace tools]
+    Tools --> Runner
+    Runner --> Journal[SQLite checkpoint + tool journal]
+    Runner --> Result[Output + status + usage + events]
 ```
 
-## Compiler Pipeline
+Each fresh execution owns its messages, budgets and tool journal. Checkpoints
+bind the source, agent definition, provider and working directory. A tool intent
+is persisted before dispatch; its completed result is persisted before appending
+the provider tool-result message. Recovery reuses completed results. Unknown
+external outcomes stop execution until the operator reconciles them.
 
-```
-.nx source files
-    │
-    ├── main.nx  ──include──► tools.nx
-    │                         agent.nx
-    │                         flows.nx
-    │
-    ▼
-nexa_parser.py ── Lark parser ──► CST
-    │
-    ▼
-ast_transformer.py ── Transformer ──► AST (dicts + dataclasses)
-    │
-    ├── import_stmt → IncludeStatement
-    ├── tool_fn_def → ToolAnnotation (with python_code)
-    ├── agent_decl  → Agent declaration
-    ├── flow_def    → FlowDeclaration
-    │
-    ▼
-code_generator.py ── CodeGenerator ──► main.py
-    │
-    ├── _generate_tool_annotation_as_schema()
-    │   ├── __tool_read_file_schema (OpenAI function calling JSON)
-    │   └── def read_file(path): ... (Python implementation)
-    │
-    ├── _generate_agents()
-    │   └── CodeAssistant = NexaAgent(tools=[...], ...)
-    │
-    ├── _generate_flows()
-    │   └── def flow_nexa_code_repl(): ...
-    │   └── def flow_nexa_code_oneshot(task): ...
-    │
-    └── __main__ block
-```
+`read_file`, `search_files` and `list_directory` use bounded local reads.
+`write_file` and `shell_exec` require explicit approval. File writes use a
+workspace containment check and atomic replacement; commands run on the host
+through the existing command policy. Approval and filesystem containment have
+different responsibilities, documented in the [usage guide](usage.md).
 
-## Module Design
+The versioned evaluation task runs the compiled Nexa Code definition, replacing
+only the model boundary with a fixture. Acceptance checks the resulting file,
+verification subprocess, run status, checkpoint, approvals and call counts.
+Live model quality, resource use and latency are recorded in separate evaluations.
 
-| Module | Concern | Dependencies |
-|--------|---------|--------------|
-| `tools.nx` | Tool definitions (pure functions) | None |
-| `agent.nx` | Agent configuration (prompt, model) | `tools.nx` (auto-linked) |
-| `flows.nx` | Orchestration logic (REPL, oneshot) | `agent.nx` |
-| `main.nx` | Entry point (includes everything) | All of the above |
-
-This separation follows the Single Responsibility Principle:
-- Tools are reusable pure functions
-- Agent config is declarative
-- Flows are procedural orchestration
-- Main is just composition
-
-## Runtime Interaction
-
-### Tool Execution Loop (agent.py)
-
-```python
-while True:
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        tools=tools  # ← @tool schemas from generated code
-    )
-    msg = response.choices[0].message
-
-    if msg.tool_calls:
-        for tc in msg.tool_calls:
-            result = execute_tool(tc.function.name, tc.function.arguments)
-            # execute_tool dispatches to LOCAL_TOOLS[name](**args)
-        continue  # ← back to LLM with tool results
-    else:
-        return msg.content  # ← final answer
-```
-
-### LOCAL_TOOLS Registry (tools_registry.py)
-
-Generated by `code_generator.py`:
-
-```python
-LOCAL_TOOLS = {}
-def register_tool(name, func):
-    LOCAL_TOOLS[name] = func
-
-def read_file(path):
-    # ... python! block content ...
-register_tool("read_file", read_file)
-
-def execute_tool(name, args_json):
-    func = LOCAL_TOOLS.get(name)
-    if not func:
-        return f"Tool '{name}' not found"
-    args = json.loads(args_json) if isinstance(args_json, str) else args_json
-    return func(**args)
-```
-
-## Harness Dimensions in Practice
-
-### E (Execution) — autoloop
-
-The REPL uses `autoloop` for the interactive loop. Each iteration: read input → call agent → print result → repeat. This is the core primacy of Harness — the loop is a language construct, not a while loop.
-
-### T (Tool) — @tool fn
-
-5 tools map directly to OpenAI function calling. The `@tool` annotation generates both the schema (for the LLM) and the implementation (for LOCAL_TOOLS). Zero manual JSON serialization.
-
-### C (Context) — with_context
-
-`with_context max_tokens: 50000` wraps each agent call. The ContextManager handles sliding window truncation when the conversation exceeds the token budget.
-
-### V (Verify) — verify ... satisfies
-
-`verify result satisfies string` checks that the agent's output is a string. If verification fails, the correction_hint is printed. This is a compile-time + runtime guard.
-
-## Future Enhancements
-
-- **S-dimension (State)**: Add `snapshot/restore` for conversation state persistence
-- **L-dimension (Lifecycle)**: Add `reflect` hooks for self-improvement
-- **Multi-agent**: `spawn` sub-agents for code review, test generation, etc.
-- **WASM Sandbox**: Run shell_exec inside WASM for additional safety
+The general runtime also supplies flow-scoped actors, parallel execution,
+artifacts and native provider history. Their contracts are shared with other
+Nexa applications; see [runtime v2.4](../../../docs/runtime-v2.4.md).

@@ -146,6 +146,38 @@ fn write_module(output: &Path, module: &BytecodeModule) -> Result<()> {
 
 fn run_module(module: BytecodeModule) -> Result<ExecutionResult> {
     let mut interpreter = Interpreter::new(InterpreterConfig::default());
+    interpreter.set_agent_executor(|definition, arguments| {
+        use nexa_avm::runtime::llm::{LlmClient, LlmConfig};
+        use nexa_avm::vm::stack::Value;
+        if matches!(definition.get("tools"), Some(Value::List(tools)) if !tools.is_empty()) {
+            return Err(nexa_avm::AvmError::NotImplemented(
+                "AVM provider tool execution is not supported; use Python runtime".into(),
+            ));
+        }
+        let config = LlmConfig {
+            api_key: std::env::var("NEXA_API_KEY").ok(),
+            base_url: std::env::var("NEXA_BASE_URL").ok(),
+            ..LlmConfig::default()
+        };
+        let mut client = LlmClient::new(config);
+        let prompt = definition
+            .get("prompt")
+            .filter(|value| **value != Value::Null)
+            .map(Value::to_string)
+            .unwrap_or_default();
+        let input = arguments
+            .iter()
+            .map(Value::to_string)
+            .collect::<Vec<_>>()
+            .join(" ");
+        let model = definition
+            .get("model")
+            .filter(|value| **value != Value::Null)
+            .map(Value::to_string);
+        client
+            .chat(&[("system", &prompt), ("user", &input)], model.as_deref())
+            .map(Value::String)
+    });
     interpreter.load_module(module);
     interpreter
         .run()

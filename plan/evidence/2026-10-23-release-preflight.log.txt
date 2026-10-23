@@ -1,0 +1,15 @@
+COMPILED README.md block 1
+COMPILED README_EN.md block 1
+COMPILED AGENT_LEARN/INSTALL_AND_HELLO_WORLD.md block 1
+COMPILED AGENT_LEARN/AGENT_GUIDE.md block 1
+COMPILED AGENT_LEARN/AGENT_GUIDE.md block 2
+COMPILED docs/development.md block 1
+COMPILED docs/runtime-v2.4.md block 1
+COMPILED docs/runtime-v2.4.md block 2
+COMPILED site/index.html example
+COMPILED site/index.html example
+COMPILED site/blog/2026-10-v2.4-release.html example
+11 Nexa documentation examples compiled; 66 local page references exist
+PARSED .github/workflows/deploy.yml
+PARSED .github/workflows/ci.yml
+Release publication drives deployment; checkout follows the release tag

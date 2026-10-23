@@ -922,7 +922,7 @@ class TestEndToEnd:
     def test_e2e_plain_string(self):
         'End-to-end: "Hello World" should produce plain Python string'
         code = generate_code('flow main { x = "Hello World"; }')
-        assert '"Hello World"' in code
+        assert "'Hello World'" in code
 
     def test_e2e_dot_access(self):
         'End-to-end: "#{user.name}" should produce dict-style access'
@@ -975,5 +975,5 @@ class TestEndToEnd:
     def test_e2e_codegen_both_string_types(self):
         'End-to-end: Code generation with both string types'
         code = generate_code('flow main { a = "plain"; b = "#{interp}"; }')
-        assert '"plain"' in code
+        assert "'plain'" in code
         assert "_nexa_interp_str(interp)" in code

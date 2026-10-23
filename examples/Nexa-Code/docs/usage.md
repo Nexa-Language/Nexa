@@ -1,137 +1,52 @@
 # Nexa Code — Usage Guide
 
-## Prerequisites
+Nexa 2.4.0 uses the durable `nexa agent` entry point for tasks that edit files or run
+commands. Follow the [tagged-source setup](../README.md#运行), then configure your
+endpoint, model and credential using the [first-model guide](../../../docs/development.md#configure-your-first-model).
 
-- Python 3.10+
-- Nexa compiler (`nexa build`)
+## Start a task
 
-## Setup
+Change to the workspace to edit, then invoke the installed CLI:
 
-### 1. Configure API Secrets
-
-Create `secrets.nxs` in the `Nexa-Code/` directory:
-
-```
-config default{
-    BASE_URL = "https://your-api-endpoint/v1"
-    API_KEY = "your-api-key"
-    MODEL_NAME = {
-        "strong": "your-model-name"
-    }
-}
+```sh
+/path/to/Nexa/.venv/bin/nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx CodeAssistant "Fix the failing tests" --timeout 900
 ```
 
-This file is gitignored — never commit API keys.
+The current directory is the tool workspace. Read, search and directory-listing
+tools are read-only. Writing files and executing commands pause the run with
+`status: waiting_approval`; the JSON result contains the run ID and pending calls.
 
-### 2. Build
+## Approve, deny and resume
 
-```bash
-cd /path/to/nexa
-python src/cli.py build examples/Nexa-Code/main.nx
+Inspect the pending tool name and complete arguments, then approve that call:
+
+```sh
+/path/to/Nexa/.venv/bin/nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx CodeAssistant --resume RUN_ID --approve CALL_ID
 ```
 
-This compiles all included modules (tools.nx, agent.nx, flows.nx, secrets.nxs) into a single `main.py`.
+Use `--deny CALL_ID` to reject it. Resume from the same workspace with the same
+source and provider configuration. `--checkpoint PATH` selects a SQLite file;
+the default is `.nexa/runs.sqlite3`. The original timeout includes time spent
+waiting for approval. Exit codes are 0 for completion, 2 for pending approval,
+and 1 for failure, cancellation or exhausted budgets.
 
-### 3. Run Interactive REPL
+A transport failure after dispatch leaves the tool result unknown. Verify the
+actual file/service state and reconcile it with `SQLiteCheckpointStore.resolve_tool`
+before resuming. Completed journal entries reuse their stored results.
 
-```bash
-python examples/Nexa-Code/main.py
-```
+## Tools and verification
 
-```
-╔════════════════════════════════════════════════╗
-║          Nexa Code v2.0.0                     ║
-║   The First Harness Native AI Coding Agent    ║
-╚════════════════════════════════════════════════╝
-Type your request, or /exit to quit.
+File tools validate resolved paths against the workspace and reject sensitive
+paths. Writes are atomic. `shell_exec` runs a parsed argument list without a
+shell, in the host environment, with a 30-second timeout. Approval authorizes the
+actual command; commands can have effects beyond the file-tool path checks.
 
-nexa-code>
-```
+Run `uv run pytest tests/test_nexa_code_eval.py -q` from the Nexa repository for a
+reproducible temporary-workspace evaluation. It uses scripted model responses,
+real file tools, two approvals and a real verification subprocess. See the
+[evaluation guide](../../../evals/README.md) for report fields and live-provider
+measurements.
 
-### REPL Commands
-
-| Command | Description |
-|---------|-------------|
-| `/exit` | Exit the REPL |
-| `/help` | Show available commands |
-| `/clear` | Clear conversation context |
-| `/tools` | List available tools |
-| `/snap` | Save conversation snapshot |
-| `/restore` | Restore from snapshot |
-
-### Example Interactions
-
-```
-nexa-code> Read the VERSION file and tell me the version.
-> [CodeAssistant received]: Read the VERSION file...
-[CodeAssistant requested TOOL CALL]: read_file -> {"path": "VERSION"}
-    [ToolRegistry] Execution result: File: VERSION | 2.0.0
-< [CodeAssistant replied]: This project is version 2.0.0.
-
-nexa-code> List all python files in src/runtime/
-> [CodeAssistant requested TOOL CALL]: shell_exec -> {"command": "ls src/runtime/*.py"}
-    [ToolRegistry] Execution result: agent.py, context_manager.py, ...
-< [CodeAssistant replied]: There are 47 Python files in src/runtime/
-```
-
-## One-shot Mode
-
-For scripting or CI pipelines, use the oneshot flow:
-
-```python
-import importlib.util, sys
-sys.path.insert(0, '/path/to/nexa')
-
-spec = importlib.util.spec_from_file_location(
-    'nexa_code', 'examples/Nexa-Code/main.py'
-)
-mod = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(mod)
-
-# Execute a single task
-result = mod.flow_nexa_code_oneshot(
-    "Check if tests/test_integration.py has any failing tests"
-)
-print(result)
-```
-
-## Adding Custom Tools
-
-1. Edit `tools.nx` and add a new `@tool fn`:
-
-```nexa
-@tool("Get current git status")
-fn git_status(path: string): string {
-    python! """
-import subprocess, os
-result = subprocess.run(["git", "status", "--short"],
-    cwd=path, capture_output=True, text=True, timeout=10)
-return result.stdout if result.stdout else "(clean)"
-"""
-}
-```
-
-2. Rebuild:
-
-```bash
-python src/cli.py build examples/Nexa-Code/main.nx
-```
-
-3. The new tool is automatically registered in `LOCAL_TOOLS` and included in the OpenAI function calling schemas — the LLM will discover it automatically.
-
-## Architecture
-
-See [`docs/architecture.md`](docs/architecture.md) for the full compiler pipeline, data flow, and module design.
-
-## Limitations
-
-- **No multi-file edit**: The agent operates on one file at a time
-- **10-second grep timeout**: `search_files` has a 10s timeout
-- **30-second shell timeout**: `shell_exec` has a 30s timeout
-- **Dangerous command filter**: Blocks `rm -rf`, `chmod 777`, `dd`, `mkfs`
-
-## Security
-
-- `shell_exec` blocks dangerous commands via a pattern match filter
-- `secrets.nxs` is gitignored and never committed
-- API keys are loaded at runtime from `secrets.nxs`, never hardcoded
+The older REPL flows remain in `flows.nx`. Use the durable entry point above for
+approval and checkpoint recovery. Full contracts are in the
+[2.4 migration guide](../../../docs/runtime-v2.4.md).

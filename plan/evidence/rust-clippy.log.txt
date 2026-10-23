@@ -1,0 +1,413 @@
+   Compiling nexa-avm v2.4.0 (/Users/bytedance/proj/experiment/Nexa/avm)
+warning: this `map_or` can be simplified
+   --> src/compiler/parser.rs:645:28
+    |
+645 |                           && self
+    |  ____________________________^
+646 | |                             .previous_identifier()
+647 | |                             .map_or(false, |s| s == "semantic");
+    | |_______________________________________________________________^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unnecessary_map_or
+    = note: `#[warn(clippy::unnecessary_map_or)]` on by default
+help: use `is_some_and` instead
+    |
+647 -                             .map_or(false, |s| s == "semantic");
+647 +                             .is_some_and(|s| s == "semantic");
+    |
+
+warning: very complex type used. Consider factoring parts into `type` definitions
+    --> src/compiler/parser.rs:1066:38
+     |
+1066 |     fn parse_arguments(&mut self) -> AvmResult<(Vec<Expression>, Vec<(String, Expression)>)> {
+     |                                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+     |
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#type_complexity
+     = note: `#[warn(clippy::type_complexity)]` on by default
+
+warning: length comparison to zero
+   --> src/compiler/lexer.rs:459:17
+    |
+459 |         assert!(result.tokens.len() > 0);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^ help: using `!is_empty` is clearer and more explicit: `!result.tokens.is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#len_zero
+    = note: `#[warn(clippy::len_zero)]` on by default
+
+warning: this `impl` can be derived
+   --> src/compiler/ast.rs:488:1
+    |
+488 | / impl Default for TypeMode {
+489 | |     fn default() -> Self {
+490 | |         TypeMode::Warn
+491 | |     }
+492 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+    = note: `#[warn(clippy::derivable_impls)]` on by default
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+479 + #[derive(Default)]
+480 | pub enum TypeMode {
+481 |     /// 类型不匹配=运行时错误，程序终止
+482 |     Strict,
+483 |     /// 类型不匹配=日志警告并继续（默认）
+484 ~     #[default]
+485 ~     Warn,
+    |
+
+warning: this `impl` can be derived
+   --> src/compiler/ast.rs:505:1
+    |
+505 | / impl Default for LintMode {
+506 | |     fn default() -> Self {
+507 | |         LintMode::Default
+508 | |     }
+509 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+496 + #[derive(Default)]
+497 | pub enum LintMode {
+498 |     /// 只检查有类型标注的代码（默认）
+499 ~     #[default]
+500 ~     Default,
+    |
+
+warning: you seem to use `.enumerate()` and immediately discard the index
+   --> src/bytecode/compiler.rs:238:70
+    |
+238 |         for (_i, (param_name, _param_type)) in flow.parameters.iter().enumerate() {
+    |                                                                      ^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unused_enumerate_index
+    = note: `#[warn(clippy::unused_enumerate_index)]` on by default
+help: remove the `.enumerate()` call
+    |
+238 -         for (_i, (param_name, _param_type)) in flow.parameters.iter().enumerate() {
+238 +         for (param_name, _param_type) in flow.parameters.iter() {
+    |
+
+warning: this `impl` can be derived
+   --> src/vm/context_pager.rs:176:1
+    |
+176 | / impl Default for EvictionPolicy {
+177 | |     fn default() -> Self {
+178 | |         EvictionPolicy::Hybrid
+179 | |     }
+180 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+165 + #[derive(Default)]
+166 | pub enum EvictionPolicy {
+167 |     /// 最近最少使用 (LRU)
+...
+173 |     /// 混合策略
+174 ~     #[default]
+175 ~     Hybrid,
+    |
+
+warning: you seem to use `.enumerate()` and immediately discard the index
+   --> src/vm/context_pager.rs:566:39
+    |
+566 |         for (_i, word) in words.iter().enumerate() {
+    |                                       ^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unused_enumerate_index
+help: remove the `.enumerate()` call
+    |
+566 -         for (_i, word) in words.iter().enumerate() {
+566 +         for word in words.iter() {
+    |
+
+warning: useless use of `format!`
+   --> src/vm/interpreter.rs:714:45
+    |
+714 |               _ => Err(AvmError::RuntimeError(format!(
+    |  _____________________________________________^
+715 | |                 "Unsupported AST statement type for direct execution"
+716 | |             ))),
+    | |_____________^ help: consider using `.to_string()`: `"Unsupported AST statement type for direct execution".to_string()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#useless_format
+    = note: `#[warn(clippy::useless_format)]` on by default
+
+warning: length comparison to zero
+   --> src/bytecode/compiler.rs:972:17
+    |
+972 |         assert!(module.instructions.len() > 0);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: using `!is_empty` is clearer and more explicit: `!module.instructions.is_empty()`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#len_zero
+
+warning: this `impl` can be derived
+  --> src/vm/scheduler.rs:69:1
+   |
+69 | / impl Default for LoadBalanceStrategy {
+70 | |     fn default() -> Self {
+71 | |         LoadBalanceStrategy::Adaptive
+72 | |     }
+73 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+56 + #[derive(Default)]
+57 | pub enum LoadBalanceStrategy {
+58 |     /// 轮询调度
+...
+66 |     /// 自适应调度
+67 ~     #[default]
+68 ~     Adaptive,
+   |
+
+warning: clamp-like pattern without using clamp function
+    --> src/vm/scheduler.rs:1150:46
+     |
+1150 |         self.stats.load_balance_efficiency = (1.0 - (variance.sqrt() / avg)).max(0.0).min(1.0);
+     |                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: replace with clamp: `(1.0 - (variance.sqrt() / avg)).clamp(0.0, 1.0)`
+     |
+     = note: clamp will panic if max < min, min.is_nan(), or max.is_nan()
+     = note: clamp returns NaN if the input is NaN
+     = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#manual_clamp
+     = note: `#[warn(clippy::manual_clamp)]` on by default
+
+warning: `to_string` applied to a type that implements `Display` in `format!` args
+  --> src/vm/stack.rs:69:57
+   |
+69 |                     .map(|(k, v)| format!("{}: {}", k, v.to_string()))
+   |                                                         ^^^^^^^^^^^^ help: remove this
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#to_string_in_format_args
+   = note: `#[warn(clippy::to_string_in_format_args)]` on by default
+
+warning: this `impl` can be derived
+  --> src/vm/stack.rs:80:1
+   |
+80 | / impl Default for Value {
+81 | |     fn default() -> Self {
+82 | |         Value::Null
+83 | |     }
+84 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+28 + #[derive(Default)]
+29 | pub enum Value {
+30 ~     #[default]
+31 ~     Null,
+   |
+
+warning: you should consider adding a `Default` implementation for `MemoryBackend`
+   --> src/runtime/jobs.rs:161:5
+    |
+161 | /     pub fn new() -> Self {
+162 | |         let mut queues = HashMap::new();
+163 | |         queues.insert(JobPriority::Low, VecDeque::new());
+164 | |         queues.insert(JobPriority::Normal, VecDeque::new());
+...   |
+174 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#new_without_default
+    = note: `#[warn(clippy::new_without_default)]` on by default
+help: try adding this
+    |
+160 + impl Default for MemoryBackend {
+161 +     fn default() -> Self {
+162 +         Self::new()
+163 +     }
+164 + }
+    |
+
+warning: you should consider adding a `Default` implementation for `JobRegistry`
+   --> src/runtime/jobs.rs:407:5
+    |
+407 | /     pub fn new() -> Self {
+408 | |         Self { specs: HashMap::new() }
+409 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#new_without_default
+help: try adding this
+    |
+406 + impl Default for JobRegistry {
+407 +     fn default() -> Self {
+408 +         Self::new()
+409 +     }
+410 + }
+    |
+
+warning: you should consider adding a `Default` implementation for `JobQueue`
+   --> src/runtime/jobs.rs:435:5
+    |
+435 | /     pub fn new() -> Self {
+436 | |         Self {
+437 | |             backend: Arc::new(Mutex::new(MemoryBackend::new())),
+438 | |             registry: Arc::new(Mutex::new(JobRegistry::new())),
+439 | |         }
+440 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#new_without_default
+help: try adding this
+    |
+434 + impl Default for JobQueue {
+435 +     fn default() -> Self {
+436 +         Self::new()
+437 +     }
+438 + }
+    |
+
+warning: this block may be rewritten with the `?` operator
+   --> src/runtime/jobs.rs:451:9
+    |
+451 | /         if spec.is_none() {
+452 | |             return None;
+453 | |         }
+    | |_________^ help: replace it with: `spec?;`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#question_mark
+    = note: `#[warn(clippy::question_mark)]` on by default
+
+warning: this block may be rewritten with the `?` operator
+   --> src/runtime/jobs.rs:496:9
+    |
+496 | /         if spec.is_none() {
+497 | |             return None;
+498 | |         }
+    | |_________^ help: replace it with: `spec?;`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#question_mark
+
+warning: called `unwrap` on `self.metadata` after checking its variant with `is_some`
+   --> src/wasm/runtime.rs:293:23
+    |
+292 |         if self.metadata.is_some() {
+    |         -------------------------- help: try: `if let Some(<item>) = &self.metadata`
+293 |             return Ok(self.metadata.as_ref().unwrap());
+    |                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#unnecessary_unwrap
+    = note: `#[warn(clippy::unnecessary_unwrap)]` on by default
+
+warning: this operation has no effect
+   --> src/wasm/sandbox.rs:162:28
+    |
+162 |             max_file_size: 1 * 1024 * 1024, // 1MB
+    |                            ^^^^^^^^ help: consider reducing it to: `1024`
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#identity_op
+    = note: `#[warn(clippy::identity_op)]` on by default
+
+warning: writing `&PathBuf` instead of `&Path` involves a new object where a slice will do
+   --> src/wasm/sandbox.rs:269:41
+    |
+269 |     pub fn is_path_allowed(&self, path: &PathBuf) -> bool {
+    |                                         ^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#ptr_arg
+    = note: `#[warn(clippy::ptr_arg)]` on by default
+help: change this to
+    |
+269 -     pub fn is_path_allowed(&self, path: &PathBuf) -> bool {
+269 +     pub fn is_path_allowed(&self, path: &Path) -> bool {
+    |
+
+warning: this `impl` can be derived
+   --> src/ffi/python.rs:193:1
+    |
+193 | / impl Default for PythonValue {
+194 | |     fn default() -> Self {
+195 | |         PythonValue::None
+196 | |     }
+197 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+    |
+ 71 + #[derive(Default)]
+ 72 | pub enum PythonValue {
+ 73 |     /// None 值
+ 74 ~     #[default]
+ 75 ~     None,
+    |
+
+warning: this `impl` can be derived
+  --> src/ffi/c_api.rs:87:1
+   |
+87 | / impl Default for AvmErrorCode {
+88 | |     fn default() -> Self {
+89 | |         AvmErrorCode::Success
+90 | |     }
+91 | | }
+   | |_^
+   |
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute and mark the default variant
+   |
+41 + #[derive(Default)]
+42 | pub enum AvmErrorCode {
+43 |     /// 成功
+44 ~     #[default]
+45 ~     Success = 0,
+   |
+
+warning: this `impl` can be derived
+   --> src/ffi/c_api.rs:166:1
+    |
+166 | / impl Default for AvmStatsC {
+167 | |     fn default() -> Self {
+168 | |         Self {
+169 | |             modules_compiled: 0,
+...   |
+176 | | }
+    | |_^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#derivable_impls
+help: replace the manual implementation with a derive attribute
+    |
+153 + #[derive(Default)]
+154 | pub struct AvmStatsC {
+    |
+
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> src/wasm/runtime.rs:979:9
+    |
+979 |         stats.call_count = 10;
+    |         ^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `wasm::runtime::ExecutionStats { call_count: 10, total_time_ns: 1_000_000_000, ..Default::default() }` and removing relevant reassignments
+   --> src/wasm/runtime.rs:978:9
+    |
+978 |         let mut stats = ExecutionStats::default();
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#field_reassign_with_default
+    = note: `#[warn(clippy::field_reassign_with_default)]` on by default
+
+warning: `nexa-avm` (lib) generated 23 warnings (run `cargo clippy --fix --lib -p nexa-avm -- ` to apply 19 suggestions)
+warning: field assignment outside of initializer for an instance created with Default::default()
+   --> src/ffi/c_api.rs:777:13
+    |
+777 |             config.max_memory_mb = 512;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+note: consider initializing the variable with `ffi::c_api::AvmConfigC { max_memory_mb: 512, debug_mode: 1, ..Default::default() }` and removing relevant reassignments
+   --> src/ffi/c_api.rs:776:13
+    |
+776 |             let mut config = AvmConfigC::default();
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.97.0/index.html#field_reassign_with_default
+
+warning: `nexa-avm` (lib test) generated 27 warnings (23 duplicates) (run `cargo clippy --fix --lib -p nexa-avm --tests -- ` to apply 2 suggestions)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.77s

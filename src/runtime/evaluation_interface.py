@@ -280,228 +280,39 @@ class EvaluationInterface:
 
     # ─── Semantic Verification ───
 
-    def verify_semantic(
-        self,
-        condition: str,
-        value: Any,
-        context: Optional[Dict] = None,
-    ) -> VerifyResult:
-        """
-        Verify a semantic condition against a value.
-
-        Uses heuristic matching for simple conditions.
-        Full LLM-based semantic evaluation is available via verify_semantic_llm().
-
-        Args:
-            condition: Natural language condition (e.g., "result is positive")
-            value: The value to check
-            context: Optional verification context
-
-        Returns:
-            VerifyResult with pass/fail and correction hint
-        """
+    def verify_semantic(self, condition: str, value: Any, context: Optional[Dict] = None) -> VerifyResult:
+        """Evaluate the documented deterministic predicates or an explicit judge."""
+        import re
         self._verification_count += 1
-
-        # Heuristic checks for common patterns
-        condition_lower = condition.lower()
-
-        # Bool checks (must be before int since bool is subclass of int)
-        if isinstance(value, bool):
-            return self._verify_bool_semantic(condition_lower, value)
-
-        # Numeric checks
-        if isinstance(value, (int, float)):
-            return self._verify_numeric_semantic(condition_lower, value)
-
-        # String checks
-        if isinstance(value, str):
-            return self._verify_string_semantic(condition_lower, value)
-
-        # List/dict checks
-        if isinstance(value, (list, dict)):
-            return self._verify_collection_semantic(condition_lower, value)
-
-        # Default: pass with low confidence (needs LLM)
-        result = VerifyResult(
-            passed=True,
-            verify_type="semantic",
-            target=str(value)[:100],
-            condition=condition,
-            details="Heuristic check passed (low confidence, consider LLM verification)",
-            score=0.5,
-        )
-        self._passed_count += 1
-        return result
-
-    def _verify_numeric_semantic(self, condition: str, value: float) -> VerifyResult:
-        """Semantic verification for numeric values."""
-        import re
-
-        # "is positive" / "is negative" / "is zero"
-        if "positive" in condition:
-            passed = value > 0
-            hint = None if passed else f"Value {value} is not positive"
-        elif "negative" in condition:
-            passed = value < 0
-            hint = None if passed else f"Value {value} is not negative"
-        elif "zero" in condition or "is 0" in condition:
-            passed = value == 0
-            hint = None if passed else f"Value {value} is not zero"
-        elif "non-zero" in condition or "nonzero" in condition:
-            passed = value != 0
-            hint = None if passed else f"Value {value} is zero"
-        # "greater than X" / "> X"
-        elif m := re.search(r'greater than\s+(-?\d+\.?\d*)', condition):
-            threshold = float(m.group(1))
-            passed = value > threshold
-            hint = None if passed else f"Value {value} is not greater than {threshold}"
-        elif m := re.search(r'>\s*(-?\d+\.?\d*)', condition):
-            threshold = float(m.group(1))
-            passed = value > threshold
-            hint = None if passed else f"Value {value} <= {threshold}"
-        # "less than X" / "< X"
-        elif m := re.search(r'less than\s+(-?\d+\.?\d*)', condition):
-            threshold = float(m.group(1))
-            passed = value < threshold
-            hint = None if passed else f"Value {value} is not less than {threshold}"
-        elif m := re.search(r'<\s*(-?\d+\.?\d*)', condition):
-            threshold = float(m.group(1))
-            passed = value < threshold
-            hint = None if passed else f"Value {value} >= {threshold}"
-        else:
-            passed = True
-            hint = None
-
-        if passed:
-            self._passed_count += 1
-        else:
-            self._failed_count += 1
-
-        return VerifyResult(
-            passed=passed,
-            verify_type="semantic",
-            target=str(value),
-            condition=condition,
-            details=f"Numeric check: {value} {'passes' if passed else 'fails'} '{condition}'",
-            correction_hint=hint,
-            score=1.0 if passed else 0.0,
-        )
-
-    def _verify_string_semantic(self, condition: str, value: str) -> VerifyResult:
-        """Semantic verification for string values."""
-        # "contains X"
-        import re
-        if m := re.search(r'contains?\s+"([^"]*)"', condition):
-            substring = m.group(1)
-            passed = substring in value
-            hint = None if passed else f"String does not contain '{substring}'"
-        elif m := re.search(r"contains?\s+'([^']*)'", condition):
-            substring = m.group(1)
-            passed = substring in value
-            hint = None if passed else f"String does not contain '{substring}'"
-        # "not empty" / "non-empty"
-        elif "not empty" in condition or "non-empty" in condition or "nonempty" in condition:
-            passed = bool(value.strip())
-            hint = None if passed else "String is empty"
-        # "empty"
-        elif "empty" in condition:
-            passed = not value.strip()
-            hint = None if passed else f"String is not empty: '{value[:50]}'"
-        else:
-            passed = True
-            hint = None
-
-        if passed:
-            self._passed_count += 1
-        else:
-            self._failed_count += 1
-
-        return VerifyResult(
-            passed=passed,
-            verify_type="semantic",
-            target=value[:100],
-            condition=condition,
-            details=f"String check: '{value[:50]}' {'passes' if passed else 'fails'} '{condition}'",
-            correction_hint=hint,
-            score=1.0 if passed else 0.0,
-        )
-
-    def _verify_bool_semantic(self, condition: str, value: bool) -> VerifyResult:
-        """Semantic verification for boolean values."""
-        if "true" in condition.lower():
-            passed = value is True
-            hint = None if passed else "Expected True, got False"
-        elif "false" in condition.lower():
-            passed = value is False
-            hint = None if passed else "Expected False, got True"
-        else:
-            passed = True
-            hint = None
-
-        if passed:
-            self._passed_count += 1
-        else:
-            self._failed_count += 1
-
-        return VerifyResult(
-            passed=passed,
-            verify_type="semantic",
-            target=str(value),
-            condition=condition,
-            details=f"Bool check: {value} {'passes' if passed else 'fails'} '{condition}'",
-            correction_hint=hint,
-            score=1.0 if passed else 0.0,
-        )
-
-    def _verify_collection_semantic(self, condition: str, value: Any) -> VerifyResult:
-        """Semantic verification for list/dict values."""
-        import re
-
-        if isinstance(value, list):
-            if "not empty" in condition or "non-empty" in condition:
-                passed = len(value) > 0
-                hint = None if passed else "List is empty"
-            elif "empty" in condition:
-                passed = len(value) == 0
-                hint = None if passed else f"List has {len(value)} items"
-            elif m := re.search(r'length\s*(>=|>|==|<|<=)\s*(\d+)', condition):
-                op, n = m.group(1), int(m.group(2))
-                ops = {">=": lambda a, b: a >= b, ">": lambda a, b: a > b,
-                       "==": lambda a, b: a == b, "<": lambda a, b: a < b,
-                       "<=": lambda a, b: a <= b}
-                passed = ops.get(op, lambda a, b: True)(len(value), n)
-                hint = None if passed else f"List length {len(value)} does not satisfy {op} {n}"
-            else:
-                passed = True
-                hint = None
-        elif isinstance(value, dict):
-            if "not empty" in condition or "non-empty" in condition:
-                passed = len(value) > 0
-                hint = None if passed else "Dict is empty"
-            elif "empty" in condition:
-                passed = len(value) == 0
-                hint = None if passed else f"Dict has {len(value)} keys"
-            else:
-                passed = True
-                hint = None
-        else:
-            passed = True
-            hint = None
-
-        if passed:
-            self._passed_count += 1
-        else:
-            self._failed_count += 1
-
-        return VerifyResult(
-            passed=passed,
-            verify_type="semantic",
-            target=f"{type(value).__name__}(len={len(value)})",
-            condition=condition,
-            details=f"Collection check: {'passes' if passed else 'fails'} '{condition}'",
-            correction_hint=hint,
-            score=1.0 if passed else 0.0,
-        )
+        text = condition.strip().lower()
+        predicate = None
+        if text in {"not empty", "is not empty"} and isinstance(value, (str, list, dict)):
+            predicate = bool(value)
+        elif text in {"is true", "is false"} and type(value) is bool:
+            predicate = value == (text == "is true")
+        elif type(value) in {int, float}:
+            if text in {"is positive", "is negative", "is zero", "is non-zero", "is nonzero"}:
+                predicate = {"is positive": value > 0, "is negative": value < 0, "is zero": value == 0,
+                             "is non-zero": value != 0, "is nonzero": value != 0}[text]
+            elif match := re.fullmatch(r"(greater than|less than) (-?\d+(?:\.\d+)?)", text):
+                predicate = value > float(match[2]) if match[1] == "greater than" else value < float(match[2])
+        elif isinstance(value, str) and (match := re.fullmatch(r'contains "(.*)"', condition.strip())):
+            predicate = match[1] in value
+        if predicate is None and isinstance(value, (str, list, dict)) and (match := re.fullmatch(r"length (>=|<=|==|>|<) (\d+)", text)):
+            count, expected = len(value), int(match[2])
+            predicate = {">=": count >= expected, "<=": count <= expected, "==": count == expected,
+                         ">": count > expected, "<": count < expected}[match[1]]
+        if predicate is None:
+            judge = (context or {}).get("semantic_evaluator")
+            if judge is None:
+                self._failed_count += 1
+                return VerifyResult(False, "semantic", str(value), condition, "A semantic evaluator is required",
+                                    "Configure an explicit semantic evaluator", 0.0)
+            return self.verify_method(lambda actual: judge(actual, condition), value)
+        self._passed_count += int(predicate)
+        self._failed_count += int(not predicate)
+        return VerifyResult(predicate, "semantic", str(value), condition, f"Predicate evaluated to {predicate}",
+                            None if predicate else "Output does not satisfy the predicate", float(predicate))
 
     # ─── Behavioral Verification ───
 
@@ -528,6 +339,8 @@ class EvaluationInterface:
         all_assertions = assertions or trace.assertions
 
         failures = []
+        if (all_invariants or all_assertions) and not trace.steps:
+            failures.append("No execution trace is available")
 
         # Check invariants (must hold for all steps)
         for inv in all_invariants:
@@ -572,7 +385,7 @@ class EvaluationInterface:
 
         # "success is true" / "step succeeded"
         if "success" in inv_lower:
-            return step.get("success", True)
+            return step.get("success") is True
 
         # "error is None" / "no error"
         if "error" in inv_lower and ("none" in inv_lower or "no error" in inv_lower):
@@ -582,7 +395,7 @@ class EvaluationInterface:
         if "observation" in inv_lower and "not empty" in inv_lower:
             return bool(step.get("observation", ""))
 
-        return True  # Unknown invariant: pass
+        return False  # Unknown invariants require an explicit evaluator.
 
     def _check_assertion_on_step(self, assertion: str, step: Dict) -> bool:
         """Check if an assertion holds on a step."""
@@ -633,14 +446,14 @@ class EvaluationInterface:
                     score=1.0 if passed else 0.0,
                 )
             else:
-                self._passed_count += 1
+                self._failed_count += 1
                 return VerifyResult(
-                    passed=True,
+                    passed=False,
                     verify_type="method",
                     target=str(value)[:100],
                     condition=method.__name__,
                     details=f"Custom method returned: {result}",
-                    score=0.5,
+                    score=0.0,
                 )
         except Exception as e:
             self._failed_count += 1

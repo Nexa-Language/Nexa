@@ -1,0 +1,515 @@
+[
+  {
+    "path": "examples/Nexa-Code/agent.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0827
+  },
+  {
+    "path": "examples/Nexa-Code/flows.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.2547
+  },
+  {
+    "path": "examples/Nexa-Code/main.nx",
+    "status": "compiled",
+    "warnings": 9,
+    "errors": 0,
+    "seconds": 0.5283
+  },
+  {
+    "path": "examples/Nexa-Code/tools.nx",
+    "status": "compiled",
+    "warnings": 7,
+    "errors": 0,
+    "seconds": 0.1223
+  },
+  {
+    "path": "examples/intent_demo/weather_bot.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0927
+  },
+  {
+    "path": "examples/v0.1/01_hello_world.nx",
+    "status": "compiled",
+    "warnings": 3,
+    "errors": 0,
+    "seconds": 0.1626
+  },
+  {
+    "path": "examples/v0.1/02_pipeline_and_routing.nx",
+    "status": "compiled",
+    "warnings": 5,
+    "errors": 0,
+    "seconds": 0.1246
+  },
+  {
+    "path": "examples/v0.1/03_critic_loop.nx",
+    "status": "compiled",
+    "warnings": 3,
+    "errors": 0,
+    "seconds": 0.1233
+  },
+  {
+    "path": "examples/v0.1/04_join_consensus.nx",
+    "status": "compiled",
+    "warnings": 3,
+    "errors": 0,
+    "seconds": 0.1384
+  },
+  {
+    "path": "examples/v0.1/05_tool_execution.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0989
+  },
+  {
+    "path": "examples/v0.1/06_sys_admin_bot.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0793
+  },
+  {
+    "path": "examples/v0.1/07_modules_and_secrets.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.2
+  },
+  {
+    "path": "examples/v0.1/08_news_aggregator.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0874
+  },
+  {
+    "path": "examples/v0.1/09_cognitive_architecture.nx",
+    "status": "compiled",
+    "warnings": 3,
+    "errors": 0,
+    "seconds": 0.1162
+  },
+  {
+    "path": "examples/v0.1/10_skill_markdown.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0853
+  },
+  {
+    "path": "examples/v0.1/11_fallback_and_vision.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1203
+  },
+  {
+    "path": "examples/v0.9/12_v0.9_features.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1165
+  },
+  {
+    "path": "examples/v1.0/13_try_catch_and_reflection.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.179
+  },
+  {
+    "path": "examples/v1.0/14_secrets_and_caching.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1287
+  },
+  {
+    "path": "examples/v1.0/15_dag_topology.nx",
+    "status": "compiled",
+    "warnings": 6,
+    "errors": 0,
+    "seconds": 0.2147
+  },
+  {
+    "path": "examples/v1.2/16_native_controls_and_python.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.4126
+  },
+  {
+    "path": "examples/v1.2/16_syntax_comprehensive_test.nx",
+    "status": "compiled",
+    "warnings": 9,
+    "errors": 0,
+    "seconds": 0.3114
+  },
+  {
+    "path": "examples/v1.2/test_adt.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_adt.nx: No terminal matches 'p' in the current parser context, at line 60 col 28\n\n        Option::Some(v) => print(v),\n                           ^\nExpected one of: \n\t* LBRACE\n\t* PARALLEL\n\t* AFTER\n\t* SELECT\n\t* STRING_LITERAL\n\t* FLOAT\n\t* MULTILINE_STRING\n\t* STD\n\t* LSQB\n\t* IMG\n\t* SPAWN\n\t* INT\n\t* CHANNEL\n\t* SEMANTIC_IF\n\t* FALSE\n\t* JOIN\n\t* TRUE\n\t* TEMPLATE\n\t* IDENTIFIER\n\t* RACE\n",
+    "seconds": 0.1751
+  },
+  {
+    "path": "examples/v1.2/test_agent_attributes.nx",
+    "status": "compiled",
+    "warnings": 24,
+    "errors": 0,
+    "seconds": 0.4102
+  },
+  {
+    "path": "examples/v1.2/test_agent_decorators.nx",
+    "status": "compiled",
+    "warnings": 12,
+    "errors": 0,
+    "seconds": 0.3238
+  },
+  {
+    "path": "examples/v1.2/test_auth.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_auth.nx: No terminal matches ''' in the current parser context, at line 4 col 27\n\nauth myAuth = enable_auth('[{\"name\":\"google\",\"client_id\":\"GOOGLE_I\n                          ^\nExpected one of: \n\t* STRING_LITERAL\n",
+    "seconds": 0.0929
+  },
+  {
+    "path": "examples/v1.2/test_batch_a.nx",
+    "status": "compiled",
+    "warnings": 0,
+    "errors": 0,
+    "seconds": 0.5152
+  },
+  {
+    "path": "examples/v1.2/test_concurrent.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_concurrent.nx: No terminal matches 'l' in the current parser context, at line 5 col 1\n\nlet [tx, rx] = channel()\n^\nExpected one of: \n\t* IMPL\n\t* FLOW\n\t* PARALLEL\n\t* SCHEDULE\n\t* TEST\n\t* __ANON_15\n\t* AUTH\n\t* TYPE\n\t* AFTER\n\t* KV\n\t* ENUM\n\t* STRUCT\n\t* DEFER\n\t* SERVER\n\t* PROTOCOL\n\t* USE\n\t* TRAIT\n\t* SPAWN\n\t* INCLUDE\n\t* DB\n\t* AT\n\t* CHANNEL\n\t* JOB\n\t* AGENT\n\t* TOOL\n\t* MATCH\n\t* RACE\n",
+    "seconds": 0.0986
+  },
+  {
+    "path": "examples/v1.2/test_contract.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_contract.nx: No terminal matches '-' in the current parser context, at line 78 col 42\n\n       invalid_result = process_payment(-100)\n                                        ^\nExpected one of: \n\t* PARALLEL\n\t* RPAR\n\t* AFTER\n\t* SELECT\n\t* STRING_LITERAL\n\t* FLOAT\n\t* MULTILINE_STRING\n\t* STD\n\t* LSQB\n\t* IMG\n\t* SPAWN\n\t* INT\n\t* CHANNEL\n\t* SEMANTIC_IF\n\t* FALSE\n\t* JOIN\n\t* TRUE\n\t* TEMPLATE\n\t* IDENTIFIER\n\t* RACE\n",
+    "seconds": 0.2193
+  },
+  {
+    "path": "examples/v1.2/test_custom_tool.nx",
+    "status": "compiled",
+    "warnings": 7,
+    "errors": 0,
+    "seconds": 0.4249
+  },
+  {
+    "path": "examples/v1.2/test_dag_operators.nx",
+    "status": "compiled",
+    "warnings": 42,
+    "errors": 0,
+    "seconds": 0.5907
+  },
+  {
+    "path": "examples/v1.2/test_database.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_database.nx: No terminal matches '=' in the current parser context, at line 7 col 10\n\n  memory = db(app_db)\n         ^\nExpected one of: \n\t* COLON\n",
+    "seconds": 0.0787
+  },
+  {
+    "path": "examples/v1.2/test_error_propagation.nx",
+    "status": "compiled",
+    "warnings": 5,
+    "errors": 0,
+    "seconds": 0.3631
+  },
+  {
+    "path": "examples/v1.2/test_flow_params.nx",
+    "status": "compiled",
+    "warnings": 17,
+    "errors": 0,
+    "seconds": 0.7383
+  },
+  {
+    "path": "examples/v1.2/test_http_server.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_http_server.nx: No terminal matches 'o' in the current parser context, at line 19 col 12\n\n    cors { origins: [\"*\"] }\n           ^\nExpected one of: \n\t* STRING_LITERAL\n\t* RBRACE\n",
+    "seconds": 0.0851
+  },
+  {
+    "path": "examples/v1.2/test_img_multimodal.nx",
+    "status": "compiled",
+    "warnings": 15,
+    "errors": 0,
+    "seconds": 0.4393
+  },
+  {
+    "path": "examples/v1.2/test_include_module.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2: included file 'utils.nxlib' not found",
+    "seconds": 0.4072
+  },
+  {
+    "path": "examples/v1.2/test_input_exit.nx",
+    "status": "compiled",
+    "warnings": 0,
+    "errors": 0,
+    "seconds": 0.148
+  },
+  {
+    "path": "examples/v1.2/test_jobs.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_jobs.nx: No terminal matches ':' in the current parser context, at line 24 col 51\n\ncurityAlert on \"notifications\" (priority: critical) {\n                                        ^\nExpected one of: \n\t* EQUAL\n",
+    "seconds": 0.1178
+  },
+  {
+    "path": "examples/v1.2/test_kv.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_kv.nx: No terminal matches 's' in the current parser context, at line 5 col 1\n\nset(myCache, \"user:123\", \"Alice\")\n^\nExpected one of: \n\t* IMPL\n\t* FLOW\n\t* PARALLEL\n\t* SCHEDULE\n\t* TEST\n\t* __ANON_15\n\t* AUTH\n\t* TYPE\n\t* AFTER\n\t* KV\n\t* ENUM\n\t* STRUCT\n\t* DEFER\n\t* SERVER\n\t* PROTOCOL\n\t* TRAIT\n\t* SPAWN\n\t* DB\n\t* AT\n\t* CHANNEL\n\t* JOB\n\t* AGENT\n\t* TOOL\n\t* MATCH\n\t* RACE\n",
+    "seconds": 0.0968
+  },
+  {
+    "path": "examples/v1.2/test_loop_until.nx",
+    "status": "compiled",
+    "warnings": 25,
+    "errors": 0,
+    "seconds": 0.7491
+  },
+  {
+    "path": "examples/v1.2/test_match.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_match.nx: No terminal matches '1' in the current parser context, at line 31 col 13\n\n    data = [10, 20]\n            ^\nExpected one of: \n\t* IDENTIFIER\n",
+    "seconds": 0.1891
+  },
+  {
+    "path": "examples/v1.2/test_match_intent.nx",
+    "status": "compiled",
+    "warnings": 35,
+    "errors": 0,
+    "seconds": 0.5928
+  },
+  {
+    "path": "examples/v1.2/test_multiline_prompt.nx",
+    "status": "compiled",
+    "warnings": 12,
+    "errors": 0,
+    "seconds": 0.3484
+  },
+  {
+    "path": "examples/v1.2/test_pipeline_operator.nx",
+    "status": "compiled",
+    "warnings": 31,
+    "errors": 0,
+    "seconds": 0.4768
+  },
+  {
+    "path": "examples/v1.2/test_protocol.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1339
+  },
+  {
+    "path": "examples/v1.2/test_protocol_implements.nx",
+    "status": "compiled",
+    "warnings": 16,
+    "errors": 0,
+    "seconds": 0.392
+  },
+  {
+    "path": "examples/v1.2/test_secret_management.nx",
+    "status": "compiled",
+    "warnings": 16,
+    "errors": 0,
+    "seconds": 0.458
+  },
+  {
+    "path": "examples/v1.2/test_semantic_if.nx",
+    "status": "compiled",
+    "warnings": 26,
+    "errors": 0,
+    "seconds": 0.9809
+  },
+  {
+    "path": "examples/v1.2/test_semantic_types.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0927
+  },
+  {
+    "path": "examples/v1.2/test_stdlib_uses.nx",
+    "status": "compiled",
+    "warnings": 12,
+    "errors": 0,
+    "seconds": 0.4321
+  },
+  {
+    "path": "examples/v1.2/test_string_interp.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_string_interp.nx: No terminal matches '=' in the current parser context, at line 19 col 15\n\n    user.name = \"Alice\"\n              ^\nExpected one of: \n\t* AFTER_TOOL\n\t* DOT\n\t* TRY_AGENT\n\t* BREAK\n\t* QMARK\n\t* REFLECT\n\t* PARALLEL\n\t* SNAPSHOT\n\t* SEMICOLON\n\t* RACE\n\t* RECEIVE\n\t* BINARY_OP\n\t* WITH_CONTEXT\n\t* AFTER_STEP\n\t* CMP_OP\n\t* __ANON_6\n\t* ASSERT\n\t* __ANON_1\n\t* AFTER\n\t* ON_ERROR\n\t* SELECT\n\t* STRING_LITERAL\n\t* RBRACE\n\t* CONTINUE\n\t* FLOAT\n\t* MULTILINE_STRING\n\t* STD\n\t* DEFER\n\t* PASS\n\t* LPAR\n\t* __ANON_10\n\t* FOR\n\t* LSQB\n\t* BEFORE_STEP\n\t* IMG\n\t* PRINT\n\t* SPAWN\n\t* UNHARNESSED\n\t* AWAIT\n\t* INT\n\t* __ANON_14\n\t* CHANNEL\n\t* SEMANTIC_IF\n\t* FALLBACK\n\t* __ANON_11\n\t* __ANON_9\n\t* AUTOLOOP\n\t* RESTORE\n\t* FALSE\n\t* IF\n\t* JOIN\n\t* FORK\n\t* WHILE\n\t* TRUE\n\t* VERIFY\n\t* CONTEXT_POLICY\n\t* BEFORE_TOOL\n\t* TEMPLATE\n\t* TRY\n\t* LOOP\n\t* IDENTIFIER\n\t* MATCH\n\t* LET\n",
+    "seconds": 0.1418
+  },
+  {
+    "path": "examples/v1.2/test_template.nx",
+    "status": "historical_draft",
+    "error": "/Users/bytedance/proj/experiment/Nexa/examples/v1.2/test_template.nx: No terminal matches 'l' in the current parser context, at line 4 col 1\n\nlet greeting = template\"\"\"Hello {{name}}\n^\nExpected one of: \n\t* IMPL\n\t* FLOW\n\t* PARALLEL\n\t* SCHEDULE\n\t* TEST\n\t* __ANON_15\n\t* AUTH\n\t* TYPE\n\t* AFTER\n\t* KV\n\t* ENUM\n\t* STRUCT\n\t* DEFER\n\t* SERVER\n\t* PROTOCOL\n\t* USE\n\t* TRAIT\n\t* SPAWN\n\t* INCLUDE\n\t* DB\n\t* AT\n\t* CHANNEL\n\t* JOB\n\t* AGENT\n\t* TOOL\n\t* MATCH\n\t* RACE\n",
+    "seconds": 0.0871
+  },
+  {
+    "path": "examples/v1.2/test_try_catch.nx",
+    "status": "compiled",
+    "warnings": 33,
+    "errors": 0,
+    "seconds": 0.82
+  },
+  {
+    "path": "examples/v1.2/test_type_system.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.141
+  },
+  {
+    "path": "examples/v1.2/test_while_true.nx",
+    "status": "compiled",
+    "warnings": 0,
+    "errors": 0,
+    "seconds": 0.1193
+  },
+  {
+    "path": "examples/v2.0/01_autoloop.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1163
+  },
+  {
+    "path": "examples/v2.0/02_with_context.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1025
+  },
+  {
+    "path": "examples/v2.0/03_try_agent.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1265
+  },
+  {
+    "path": "examples/v2.0/04_tool_annotation.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1914
+  },
+  {
+    "path": "examples/v2.0/05_snapshot_restore.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1242
+  },
+  {
+    "path": "examples/v2.0/06_fork_merge.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0871
+  },
+  {
+    "path": "examples/v2.0/07_verify.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1139
+  },
+  {
+    "path": "examples/v2.0/08_reflect.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1112
+  },
+  {
+    "path": "examples/v2.0/09_lifecycle_hooks.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1081
+  },
+  {
+    "path": "examples/v2.0/10_actor_system.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1261
+  },
+  {
+    "path": "examples/v2.0/11_well_harnessed.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1569
+  },
+  {
+    "path": "examples/v2.0/12_harness_cli.nx",
+    "status": "compiled",
+    "warnings": 9,
+    "errors": 0,
+    "seconds": 0.385
+  },
+  {
+    "path": "examples/v2.0/nexa_code.nx",
+    "status": "compiled",
+    "warnings": 7,
+    "errors": 0,
+    "seconds": 0.3468
+  },
+  {
+    "path": "examples/v2.1/01_streaming_agent.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1105
+  },
+  {
+    "path": "examples/v2.1/02_structured_output.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.0941
+  },
+  {
+    "path": "examples/v2.1/03_tool_call_control.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1171
+  },
+  {
+    "path": "examples/v2.1/04_spawn_pipeline.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1097
+  },
+  {
+    "path": "examples/v2.1/05_config_selection.nx",
+    "status": "compiled",
+    "warnings": 1,
+    "errors": 0,
+    "seconds": 0.1365
+  },
+  {
+    "path": "examples/v2.2/01_context_handoff.nx",
+    "status": "compiled",
+    "warnings": 2,
+    "errors": 0,
+    "seconds": 0.1259
+  }
+]

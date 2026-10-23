@@ -41,6 +41,8 @@ import datetime
 import hashlib
 import base64
 import urllib.parse
+from .tool_dispatch import raise_for_unknown_outcome
+
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass
@@ -113,6 +115,7 @@ class StdTool:
         try:
             return self.handler(**kwargs)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f"Error: {str(e)}"
 
 
@@ -132,6 +135,7 @@ def _http_get(url: str, headers: Dict = None, timeout: int = 30) -> str:
         with urllib.request.urlopen(req, timeout=timeout) as response:
             return response.read().decode('utf-8')
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"HTTP GET Error: {str(e)}"
 
 
@@ -146,6 +150,7 @@ def _http_post(url: str, data: str, headers: Dict = None,
         resp = requests.post(url, data=data, headers=req_headers, timeout=timeout)
         return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Error: {str(e)}"
 
 
@@ -160,6 +165,7 @@ def _http_put(url: str, data: str, headers: Dict = None,
         resp = requests.put(url, data=data, headers=req_headers, timeout=timeout)
         return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Error: {str(e)}"
 
 
@@ -171,6 +177,7 @@ def _http_delete(url: str, headers: Dict = None, timeout: int = 30) -> str:
         resp = requests.delete(url, headers=req_headers, timeout=timeout)
         return json.dumps({"status": resp.status_code, "body": resp.text[:2000]})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Error: {str(e)}"
 
 
@@ -192,6 +199,7 @@ def _file_read(path: str, encoding: str = "utf-8") -> str:
         with open(path, 'r', encoding=encoding) as f:
             return f.read()
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"File Read Error: {str(e)}"
 
 
@@ -207,6 +215,7 @@ def _file_write(path: str, content: str, encoding: str = "utf-8") -> str:
             f.write(content)
         return f"Successfully wrote {len(content)} characters to {path}"
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"File Write Error: {str(e)}"
 
 
@@ -222,6 +231,7 @@ def _file_append(path: str, content: str, encoding: str = "utf-8") -> str:
             f.write(content)
         return f"Successfully appended {len(content)} characters to {path}"
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"File Append Error: {str(e)}"
 
 
@@ -237,6 +247,7 @@ def _file_list(directory: str, pattern: str = "*") -> str:
         files = glob.glob(os.path.join(directory, pattern))
         return json.dumps({"files": files, "count": len(files)})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"File List Error: {str(e)}"
 
 
@@ -250,6 +261,7 @@ def _file_delete(path: str) -> str:
         os.remove(path)
         return f"Successfully deleted {path}"
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"File Delete Error: {str(e)}"
 
 
@@ -272,6 +284,7 @@ def _file_edit(path: str, old_text: str, new_text: str) -> str:
         open(path, 'w', encoding='utf-8').write(new_content)
         return f"Successfully edited {path}: {count} replacement(s) made."
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"File Edit Error: {str(e)}"
 
 
@@ -293,6 +306,7 @@ def _search_files(pattern: str, directory: str = ".") -> str:
         lines = result.stdout.splitlines()[:30]
         return "\n".join(lines)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Search Error: {e}"
 
 
@@ -311,6 +325,7 @@ def _list_directory(path: str = ".") -> str:
                 output.append(f"  FILE {entry} ({size} bytes)")
         return f"Directory: {path}\n" + "\n".join(output[:50])
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Error listing '{path}': {e}"
 
 
@@ -322,6 +337,7 @@ def _json_parse(text: str) -> str:
         data = json.loads(text)
         return json.dumps(data, indent=2, ensure_ascii=False)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"JSON Parse Error: {str(e)}"
 
 
@@ -331,6 +347,7 @@ def _json_stringify(data: str, indent: int = 2) -> str:
         parsed = json.loads(data)
         return json.dumps(parsed, indent=indent, ensure_ascii=False)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"JSON Stringify Error: {str(e)}"
 
 
@@ -346,6 +363,7 @@ def _json_get(text: str, path: str) -> str:
                 data = data[key]
         return json.dumps(data, ensure_ascii=False)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"JSON Get Error: {str(e)}"
 
 
@@ -363,6 +381,7 @@ def _regex_match(pattern: str, text: str, flags: str = "") -> str:
         matches = re.findall(pattern, text, re_flags)
         return json.dumps({"matches": matches, "count": len(matches)})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Regex Match Error: {str(e)}"
 
 
@@ -376,6 +395,7 @@ def _regex_replace(pattern: str, replacement: str, text: str, flags: str = "") -
         result = re.sub(pattern, replacement, text, flags=re_flags)
         return result
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Regex Replace Error: {str(e)}"
 
 
@@ -473,6 +493,7 @@ def _time_parse(text: str, format: str = "%Y-%m-%d") -> str:
             "iso": dt.isoformat()
         })
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Time Parse Error: {str(e)}"
 
 
@@ -497,6 +518,7 @@ def _time_format(iso_string: str, format: str = "%Y-%m-%d %H:%M:%S") -> str:
         dt = datetime.datetime.fromisoformat(iso_string)
         return dt.strftime(format)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Time Format Error: {str(e)}"
 
 
@@ -525,6 +547,7 @@ def _time_diff(start: str, end: str, unit: str = "seconds") -> str:
             "seconds": diff.total_seconds()
         })
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Time Diff Error: {str(e)}"
 
 
@@ -536,6 +559,7 @@ def _math_calc(expression: str) -> str:
         result = safe_arithmetic_eval(expression)
         return json.dumps({"result": result, "expression": expression})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return f"Math Calc Error: {str(e)}"
 
 
@@ -577,14 +601,10 @@ def _shell_exec(command: str, timeout: int = 30) -> str:
             "returncode": result.returncode,
             "success": result.returncode == 0
         })
-    except subprocess.TimeoutExpired:
-        return json.dumps({
-            "stdout": "",
-            "stderr": f"Command timed out after {timeout} seconds",
-            "returncode": -1,
-            "success": False
-        })
+    except subprocess.TimeoutExpired as error:
+        raise_for_unknown_outcome(error)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({
             "stdout": "",
             "stderr": str(e),
@@ -635,6 +655,7 @@ def _std_db_sqlite_connect(path: str = ":memory:") -> str:
         handle = NexaSQLite.connect(path)
         return json.dumps(handle)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -646,6 +667,7 @@ def _std_db_sqlite_query(handle_json: str, sql: str, params_json: str = "[]") ->
         results = NexaSQLite.query(handle, sql, params)
         return json.dumps(results, ensure_ascii=False)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -657,6 +679,7 @@ def _std_db_sqlite_query_one(handle_json: str, sql: str, params_json: str = "[]"
         result = NexaSQLite.query_one(handle, sql, params)
         return json.dumps(result, ensure_ascii=False)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -668,6 +691,7 @@ def _std_db_sqlite_execute(handle_json: str, sql: str, params_json: str = "[]") 
         count = NexaSQLite.execute(handle, sql, params)
         return json.dumps({"affected_rows": count})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -678,6 +702,7 @@ def _std_db_sqlite_close(handle_json: str) -> str:
         NexaSQLite.close(handle)
         return json.dumps({"closed": True})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -688,6 +713,7 @@ def _std_db_sqlite_begin(handle_json: str) -> str:
         NexaSQLite.begin(handle)
         return json.dumps({"transaction": "started"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -698,6 +724,7 @@ def _std_db_sqlite_commit(handle_json: str) -> str:
         NexaSQLite.commit(handle)
         return json.dumps({"transaction": "committed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -708,6 +735,7 @@ def _std_db_sqlite_rollback(handle_json: str) -> str:
         NexaSQLite.rollback(handle)
         return json.dumps({"transaction": "rolled_back"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -719,6 +747,7 @@ def _std_db_postgres_connect(url: str) -> str:
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -732,6 +761,7 @@ def _std_db_postgres_query(handle_json: str, sql: str, params_json: str = "[]") 
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -745,6 +775,7 @@ def _std_db_postgres_query_one(handle_json: str, sql: str, params_json: str = "[
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -758,6 +789,7 @@ def _std_db_postgres_execute(handle_json: str, sql: str, params_json: str = "[]"
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -768,6 +800,7 @@ def _std_db_postgres_close(handle_json: str) -> str:
         NexaPostgres.close(handle)
         return json.dumps({"closed": True})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -780,6 +813,7 @@ def _std_db_postgres_begin(handle_json: str) -> str:
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -792,6 +826,7 @@ def _std_db_postgres_commit(handle_json: str) -> str:
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -804,6 +839,7 @@ def _std_db_postgres_rollback(handle_json: str) -> str:
     except ImportError:
         return json.dumps({"error": "psycopg2 not installed"})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -814,6 +850,7 @@ def _std_db_memory_query(handle_json: str, agent_name: str, key: str) -> str:
         result = agent_memory_query(handle, agent_name, key)
         return json.dumps({"value": result})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -824,6 +861,7 @@ def _std_db_memory_store(handle_json: str, agent_name: str, key: str, value: str
         success = agent_memory_store(handle, agent_name, key, value)
         return json.dumps({"stored": success})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -834,6 +872,7 @@ def _std_db_memory_delete(handle_json: str, agent_name: str, key: str) -> str:
         success = agent_memory_delete(handle, agent_name, key)
         return json.dumps({"deleted": success})
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -844,6 +883,7 @@ def _std_db_memory_list(handle_json: str, agent_name: str) -> str:
         result = agent_memory_list(handle, agent_name)
         return json.dumps(result, ensure_ascii=False)
     except Exception as e:
+        raise_for_unknown_outcome(e)
         return json.dumps({"error": str(e)})
 
 
@@ -988,6 +1028,28 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             handler=_file_list
         ),
         
+        "search_files": StdTool(
+            name="search_files",
+            description="Search source files for a text pattern",
+            parameters={"type": "object", "properties": {"pattern": {"type": "string"}, "directory": {"type": "string"}}, "required": ["pattern"]},
+            handler=_search_files,
+        ),
+        "list_directory": StdTool(
+            name="list_directory",
+            description="List files in a directory",
+            parameters={"type": "object", "properties": {"directory": {"type": "string"}}, "required": ["directory"]},
+            handler=_file_list,
+        ),
+        "file_edit": StdTool(
+            name="file_edit",
+            description="Replace text in a file within configured write roots",
+            parameters={
+                "type": "object",
+                "properties": {"path": {"type": "string"}, "old_text": {"type": "string"}, "new_text": {"type": "string"}},
+                "required": ["path", "old_text", "new_text"],
+            },
+            handler=_file_edit,
+        ),
         # JSON
         "json_parse": StdTool(
             name="json_parse",
@@ -1564,6 +1626,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_oauth_fn(name, client_id, client_secret, opts)
             return json.dumps(result.to_dict(), ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_enable_auth(**kwargs):
@@ -1585,6 +1648,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_enable_auth_fn(provider_configs, options)
             return json.dumps(result.to_dict(), ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_get_user(**kwargs):
@@ -1598,6 +1662,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_get_user_fn(req)
             return json.dumps(result, ensure_ascii=False) if result else 'null'
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_get_session(**kwargs):
@@ -1611,6 +1676,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_get_session_fn(req)
             return json.dumps(result.to_dict(), ensure_ascii=False) if result else 'null'
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_session_data(**kwargs):
@@ -1624,6 +1690,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_session_data_fn(req)
             return json.dumps(result, ensure_ascii=False) if result else 'null'
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_set_session(**kwargs):
@@ -1640,6 +1707,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_set_session_fn(req, data)
             return json.dumps({'success': result})
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_logout_user(**kwargs):
@@ -1653,6 +1721,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_logout_user_fn(req)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_require_auth(**kwargs):
@@ -1668,6 +1737,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 return json.dumps({'authenticated': True})
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_jwt_sign(**kwargs):
@@ -1684,6 +1754,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_jwt_sign_fn(claims, secret, options)
             return result
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_jwt_verify(**kwargs):
@@ -1693,6 +1764,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_jwt_verify_fn(token, secret)
             return json.dumps(result, ensure_ascii=False) if result else 'null'
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_jwt_decode(**kwargs):
@@ -1701,6 +1773,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_jwt_decode_fn(token)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_csrf_token(**kwargs):
@@ -1714,6 +1787,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_csrf_token_fn(req)
             return result
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_csrf_field(**kwargs):
@@ -1727,6 +1801,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_csrf_field_fn(req)
             return result
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_verify_csrf(**kwargs):
@@ -1741,6 +1816,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_verify_csrf_fn(req, token)
             return json.dumps({'valid': result})
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_api_key_generate(**kwargs):
@@ -1752,6 +1828,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_api_key_generate_fn(agent_name, ttl)
             return result
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_api_key_verify(**kwargs):
@@ -1760,6 +1837,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_api_key_verify_fn(api_key)
             return json.dumps(result, ensure_ascii=False) if result else 'null'
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_auth_auth_context(**kwargs):
@@ -1775,6 +1853,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = _auth_auth_context_fn(req, agent)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     # P2-1: std.auth namespace — 17 StdTool registrations
@@ -2022,6 +2101,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             handles = channel()
             return json.dumps(handles, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_send(**kwargs):
@@ -2032,6 +2112,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = send(tx, value)
             return json.dumps({'success': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_recv(**kwargs):
@@ -2041,6 +2122,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = recv(rx)
             return json.dumps({'value': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_recv_timeout(**kwargs):
@@ -2051,6 +2133,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = recv_timeout(rx, ms)
             return json.dumps({'value': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_try_recv(**kwargs):
@@ -2060,6 +2143,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = try_recv(rx)
             return json.dumps({'value': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_close(**kwargs):
@@ -2069,6 +2153,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = close(rx)
             return json.dumps({'success': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_select(**kwargs):
@@ -2080,6 +2165,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = select(channels_list, tm)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_spawn(**kwargs):
@@ -2091,6 +2177,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             task = spawn(handler)
             return json.dumps(task, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_await_task(**kwargs):
@@ -2100,6 +2187,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = await_task(task)
             return json.dumps({'result': str(result)}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_try_await(**kwargs):
@@ -2109,6 +2197,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = try_await(task)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_cancel_task(**kwargs):
@@ -2118,6 +2207,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = cancel_task(task)
             return json.dumps({'success': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_parallel(**kwargs):
@@ -2127,6 +2217,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             results = parallel(handlers_list)
             return json.dumps({'results': [str(r) for r in results]}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_race(**kwargs):
@@ -2136,6 +2227,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = race(handlers_list)
             return json.dumps({'result': str(result)}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_after(**kwargs):
@@ -2147,6 +2239,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             task = after(ms, handler)
             return json.dumps(task, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_schedule(**kwargs):
@@ -2158,6 +2251,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             sched = schedule(ms, handler)
             return json.dumps(sched, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_cancel_schedule(**kwargs):
@@ -2167,6 +2261,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = cancel_schedule(sched)
             return json.dumps({'success': result}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_sleep_ms(**kwargs):
@@ -2175,6 +2270,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             sleep_ms(ms)
             return json.dumps({'ok': True}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_concurrent_thread_count(**kwargs):
@@ -2182,6 +2278,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             count = thread_count()
             return json.dumps({'count': count}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_open(**kwargs):
@@ -2190,6 +2287,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             handle = kv_open(path)
             return json.dumps(handle.to_dict(), ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_get(**kwargs):
@@ -2203,6 +2301,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 return 'null'
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_get_int(**kwargs):
@@ -2214,6 +2313,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_get_int(kv, key, default)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_get_str(**kwargs):
@@ -2225,6 +2325,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_get_str(kv, key, default)
             return result
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_get_json(**kwargs):
@@ -2237,6 +2338,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 return 'null'
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_set(**kwargs):
@@ -2250,6 +2352,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_set(kv, key, value, opts)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_set_nx(**kwargs):
@@ -2263,6 +2366,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_set_nx(kv, key, value, opts)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_del(**kwargs):
@@ -2273,6 +2377,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_del(kv, key)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_has(**kwargs):
@@ -2283,6 +2388,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_has(kv, key)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_list(**kwargs):
@@ -2293,6 +2399,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_list(kv, prefix)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_expire(**kwargs):
@@ -2304,6 +2411,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_expire(kv, key, int(ttl_seconds))
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_ttl(**kwargs):
@@ -2314,6 +2422,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_ttl(kv, key)
             return str(result) if result is not None else 'null'
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_flush(**kwargs):
@@ -2323,6 +2432,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_flush(kv)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_incr(**kwargs):
@@ -2334,6 +2444,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = kv_incr(kv, key, int(amount))
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_agent_kv_query(**kwargs):
@@ -2344,6 +2455,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = agent_kv_query(kv, semantic_query)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_agent_kv_store(**kwargs):
@@ -2357,6 +2469,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = agent_kv_store(kv, key, value, context)
             return str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_kv_agent_kv_context(**kwargs):
@@ -2368,6 +2481,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = agent_kv_context(kv, agent)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     kv_tools = {
@@ -2857,6 +2971,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = compile_template(path)
             return json.dumps(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_template_render_compiled(**kwargs):
@@ -2870,6 +2985,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
         try:
             return render(compiled, data)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_template_filter_apply(**kwargs):
@@ -2887,6 +3003,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                     return filter_fn(value, *filter_args)
                 return filter_fn(value)
             except Exception as e:
+                raise_for_unknown_outcome(e)
                 return f'Error: {str(e)}'
         return f'Error: unknown filter {filter_name}'
 
@@ -3186,6 +3303,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             # so this is primarily a documentation/inspection tool
             return json.dumps({'pipe_result': f'{func_name}({value}, {extra_args})', 'desugared': True}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_defer_schedule(**kwargs):
@@ -3194,6 +3312,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
         try:
             return json.dumps({'deferred': expression, 'note': 'Executes on scope exit in LIFO order'}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_null_coalesce_apply(**kwargs):
@@ -3208,6 +3327,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 return 'null'
             return json.dumps(result, ensure_ascii=False) if isinstance(result, (dict, list)) else str(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return fallback if fallback else f'Error: {str(e)}'
 
     def _std_string_interpolate(**kwargs):
@@ -3273,6 +3393,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = result.replace('\\#{', '#{')
             return result
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     # ==================== P3-3: Pattern Matching ====================
@@ -3290,6 +3411,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 return json.dumps({'matched': False, 'bindings': {}}, ensure_ascii=False)
             return json.dumps({'matched': True, 'bindings': bindings}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_match_destructure(**kwargs):
@@ -3303,6 +3425,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             bindings = nexa_destructure(pattern, value)
             return json.dumps({'bindings': bindings}, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     def _std_match_variant(**kwargs):
@@ -3316,6 +3439,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = nexa_make_variant(enum_name, variant_name, *fields)
             return json.dumps(result, ensure_ascii=False)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return f'Error: {str(e)}'
 
     p3_match_tools = {
@@ -3444,6 +3568,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = register_struct(name, fields)
             return json.dumps(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_make_struct(**kwargs):
@@ -3458,6 +3583,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             instance = make_struct_instance(name, **fields)
             return json.dumps(instance)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_register_enum(**kwargs):
@@ -3472,6 +3598,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = register_enum(name, variants)
             return json.dumps(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_make_variant(**kwargs):
@@ -3487,6 +3614,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = make_variant(enum_name, variant_name, *fields)
             return json.dumps(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_register_trait(**kwargs):
@@ -3501,6 +3629,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = register_trait(name, methods)
             return json.dumps(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_register_impl(**kwargs):
@@ -3516,6 +3645,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = register_impl(trait_name, type_name, methods)
             return json.dumps({'registered': True, 'trait': trait_name, 'type': type_name})
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_lookup(**kwargs):
@@ -3537,6 +3667,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
                 result = None
             return json.dumps(result) if result else json.dumps({'error': f'{kind} {name} not found'})
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_summary(**kwargs):
@@ -3545,6 +3676,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             result = adt_get_registry_summary()
             return json.dumps(result)
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     def _std_adt_reset(**kwargs):
@@ -3553,6 +3685,7 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
             adt_reset_registries()
             return json.dumps({'reset': True})
         except Exception as e:
+            raise_for_unknown_outcome(e)
             return json.dumps({'error': str(e)})
 
     p4_adt_tools = {
@@ -3673,6 +3806,14 @@ def get_stdlib_tools() -> Dict[str, StdTool]:
 
     _all_tools.update(p4_adt_tools)
 
+    import inspect
+    for name in STD_NAMESPACE_MAP["std.ui"]:
+        handler = globals()["_" + name]
+        parameters = inspect.signature(handler).parameters
+        properties = {key: {"type": "number" if value.annotation is float else "string"} for key, value in parameters.items()}
+        required = [key for key, value in parameters.items() if value.default is inspect.Parameter.empty]
+        _all_tools[name] = StdTool(name, handler.__doc__ or name, {"type": "object", "properties": properties, "required": required}, handler)
+
     return _all_tools
 
 
@@ -3693,6 +3834,22 @@ def execute_stdlib_tool(name: str, **kwargs) -> str:
     if tool:
         return tool.execute(**kwargs)
     return f"Error: Unknown tool '{name}'"
+
+
+def call_stdlib(namespace: str, function: str, *args: Any) -> Any:
+    """Bind source-level positional arguments to the same registered tools used by agents."""
+    prefix = "file" if namespace == "fs" else namespace
+    candidates = [f"{prefix}_{function}", f"std_{namespace}_{function}", function]
+    if namespace == "shell" and function == "run":
+        candidates.insert(0, "shell_exec")
+    exposed = STD_NAMESPACE_MAP.get(f"std.{namespace}", [])
+    tool = next((get_stdlib_tool(name) for name in candidates if name in exposed), None)
+    if tool is None:
+        raise ValueError(f"Unknown standard library function: std.{namespace}.{function}")
+    properties = list(tool.parameters.get("properties", {}))
+    if len(args) > len(properties):
+        raise TypeError(f"std.{namespace}.{function} accepts at most {len(properties)} arguments")
+    return tool.handler(**dict(zip(properties, args)))
 
 
 # ==================== 命名空间映射 ====================

@@ -1,0 +1,50 @@
+{
+  "struct_constructor": {
+    "source": "struct Point { x: int, y: int } flow main { point = Point(x: 2, y: 3); result = point.x; }",
+    "compiled": true,
+    "success": false,
+    "result": null,
+    "stdout": "",
+    "stderr": "name 'Point' is not defined"
+  },
+  "enum_constructor": {
+    "source": "enum Choice { Some(value), Empty } flow main { choice = Choice::Some(42); result = choice; }",
+    "compiled": true,
+    "success": false,
+    "result": null,
+    "stdout": "",
+    "stderr": "Variant Choice::Some expects 1 fields, got 0"
+  },
+  "flow_contract": {
+    "source": "flow positive(value: int) -> int requires value > 0 ensures result > 0 { result = value; } flow main { result = positive(3); }",
+    "compiled": true,
+    "success": false,
+    "result": null,
+    "stdout": "",
+    "stderr": "ContractClause.__init__() got an unexpected keyword argument 'clause_type'"
+  },
+  "defer_lowering": {
+    "source": "flow main { defer print(\"closed\"); result = 1; }",
+    "compiled": true,
+    "success": false,
+    "result": null,
+    "stdout": "",
+    "stderr": "name 'defer' is not defined"
+  },
+  "control_flow_return": {
+    "source": "flow main { result = 0; while (result < 3) { result = result + 1; } }",
+    "compiled": true,
+    "success": true,
+    "result": null,
+    "stdout": "",
+    "stderr": ""
+  },
+  "json_collection": {
+    "source": "flow main { items = std.json.parse(\"[1, 2, 3]\"); result = 0; for each item in items { result = result + item; } }",
+    "compiled": true,
+    "success": false,
+    "result": null,
+    "stdout": "",
+    "stderr": "unsupported operand type(s) for +: 'int' and 'str'"
+  }
+}

@@ -1,0 +1,107 @@
+[
+  {
+    "path": "/",
+    "width": 1440,
+    "status": 200,
+    "scroll": 1440,
+    "viewport": 1440
+  },
+  {
+    "path": "/blog/",
+    "width": 1440,
+    "status": 200,
+    "scroll": 1440,
+    "viewport": 1440
+  },
+  {
+    "path": "/blog/2026-10-v2.4-release.html",
+    "width": 1440,
+    "status": 200,
+    "scroll": 1440,
+    "viewport": 1440
+  },
+  {
+    "path": "/",
+    "width": 960,
+    "status": 200,
+    "scroll": 960,
+    "viewport": 960
+  },
+  {
+    "path": "/blog/",
+    "width": 960,
+    "status": 200,
+    "scroll": 960,
+    "viewport": 960
+  },
+  {
+    "path": "/blog/2026-10-v2.4-release.html",
+    "width": 960,
+    "status": 200,
+    "scroll": 960,
+    "viewport": 960
+  },
+  {
+    "path": "/",
+    "width": 769,
+    "status": 200,
+    "scroll": 769,
+    "viewport": 769
+  },
+  {
+    "path": "/blog/",
+    "width": 769,
+    "status": 200,
+    "scroll": 769,
+    "viewport": 769
+  },
+  {
+    "path": "/blog/2026-10-v2.4-release.html",
+    "width": 769,
+    "status": 200,
+    "scroll": 769,
+    "viewport": 769
+  },
+  {
+    "path": "/",
+    "width": 390,
+    "status": 200,
+    "scroll": 390,
+    "viewport": 390
+  },
+  {
+    "path": "/blog/",
+    "width": 390,
+    "status": 200,
+    "scroll": 390,
+    "viewport": 390
+  },
+  {
+    "path": "/blog/2026-10-v2.4-release.html",
+    "width": 390,
+    "status": 200,
+    "scroll": 390,
+    "viewport": 390
+  },
+  {
+    "path": "/",
+    "width": 320,
+    "status": 200,
+    "scroll": 320,
+    "viewport": 320
+  },
+  {
+    "path": "/blog/",
+    "width": 320,
+    "status": 200,
+    "scroll": 320,
+    "viewport": 320
+  },
+  {
+    "path": "/blog/2026-10-v2.4-release.html",
+    "width": 320,
+    "status": 200,
+    "scroll": 320,
+    "viewport": 320
+  }
+]

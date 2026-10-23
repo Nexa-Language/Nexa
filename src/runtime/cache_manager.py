@@ -224,6 +224,18 @@ class NexaCacheManager:
         keywords = sorted(set(w for w in words if w not in stop_words and len(w) > 2))
         return hashlib.md5(" ".join(keywords).encode()).hexdigest()
     
+    def _semantic_key(self, messages: List[Dict], model: str, tools: Optional[List] = None) -> Optional[str]:
+        scoped = [dict(message) for message in messages]
+        for message in reversed(scoped):
+            if message.get("role") != "user":
+                continue
+            content = message.get("content")
+            if not isinstance(content, str) or not content:
+                return None
+            message["content"] = self._generate_semantic_hash(content)
+            return self._generate_key(scoped, model, tools)
+        return None
+
     def get(
         self,
         messages: List[Dict],
@@ -269,7 +281,7 @@ class NexaCacheManager:
                         break
                         
                 if last_user_msg:
-                    semantic_hash = self._generate_semantic_hash(last_user_msg)
+                    semantic_hash = self._semantic_key(messages, model, tools)
                     
                     # 在语义索引中查找相似查询
                     if semantic_hash in self._semantic_index:
@@ -320,7 +332,7 @@ class NexaCacheManager:
                         last_user_msg = msg.get("content", "")
                         break
                 if last_user_msg:
-                    semantic_hash = self._generate_semantic_hash(last_user_msg)
+                    semantic_hash = self._semantic_key(messages, model, tools)
                     # 更新语义索引
                     if semantic_hash not in self._semantic_index:
                         self._semantic_index[semantic_hash] = []

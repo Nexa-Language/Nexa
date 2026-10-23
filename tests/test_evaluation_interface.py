@@ -208,7 +208,8 @@ class TestVerifyBehavioral:
         ei = EvaluationInterface()
         trace = BehavioralTrace(steps=[], invariants=["success is true"])
         result = ei.verify_behavioral(trace)
-        assert result.passed is True
+        assert result.passed is False
+        assert "No execution trace" in result.details
 
 
 class TestVerifyMethod:
@@ -358,7 +359,7 @@ class TestLLMRouter:
     """LLMRouter routing and chat tests."""
 
     def test_default_models_registered(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         models = router.get_models()
         model_ids = {model.model_id for model in models}
         assert len(models) >= 3
@@ -366,35 +367,35 @@ class TestLLMRouter:
         assert router.get_stats()["default_model"] == "minimax-m2.5"
 
     def test_route_coding_task(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         req = ModelRequirement(task_type="coding", min_coding=0.8)
         model = router.route(req)
         assert model is not None
         assert model.capabilities["coding"] >= 0.8
 
     def test_route_reasoning_task(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         req = ModelRequirement(task_type="reasoning", min_reasoning=0.8)
         model = router.route(req)
         assert model is not None
         assert model.capabilities["reasoning"] >= 0.8
 
     def test_route_no_match_falls_back_to_default(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         req = ModelRequirement(min_vision=1.0)  # No model has perfect vision
         model = router.route(req)
         # Should fall back to default model
         assert model is not None
 
     def test_route_with_provider_preference(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         req = ModelRequirement(preferred_provider="default", min_reasoning=0.5)
         model = router.route(req)
         assert model is not None
         assert model.provider == "default"
 
     def test_chat_with_routing(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         req = ModelRequirement(task_type="general")
         response = router.chat(
             messages=[{"role": "user", "content": "Hello"}],
@@ -405,7 +406,7 @@ class TestLLMRouter:
         assert response.get("error") is None
 
     def test_chat_with_specific_model(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         response = router.chat(
             messages=[{"role": "user", "content": "Hello"}],
             model_id="deepseek-chat",
@@ -415,7 +416,7 @@ class TestLLMRouter:
     def test_provider_config_uses_default_compatible_endpoint(self):
         from src.runtime.secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL
 
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         model = router.get_model("minimax-m2.5")
         assert model is not None
         _api_key, base_url = router._provider_config(model)
@@ -424,7 +425,7 @@ class TestLLMRouter:
     def test_openai_provider_uses_default_compatible_endpoint(self):
         from src.runtime.secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL
 
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         model = ModelInfo(
             model_id="compat-model",
             provider="openai",
@@ -435,7 +436,7 @@ class TestLLMRouter:
         assert base_url == DEFAULT_OPENAI_COMPATIBLE_BASE_URL
 
     def test_chat_unknown_model(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         response = router.chat(
             messages=[{"role": "user", "content": "Hello"}],
             model_id="nonexistent-model",
@@ -443,13 +444,13 @@ class TestLLMRouter:
         assert response.get("error") is not None
 
     def test_build_fallback_chain(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         req = ModelRequirement(min_coding=0.5)
         chain = router.build_fallback_chain(req)
         assert len(chain) >= 2  # At least 2 models match
 
     def test_register_custom_model(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         custom = ModelInfo(
             model_id="custom-model",
             provider="local",
@@ -460,7 +461,7 @@ class TestLLMRouter:
         assert router.get_model("custom-model") is not None
 
     def test_unregister_model(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         router.register_model(ModelInfo(
             model_id="temp-model", provider="local",
             capabilities={}, context_window=4096,
@@ -469,14 +470,14 @@ class TestLLMRouter:
         assert router.get_model("temp-model") is None
 
     def test_stats(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         router.route(ModelRequirement(task_type="coding", min_coding=0.8))
         stats = router.get_stats()
         assert stats["route_count"] == 1
         assert stats["registered_models"] >= 3
 
     def test_clear(self):
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
         router.clear()
         assert router.get_stats()["registered_models"] == 0
 
@@ -491,7 +492,7 @@ class TestIntegration:
     def test_verify_then_route_for_correction(self):
         """Verify failure triggers model routing for correction."""
         ei = EvaluationInterface()
-        router = LLMRouter()
+        router = LLMRouter(mock=True)
 
         # Verify output
         result = ei.verify_satisfies(

@@ -300,6 +300,7 @@ impl WasmModule {
 
     /// 从字节码提取元数据
     fn extract_metadata(&self) -> AvmResult<ModuleMetadata> {
+        let malformed = || AvmError::WasmError("Malformed WASM section".into());
         let mut imports = Vec::new();
         let mut exports = Vec::new();
         let mut custom_sections = Vec::new();
@@ -313,24 +314,36 @@ impl WasmModule {
                 break;
             }
 
-            let section_id = bytes[pos];
+            let section_id = *bytes.get(pos).ok_or_else(malformed)?;
             pos += 1;
 
             // 读取 LEB128 编码的段大小
-            let (size, consumed) = read_leb128_u32(&bytes[pos..])?;
+            let (size, consumed) = read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
             pos += consumed;
 
             let section_start = pos;
+            if pos + size as usize > bytes.len() {
+                return Err(malformed());
+            }
+            let bytes = &bytes[..pos + size as usize];
 
             match section_id {
                 0 => {
                     // 自定义段
-                    let (name_len, consumed) = read_leb128_u32(&bytes[pos..])?;
+                    let (name_len, consumed) =
+                        read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                     pos += consumed;
-                    let name =
-                        String::from_utf8_lossy(&bytes[pos..pos + name_len as usize]).to_string();
+                    let name = String::from_utf8_lossy(
+                        bytes
+                            .get(pos..pos + name_len as usize)
+                            .ok_or_else(malformed)?,
+                    )
+                    .to_string();
                     pos += name_len as usize;
-                    let data = bytes[pos..section_start + size as usize].to_vec();
+                    let data = bytes
+                        .get(pos..section_start + size as usize)
+                        .ok_or_else(malformed)?
+                        .to_vec();
                     custom_sections.push((name, data));
                 }
                 1 => {
@@ -338,22 +351,33 @@ impl WasmModule {
                 }
                 2 => {
                     // 导入段
-                    let (count, consumed) = read_leb128_u32(&bytes[pos..])?;
+                    let (count, consumed) =
+                        read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                     pos += consumed;
                     for _ in 0..count {
-                        let (mod_len, consumed) = read_leb128_u32(&bytes[pos..])?;
+                        let (mod_len, consumed) =
+                            read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                         pos += consumed;
-                        let module = String::from_utf8_lossy(&bytes[pos..pos + mod_len as usize])
-                            .to_string();
+                        let module = String::from_utf8_lossy(
+                            bytes
+                                .get(pos..pos + mod_len as usize)
+                                .ok_or_else(malformed)?,
+                        )
+                        .to_string();
                         pos += mod_len as usize;
 
-                        let (name_len, consumed) = read_leb128_u32(&bytes[pos..])?;
+                        let (name_len, consumed) =
+                            read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                         pos += consumed;
-                        let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize])
-                            .to_string();
+                        let name = String::from_utf8_lossy(
+                            bytes
+                                .get(pos..pos + name_len as usize)
+                                .ok_or_else(malformed)?,
+                        )
+                        .to_string();
                         pos += name_len as usize;
 
-                        let kind = bytes[pos];
+                        let kind = *bytes.get(pos).ok_or_else(malformed)?;
                         pos += 1;
 
                         // 简化处理，只记录导入存在
@@ -370,37 +394,40 @@ impl WasmModule {
                         match kind {
                             0 => {
                                 // 函数 - 读取类型索引
-                                let (_, consumed) = read_leb128_u32(&bytes[pos..])?;
+                                let (_, consumed) =
+                                    read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                                 pos += consumed;
                             }
-                            1 => {
-                                // 表
+                            _ => {
+                                return Err(AvmError::WasmError(
+                                    "Only function imports are supported".into(),
+                                ))
                             }
-                            2 => {
-                                // 内存
-                            }
-                            3 => {
-                                // 全局
-                            }
-                            _ => {}
                         }
                     }
                 }
                 7 => {
                     // 导出段
-                    let (count, consumed) = read_leb128_u32(&bytes[pos..])?;
+                    let (count, consumed) =
+                        read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                     pos += consumed;
                     for _ in 0..count {
-                        let (name_len, consumed) = read_leb128_u32(&bytes[pos..])?;
+                        let (name_len, consumed) =
+                            read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                         pos += consumed;
-                        let name = String::from_utf8_lossy(&bytes[pos..pos + name_len as usize])
-                            .to_string();
+                        let name = String::from_utf8_lossy(
+                            bytes
+                                .get(pos..pos + name_len as usize)
+                                .ok_or_else(malformed)?,
+                        )
+                        .to_string();
                         pos += name_len as usize;
 
-                        let _kind = bytes[pos];
+                        let _kind = *bytes.get(pos).ok_or_else(malformed)?;
                         pos += 1;
 
-                        let (index, consumed) = read_leb128_u32(&bytes[pos..])?;
+                        let (index, consumed) =
+                            read_leb128_u32(bytes.get(pos..).ok_or_else(malformed)?)?;
                         pos += consumed;
 
                         exports.push(ExportDesc {
@@ -456,6 +483,9 @@ fn read_leb128_u32(bytes: &[u8]) -> AvmResult<(u32, usize)> {
         let byte = bytes[pos];
         pos += 1;
 
+        if shift == 28 && byte & 0xF0 != 0 {
+            return Err(AvmError::WasmError("LEB128 overflow".into()));
+        }
         result |= ((byte & 0x7F) as u32) << shift;
 
         if byte & 0x80 == 0 {
@@ -499,6 +529,7 @@ pub struct WasmInstance {
     /// 模块引用
     module: WasmModule,
     /// 实例内存
+    #[cfg(not(feature = "wasm"))]
     memory: Vec<u8>,
     /// 全局变量
     #[allow(dead_code)]
@@ -507,19 +538,33 @@ pub struct WasmInstance {
     stats: ExecutionStats,
     /// 是否已初始化
     initialized: bool,
+    config: WasmConfig,
+    #[cfg(feature = "wasm")]
+    execution: Option<WasmExecution>,
 }
 
 impl WasmInstance {
     /// 创建新实例
     pub fn new(module: WasmModule) -> AvmResult<Self> {
-        let memory = vec![0u8; 65536]; // 1 页初始内存
-        Ok(Self {
+        Self::with_config(module, WasmConfig::default())
+    }
+
+    fn with_config(module: WasmModule, config: WasmConfig) -> AvmResult<Self> {
+        #[allow(unused_mut)]
+        let mut instance = Self {
             module,
-            memory,
+            #[cfg(not(feature = "wasm"))]
+            memory: vec![0u8; 65536],
             globals: Vec::new(),
             stats: ExecutionStats::default(),
             initialized: false,
-        })
+            config,
+            #[cfg(feature = "wasm")]
+            execution: None,
+        };
+        #[cfg(feature = "wasm")]
+        instance.ensure_execution()?;
+        Ok(instance)
     }
 
     /// 获取模块引用
@@ -534,28 +579,63 @@ impl WasmInstance {
 
     /// 获取内存大小
     pub fn memory_size(&self) -> usize {
-        self.memory.len()
+        #[cfg(feature = "wasm")]
+        {
+            self.execution
+                .as_ref()
+                .and_then(|e| e.memory.map(|m| m.data_size(&e.store)))
+                .unwrap_or(0)
+        }
+        #[cfg(not(feature = "wasm"))]
+        {
+            self.memory.len()
+        }
     }
 
-    /// 读取内存
     pub fn read_memory(&self, offset: usize, len: usize) -> AvmResult<Vec<u8>> {
-        if offset + len > self.memory.len() {
-            return Err(AvmError::WasmError(
-                "Memory access out of bounds".to_string(),
-            ));
+        let end = offset
+            .checked_add(len)
+            .ok_or_else(|| AvmError::WasmError("Memory offset overflow".into()))?;
+        if end > self.memory_size() {
+            return Err(AvmError::WasmError("Memory access out of bounds".into()));
         }
-        Ok(self.memory[offset..offset + len].to_vec())
+        #[cfg(feature = "wasm")]
+        {
+            let execution = self.execution.as_ref().unwrap();
+            let memory = execution.memory.ok_or_else(|| {
+                AvmError::WasmError("Module must export memory for host access".into())
+            })?;
+            Ok(memory.data(&execution.store)[offset..end].to_vec())
+        }
+        #[cfg(not(feature = "wasm"))]
+        {
+            Ok(self.memory[offset..end].to_vec())
+        }
     }
 
-    /// 写入内存
     pub fn write_memory(&mut self, offset: usize, data: &[u8]) -> AvmResult<()> {
-        if offset + data.len() > self.memory.len() {
-            return Err(AvmError::WasmError(
-                "Memory access out of bounds".to_string(),
-            ));
+        #[cfg(feature = "wasm")]
+        {
+            let execution = self.execution.as_mut().unwrap();
+            let memory = execution.memory.ok_or_else(|| {
+                AvmError::WasmError("Module must export memory for host access".into())
+            })?;
+            memory
+                .write(&mut execution.store, offset, data)
+                .map_err(|e| AvmError::WasmError(e.to_string()))
         }
-        self.memory[offset..offset + data.len()].copy_from_slice(data);
-        Ok(())
+        #[cfg(not(feature = "wasm"))]
+        {
+            let end = offset
+                .checked_add(data.len())
+                .ok_or_else(|| AvmError::WasmError("Memory offset overflow".into()))?;
+            let destination = self
+                .memory
+                .get_mut(offset..end)
+                .ok_or_else(|| AvmError::WasmError("Memory access out of bounds".into()))?;
+            destination.copy_from_slice(data);
+            Ok(())
+        }
     }
 
     /// 调用函数
@@ -576,17 +656,13 @@ impl WasmInstance {
             }
         }
 
-        // 由于没有启用 wasmtime feature，返回占位符结果
-        // 实际执行需要启用 wasm feature
+        // Feature-disabled builds must never fabricate successful execution.
         #[cfg(not(feature = "wasm"))]
         {
-            self.stats.call_count += 1;
-            // 模拟执行: 返回一个默认值
-            if args.is_empty() {
-                Ok(vec![WasmValue::I32(0)])
-            } else {
-                Ok(args.to_vec())
-            }
+            let _ = args;
+            Err(AvmError::NotImplemented(
+                "WASM execution requires the wasm feature".into(),
+            ))
         }
 
         #[cfg(feature = "wasm")]
@@ -595,55 +671,105 @@ impl WasmInstance {
         }
     }
 
-    /// 使用 wasmtime 执行
+    #[cfg(feature = "wasm")]
+    fn ensure_execution(&mut self) -> AvmResult<()> {
+        use wasmtime::*;
+        let failure = |error: wasmtime::Error| AvmError::WasmError(error.to_string());
+        if self.execution.is_none() {
+            let mut config = Config::new();
+            config.consume_fuel(true).epoch_interruption(true);
+            let engine = Engine::new(&config).map_err(failure)?;
+            let module = Module::from_binary(&engine, &self.module.bytes).map_err(failure)?;
+            let limits = StoreLimitsBuilder::new()
+                .memory_size(self.config.max_memory_pages as usize * 65536)
+                .table_elements(self.config.max_table_elements as usize)
+                .memories(1)
+                .instances(1)
+                .build();
+            let mut store = Store::new(&engine, limits);
+            store.limiter(|limits| limits);
+            store.set_fuel(10_000_000).map_err(failure)?;
+            store.set_epoch_deadline(1);
+            let instance = Instance::new(&mut store, &module, &[]).map_err(failure)?;
+            let memory = instance
+                .exports(&mut store)
+                .find_map(|export| export.into_memory());
+            self.execution = Some(WasmExecution {
+                engine,
+                store,
+                instance,
+                memory,
+            });
+        }
+        Ok(())
+    }
+
+    /// Execute scalar exports with persistent module state and bounded resources.
     #[cfg(feature = "wasm")]
     fn execute_with_wasmtime(
         &mut self,
         function: &str,
-        _args: &[WasmValue],
+        args: &[WasmValue],
     ) -> AvmResult<Vec<WasmValue>> {
         use wasmtime::*;
-
         let start = std::time::Instant::now();
-
-        // 创建引擎和模块
-        let engine = Engine::default();
-        let module = Module::from_binary(&engine, &self.module.bytes)
-            .map_err(|e| AvmError::WasmError(format!("Failed to compile module: {}", e)))?;
-
-        // 创建存储和实例
-        let mut store = Store::new(
-            &engine,
-            WasmResourceLimiter {
-                max_memory: self.memory.len(),
-                max_table: 10000,
-            },
-        );
-
-        store.limiter(|limiter| limiter);
-
-        let instance = Instance::new(&mut store, &module, &[])
-            .map_err(|e| AvmError::WasmError(format!("Failed to instantiate module: {}", e)))?;
-
-        // 获取导出函数
-        let func = instance
-            .get_typed_func::<(), (i32,)>(&mut store, function)
-            .map_err(|e| {
-                AvmError::WasmError(format!("Function '{}' not found: {}", function, e))
-            })?;
-
-        // 执行
-        let result = func
-            .call(&mut store, ())
-            .map_err(|e| AvmError::WasmError(format!("Execution failed: {}", e)))?;
-
-        // 更新统计
-        let elapsed = start.elapsed().as_nanos() as u64;
+        let failure = |error: wasmtime::Error| AvmError::WasmError(error.to_string());
+        self.ensure_execution()?;
+        let execution = self.execution.as_mut().unwrap();
+        execution.store.set_fuel(10_000_000).map_err(failure)?;
+        execution.store.set_epoch_deadline(1);
+        let func = execution
+            .instance
+            .get_func(&mut execution.store, function)
+            .ok_or_else(|| AvmError::WasmError(format!("Unknown exported function: {function}")))?;
+        let parameters: Vec<Val> = args
+            .iter()
+            .map(|arg| match arg {
+                WasmValue::I32(v) => Ok(Val::I32(*v)),
+                WasmValue::I64(v) => Ok(Val::I64(*v)),
+                WasmValue::F32(v) => Ok(Val::F32(v.to_bits())),
+                WasmValue::F64(v) => Ok(Val::F64(v.to_bits())),
+                _ => Err(AvmError::WasmError(
+                    "Only scalar WASM arguments are supported".into(),
+                )),
+            })
+            .collect::<AvmResult<_>>()?;
+        let mut results: Vec<Val> = func
+            .ty(&execution.store)
+            .results()
+            .map(|ty| {
+                Val::default_for_ty(&ty)
+                    .ok_or_else(|| AvmError::WasmError("Unsupported WASM result type".into()))
+            })
+            .collect::<AvmResult<_>>()?;
+        let engine = execution.engine.clone();
+        let (finish, receiver) = std::sync::mpsc::channel();
+        let timeout = std::time::Duration::from_millis(self.config.execution_timeout_ms);
+        let timer = std::thread::spawn(move || {
+            if receiver.recv_timeout(timeout).is_err() {
+                engine.increment_epoch();
+            }
+        });
+        let result = func.call(&mut execution.store, &parameters, &mut results);
+        let _ = finish.send(());
+        let _ = timer.join();
+        result.map_err(failure)?;
         self.stats.call_count += 1;
+        let elapsed = start.elapsed().as_nanos() as u64;
         self.stats.total_time_ns += elapsed;
         self.stats.max_time_ns = self.stats.max_time_ns.max(elapsed);
-
-        Ok(vec![WasmValue::I32(result.0)])
+        results
+            .into_iter()
+            .map(|value| match value {
+                Val::I32(v) => Ok(WasmValue::I32(v)),
+                Val::I64(v) => Ok(WasmValue::I64(v)),
+                Val::F32(v) => Ok(WasmValue::F32(f32::from_bits(v))),
+                Val::F64(v) => Ok(WasmValue::F64(f64::from_bits(v))),
+                _ => Err(AvmError::WasmError(
+                    "Only scalar WASM results are supported".into(),
+                )),
+            })
+            .collect()
     }
 
     /// 初始化实例
@@ -665,35 +791,15 @@ impl WasmInstance {
     }
 }
 
-/// 资源限制器 (用于 wasmtime)
 #[cfg(feature = "wasm")]
-struct WasmResourceLimiter {
-    max_memory: usize,
-    max_table: usize,
+struct WasmExecution {
+    engine: wasmtime::Engine,
+    store: wasmtime::Store<wasmtime::StoreLimits>,
+    instance: wasmtime::Instance,
+    memory: Option<wasmtime::Memory>,
 }
 
-#[cfg(feature = "wasm")]
-impl wasmtime::ResourceLimiter for WasmResourceLimiter {
-    fn memory_growing(
-        &mut self,
-        current: usize,
-        desired: usize,
-        _maximum: Option<usize>,
-    ) -> wasmtime::Result<bool> {
-        Ok(desired <= self.max_memory && desired >= current)
-    }
-
-    fn table_growing(
-        &mut self,
-        current: u32,
-        desired: u32,
-        _maximum: Option<u32>,
-    ) -> wasmtime::Result<bool> {
-        Ok((desired as usize) <= self.max_table && desired >= current)
-    }
-}
-
-/// WASM 运行时
+/// WASM runtime with explicitly configured limits.
 pub struct WasmRuntime {
     /// 配置
     config: WasmConfig,
@@ -740,7 +846,7 @@ impl WasmRuntime {
 
         // 克隆模块用于实例
         let module_clone = WasmModule::from_bytes(&module.name, module.bytes.clone())?;
-        let instance = WasmInstance::new(module_clone)?;
+        let instance = WasmInstance::with_config(module_clone, self.config.clone())?;
 
         self.instances.insert(module_name.to_string(), instance);
         Ok(self.instances.get_mut(module_name).unwrap())
@@ -813,9 +919,9 @@ mod tests {
         assert_eq!(i64_val.type_name(), "i64");
         assert_eq!(i64_val.as_i64(), Some(-100));
 
-        let f64_val = WasmValue::F64(3.14159);
+        let f64_val = WasmValue::F64(1.125);
         assert_eq!(f64_val.type_name(), "f64");
-        assert!((f64_val.as_f64().unwrap() - 3.14159).abs() < 1e-6);
+        assert!((f64_val.as_f64().unwrap() - 1.125).abs() < 1e-6);
     }
 
     #[test]
@@ -844,11 +950,14 @@ mod tests {
 
     #[test]
     fn test_wasm_instance_memory() {
+        #[cfg(not(feature = "wasm"))]
         let valid_wasm = vec![
             0x00, 0x61, 0x73, 0x6d, // 魔数
             0x01, 0x00, 0x00, 0x00, // 版本 1.0
         ];
 
+        #[cfg(feature = "wasm")]
+        let valid_wasm = wat::parse_str("(module (memory (export \"memory\") 1))").unwrap();
         let module = WasmModule::from_bytes("test", valid_wasm).unwrap();
         let instance = WasmInstance::new(module).unwrap();
 

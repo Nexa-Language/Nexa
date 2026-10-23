@@ -23,6 +23,7 @@ import json
 import time
 import threading
 import os
+from pathlib import Path
 
 from src.runtime.kv_store import (
     NexaKVStore, KVHandle,
@@ -50,18 +51,16 @@ class TestKVOpen:
         assert handle.path == ':memory:'
         assert handle.connected is True
 
-    def test_kv_open_file(self):
+    def test_kv_open_file(self, tmp_path: Path) -> None:
         '''打开文件 KV 存储'''
-        path = '/tmp/test_kv_open_file.db'
-        # 清理旧文件
-        if os.path.exists(path):
-            os.remove(path)
+        path = str(tmp_path / 'store.db')
         handle = kv_open(path)
         assert isinstance(handle, KVHandle)
         assert handle.path == path
         assert handle.connected is True
-        # 清理
-        os.remove(path)
+        store = _get_kv_store(handle._nexa_kv_id)
+        assert store is not None
+        store.close()
 
     def test_kv_registry(self):
         '''KV 注册表 ID 递增'''

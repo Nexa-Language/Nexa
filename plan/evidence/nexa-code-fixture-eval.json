@@ -1,0 +1,202 @@
+{
+  "schema_version": 1,
+  "task_id": "fix-addition-v1",
+  "provider_mode": "deterministic_fixture",
+  "python": "3.12.13",
+  "status": "completed",
+  "model": "minimax-m2.5",
+  "model_calls": 4,
+  "tool_calls": 3,
+  "usage": {
+    "input_tokens": 12,
+    "output_tokens": 8,
+    "source": "fixture"
+  },
+  "elapsed_seconds": 1.4448425861774012,
+  "events": [
+    {
+      "sequence": 0,
+      "event": "run_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697546.975273
+    },
+    {
+      "sequence": 1,
+      "event": "model_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697546.980008,
+      "attempt": 1,
+      "model_call": 1
+    },
+    {
+      "sequence": 2,
+      "event": "model_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697546.989226,
+      "tool_call_count": 1,
+      "input_tokens": 3,
+      "output_tokens": 2,
+      "usage_reported": true
+    },
+    {
+      "sequence": 3,
+      "event": "tool_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697546.998951,
+      "call_id": "read",
+      "tool": "read_file"
+    },
+    {
+      "sequence": 4,
+      "event": "tool_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.0088792,
+      "call_id": "read",
+      "tool": "read_file",
+      "success": true
+    },
+    {
+      "sequence": 5,
+      "event": "tool_result_attached",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.0157912,
+      "call_id": "read"
+    },
+    {
+      "sequence": 6,
+      "event": "model_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.022476,
+      "attempt": 1,
+      "model_call": 2
+    },
+    {
+      "sequence": 7,
+      "event": "model_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.027334,
+      "tool_call_count": 1,
+      "input_tokens": 3,
+      "output_tokens": 2,
+      "usage_reported": true
+    },
+    {
+      "sequence": 8,
+      "event": "approval_requested",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.032512,
+      "call_id": "write",
+      "tool": "write_file"
+    },
+    {
+      "sequence": 9,
+      "event": "run_resumed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.649185
+    },
+    {
+      "sequence": 10,
+      "event": "tool_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.655083,
+      "call_id": "write",
+      "tool": "write_file"
+    },
+    {
+      "sequence": 11,
+      "event": "tool_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.6640599,
+      "call_id": "write",
+      "tool": "write_file",
+      "success": true
+    },
+    {
+      "sequence": 12,
+      "event": "tool_result_attached",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.675555,
+      "call_id": "write"
+    },
+    {
+      "sequence": 13,
+      "event": "model_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.684899,
+      "attempt": 1,
+      "model_call": 3
+    },
+    {
+      "sequence": 14,
+      "event": "model_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.6931121,
+      "tool_call_count": 1,
+      "input_tokens": 3,
+      "output_tokens": 2,
+      "usage_reported": true
+    },
+    {
+      "sequence": 15,
+      "event": "approval_requested",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697547.701074,
+      "call_id": "verify",
+      "tool": "shell_exec"
+    },
+    {
+      "sequence": 16,
+      "event": "run_resumed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.312479
+    },
+    {
+      "sequence": 17,
+      "event": "tool_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.317701,
+      "call_id": "verify",
+      "tool": "shell_exec"
+    },
+    {
+      "sequence": 18,
+      "event": "tool_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.392629,
+      "call_id": "verify",
+      "tool": "shell_exec",
+      "success": true
+    },
+    {
+      "sequence": 19,
+      "event": "tool_result_attached",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.3988101,
+      "call_id": "verify"
+    },
+    {
+      "sequence": 20,
+      "event": "model_started",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.403323,
+      "attempt": 1,
+      "model_call": 4
+    },
+    {
+      "sequence": 21,
+      "event": "model_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.410051,
+      "tool_call_count": 0,
+      "input_tokens": 3,
+      "output_tokens": 2,
+      "usage_reported": true
+    },
+    {
+      "sequence": 22,
+      "event": "run_completed",
+      "run_id": "51b9f2c9f6bf4a3ea361973b4d1d1ba5",
+      "timestamp": 1792697548.4176772
+    }
+  ]
+}

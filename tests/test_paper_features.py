@@ -63,7 +63,7 @@ type Scores = dict[str, float]
     assert "Scores = dict[str, float]" in generated
     
     print("✅ Semantic Types test passed!")
-    return True
+    return
 
 def test_binary_expr():
     """测试二元运算符扩展"""
@@ -91,7 +91,7 @@ flow test_binary {
         assert expr["operator"] == ops[i]
     
     print("✅ Binary Expression test passed!")
-    return True
+    return
 
 def test_fallback_expr():
     """测试 Fallback 表达式"""
@@ -124,7 +124,7 @@ flow main {
     assert expr["backup"]["type"] == "StringLiteral"
     
     print("✅ Fallback Expression test passed!")
-    return True
+    return
 
 def test_traditional_control_flow():
     """测试传统控制流"""
@@ -170,7 +170,7 @@ flow test_control {
     assert stmts[3]["else_block"] is not None
     
     print("✅ Traditional Control Flow test passed!")
-    return True
+    return
 
 def test_python_escape():
     """测试 Python 逃生舱"""
@@ -193,7 +193,7 @@ print(json.dumps(data))"""
     assert "import json" in stmt["code"]
     
     print("✅ Python Escape test passed!")
-    return True
+    return
 
 def test_dag_operators():
     """测试 DAG 操作符"""
@@ -226,7 +226,7 @@ flow test_dag {
     assert expr2["type"] == "DAGMergeExpression"
     
     print("✅ DAG Operators test passed!")
-    return True
+    return
 
 def test_protocol():
     """测试 Protocol 定义"""
@@ -257,7 +257,7 @@ agent Analyzer implements AnalysisResult {
     assert agent["implements"] == "AnalysisResult"
     
     print("✅ Protocol test passed!")
-    return True
+    return
 
 def test_match_intent():
     """测试意图路由"""
@@ -289,7 +289,7 @@ flow test_routing {
     assert match_expr["type"] == "MatchIntentStatement"
     
     print("✅ Match Intent test passed!")
-    return True
+    return
 
 def test_loop_until():
     """测试语义循环"""
@@ -318,7 +318,7 @@ flow test_loop {
     assert stmt["condition"]["type"] == "StringLiteral"
     
     print("✅ Loop Until test passed!")
-    return True
+    return
 
 def run_all_tests():
     """运行所有测试"""
