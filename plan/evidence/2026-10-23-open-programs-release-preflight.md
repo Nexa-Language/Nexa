@@ -12,3 +12,6 @@
 - 待发布门禁：托管 Python/Rust CI、干净 tag 正式构建与安装、公开附件回下载、Release 事件官网部署。
 
 本地原始输出和截图位于 `.superpowers/sdd/03-v1-nexa-3-open-programs/release-*`。原有审查问题及修复见 [审查记录](2026-10-23-open-programs-review.md)，正式交付对应关系随 Release 保存。
+
+
+推送时 GitHub 返回两项 AnyIO 历史告警（GHSA-82r6-8w77-94w6、GHSA-5p39-cfhj-2xmp），均修复于 4.14.2。锁文件和测试环境已使用 4.15.1；进一步给 wheel 元数据添加 `anyio>=4.14.2,<5`，避免已有环境保留受影响的旧传递依赖。77 个锁定包的版本逐项保持不变，打包回归 2 passed；安装元数据拒绝 4.14.1、接受当前 4.15.1。完整托管 CI 使用该最终约束。
