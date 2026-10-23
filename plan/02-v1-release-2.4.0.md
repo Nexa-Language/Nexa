@@ -44,6 +44,8 @@
 
 PR [#2](https://github.com/Nexa-Language/Nexa/pull/2) 已创建。首轮 CI 的 Python 3.10/3.12 与 Rust 通过；Python 3.14 发现 Option 类型测试依赖显示格式，已改为类型比较，本地 79 项类型系统测试通过。继续等待更新后的完整 CI，再按 Rebase and merge 合入。
 
+最后一批编译器修复：顺序管道保留全部 Agent；整数历史上限、输出 token 和 limit/timeout/retry 装饰器进入真实执行配置。历史块式条件路由改为明确编译错误。122 项定向测试与 **2171 passed / 5 skipped / 3 deselected** 全套通过，源码哈希一致；两次独立增量审查无剩余实质发现。更新同一发布 PR 后等待最后一轮 CI。
+
 ## 发布后恢复 3.0 规划
 
 以 `v2.4.0` 为稳定基线，完成 Open Programs 的详细设计。允许破坏性升级，Python 参考实现优先，旗舰场景为持续维护代码仓库。首发贯通目标求解、在线修改、证据失效和有条件的跨任务实现复用。

@@ -27,6 +27,8 @@ flowchart LR
 
 以控制流语句结束的 flow 返回 `None`；需要返回计算值时，在末尾添加顶层 `result = value;`。当前 `std.json.parse` 返回 JSON 文本，消费集合前通过可信 Python 显式解码。Agent 的 Protocol 输出校验与 Harness `verify` 使用独立执行路径，覆盖范围见测试与发布验证记录。
 
+顺序管道 `input >> AgentA >> AgentB` 按顺序执行全部阶段。下游阶段必须是 Agent 引用；不支持的表达式在编译时报告错误。历史 `input >> Reviewer ?? { ... }` 块式条件路由尚未实现 cases 分派，2.4 明确拒绝该管道阶段。
+
 ## 模型协议
 
 ```nexa
@@ -47,6 +49,8 @@ Responses 保存原始 output items 和 encrypted reasoning；Anthropic 保存�
 Chat / Responses 继续使用 `.nxs` 与现有 provider 配置。原生 Anthropic 使用 `ANTHROPIC_API_KEY` 和可选的 `ANTHROPIC_BASE_URL`；安装 `anthropic` extra。凭据在首次实际调用时读取，离线编译无需凭据。
 
 `.nxs` 按父目录到当前目录合并，同名配置由最近目录覆盖。脚本目录加载遵循同一优先级；项目配置因此覆盖父目录默认值。
+
+Agent 属性 `max_tokens` 和 `@limit(max_tokens=...)` 设置单次模型响应的输出 token 上限；总运行预算通过 `RunConfig.max_tokens` 设置。`max_history_turns` 支持整数及历史数字字符串写法。`@timeout(seconds=...)` 设置运行时限；`@retry(max_attempts=...)` 设置包含首次调用的总尝试次数，运行时转换为 `max(0, max_attempts - 1)` 次重试，0/1 均不重试。装饰器优先于同名属性。`@temperature` 当前仅保留声明元数据，尚未传给 provider。
 
 ## 预算、取消与输出
 

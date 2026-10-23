@@ -44,6 +44,74 @@ class FakeClient:
         return response
 
 
+@pytest.mark.parametrize(("expression", "inputs", "outputs"), [
+    ('"evidence" >> Researcher', ["evidence"], ["facts"]),
+    ('"evidence" >> Researcher >> Summarizer', ["evidence", "facts"], ["facts", "summary"]),
+    ('Researcher.run("evidence") >> Summarizer', ["evidence", "facts"], ["facts", "summary"]),
+    ('"evidence" >> Researcher >> Summarizer >> Editor', ["evidence", "facts", "summary"], ["facts", "summary", "edited"]),
+])
+def test_compiled_pipeline_executes_every_stage_in_order(
+    monkeypatch: pytest.MonkeyPatch, expression: str, inputs: list[str], outputs: list[str],
+) -> None:
+    client = FakeClient([completion(output) for output in outputs])
+    monkeypatch.setattr(NexaAgent, "_get_client", lambda self: client)
+    result = nexa_sdk.run('''
+agent Researcher { prompt: "Extract the facts." }
+agent Summarizer { prompt: "Summarize the facts." }
+agent Editor { prompt: "Edit the summary." }
+flow main { result = ''' + expression + '; }')
+    assert result.success, result.stderr
+    assert result.result == outputs[-1]
+    assert [request["messages"][-1]["content"] for request in client.requests] == inputs
+
+
+def test_compiled_pipeline_rejects_unsupported_stage() -> None:
+    result = nexa_sdk.compile('flow main { result = "evidence" >> 42; }')
+    assert not result.success
+    assert result.error is not None and "pipeline stage" in result.error.lower()
+
+
+@pytest.mark.parametrize("history_limit", ["2", '"2"'])
+def test_compiled_history_limit_bounds_provider_input(monkeypatch: pytest.MonkeyPatch, history_limit: str) -> None:
+    client = FakeClient([completion("a"), completion("b"), completion("c")])
+    monkeypatch.setattr(NexaAgent, "_get_client", lambda self: client)
+    result = nexa_sdk.run('agent A { max_history_turns: ' + history_limit + ''' }
+flow main { A.run("first"); A.run("second"); result = A.run("third"); }
+''')
+    assert result.success, result.stderr
+    assert result.result == "c"
+    assert [message["content"] for message in client.requests[-1]["messages"] if message["role"] == "user"] == ["second", "third"]
+
+
+@pytest.mark.parametrize("declaration", [
+    "agent A { max_tokens: 2000 }",
+    "@limit(max_tokens=2000) agent A {}",
+    "@limit(max_tokens=2000) agent A { max_tokens: 100 }",
+])
+def test_compiled_token_limit_reaches_provider(monkeypatch: pytest.MonkeyPatch, declaration: str) -> None:
+    client = FakeClient([completion()])
+    monkeypatch.setattr(NexaAgent, "_get_client", lambda self: client)
+    result = nexa_sdk.run(declaration + ' flow main { result = A.run("evidence"); }')
+    assert result.success, result.stderr
+    assert client.requests[0]["max_tokens"] == 2000
+
+
+def test_compiled_timeout_and_retry_decorators_reach_run_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    client = FakeClient([completion()])
+    monkeypatch.setattr(NexaAgent, "_get_client", lambda self: client)
+    result = nexa_sdk.run('''
+@timeout(seconds=7)
+@retry(max_attempts=0)
+agent A { timeout: 60, retry: 5 }
+flow main { result = A.execute("evidence"); }
+''')
+    assert result.success, result.stderr
+    assert result.result.success, result.result.error
+    assert result.result.config["timeout"] == 7
+    assert result.result.config["retries"] == 0
+    assert 0 < client.requests[0]["timeout"] <= 7
+
+
 def test_unexposed_tool_is_never_executed(monkeypatch: pytest.MonkeyPatch) -> None:
     effects: list[int] = []
     monkeypatch.setitem(LOCAL_TOOLS, "hidden", lambda: effects.append(1))
