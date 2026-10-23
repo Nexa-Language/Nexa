@@ -1,0 +1,48 @@
+{
+  "files": {
+    "avm/Cargo.lock": "29d12ab6577ceb7eb9e9bfb341e4fdae6c867e5721805bfca70930762c08911d",
+    "avm/Cargo.toml": "d6e697d161e251c0716fbdf3167e8bdc78d8e5db87dd94a1883579f082ac93a4",
+    "avm/src/bytecode/compiler.rs": "f901f5571753dc44f6c5c17a33b1b3368823134eb592f67f6e3d0e62cac5e835",
+    "avm/src/bytecode/instructions.rs": "633f7b102015ef3c7253c485ebbd1e182cd631a50e68aea04a5c80f161134283",
+    "avm/src/bytecode/mod.rs": "8a372d9450393f57e4b2b44d01e8d5756f5f3fde966949de942f7c338970d29a",
+    "avm/src/compiler/ast.rs": "3b20490e9770b0af3eb78a19cf31c7fd95df40b16c30821ab2721a30b6abcae3",
+    "avm/src/compiler/lexer.rs": "d86963162ae410a9fab5a264b63b509a848cb83a3eb885f77a3b68ec5a4e31e2",
+    "avm/src/compiler/mod.rs": "75739fcdd084977253eda8b8652d783b68719965a46fa19583cd0a10a37151bc",
+    "avm/src/compiler/parser.rs": "3435dca61a44f822a2acab0b42da77531eb4ccf9dfa7cf0844c0adb64facedfa",
+    "avm/src/compiler/type_checker.rs": "f24fd1641aeffccd0e4a663183abdd72702afca61c2ec9802e956de0b9ccac04",
+    "avm/src/ffi/c_api.rs": "bb6c8a01b2935de10aa8f94bd322bafadf148b04a6434e6a6142edfdc1300e68",
+    "avm/src/ffi/mod.rs": "116a71cec607224d9b352dfa15599fcd9e102fee6d81910655be3cf24745a4f6",
+    "avm/src/ffi/python.rs": "eca807a65113e92492a28d645ad2d6621624aa135a487d257e8333fcc5319700",
+    "avm/src/lib.rs": "ea52a6b3e532bf3bbb29e58e00eb336f46e36aca4b6b7db5287f0d31c8cfc0bf",
+    "avm/src/main.rs": "2b0b7cefc24536cd556dbdd993affb3c9a288a2f669a3c1cd41403332a033d88",
+    "avm/src/runtime/agent.rs": "326d2ba8613a2e6ae4db830ae06e71a25290964dfb39f136f8254a5a5b8b1a8f",
+    "avm/src/runtime/contracts.rs": "5f2fbef7104c6e5853c39bb4bf8b6f723699e5116f569457c27aed6d6efe0a7d",
+    "avm/src/runtime/jobs.rs": "77c6a170f3037aaf8ca8aa281768394eb0ffea4e609e1fbb20809843e023e784",
+    "avm/src/runtime/llm.rs": "57f192f1aec97cd258885a4f08cfc3380ce5b71459431e6be7d1dfb08d1f6e1c",
+    "avm/src/runtime/mod.rs": "db8ed613d1aa514a51ceae738d3236665bc26902913afe94864ac87f1693f731",
+    "avm/src/runtime/result_types.rs": "65d5dade8dddc9a861ad88521b36bf4903f69e2dabc3e7df57484e3a2524564e",
+    "avm/src/runtime/tool.rs": "bf3348a911d3b53c5a7073061b88f9d0cf17cc6b9fd7297728c1e18d4158476d",
+    "avm/src/utils/error.rs": "a4d6c8fef374c2acfbb4e29174991e5259e16f3d4283423eca63d943cdc015e3",
+    "avm/src/utils/mod.rs": "feaddde2c8a19560def76fc73a6564412785c91784120e9c03f5949841502091",
+    "avm/src/vm/context_pager.rs": "d12ca5dcf5528bb1168c6a9385ff1d0c1e29efd8dedc07f27ba94ae223564f77",
+    "avm/src/vm/cow_memory.rs": "b66ec1a3f89114323a468765a6345a4c51c6b36dbf36d6fde5f004ef5f2363a5",
+    "avm/src/vm/interpreter.rs": "5ddd81de23001f32e25641c634a390416ef64a14d1a7f531d8cd24172f52ba56",
+    "avm/src/vm/mod.rs": "d3f6658d6e10057f816d9ac40d933667a64c4da0accccaf91290c4646618d56c",
+    "avm/src/vm/scheduler.rs": "709f4d60a79d66f04b01c9dd514d4e2675fee60d1f214d608f7afe7a8bf6c49d",
+    "avm/src/vm/stack.rs": "2dd0a4c2bb16a522af80b954dd90b836d263a458c9c84f51a9d4724bd849ebaf",
+    "avm/src/wasm/mod.rs": "507b3442010e4f49db1750d554559c5a2de96a8044184c4ee3c39cc3876ec9eb",
+    "avm/src/wasm/runtime.rs": "42d6b5304926b26cf8b3c74c9f641658cf9f64659c1b59c5b23e602dd438cf4c",
+    "avm/src/wasm/sandbox.rs": "7d37e459bf9cf69facb46128285bafbed054f2af5d0556b9767cbc0e0d9a078b",
+    "avm/tests/conformance.rs": "958fcea3fff318198d932055c41cb15ca297ecdb005c026260bc81ab790f57c3",
+    "avm/tests/wasm_execution.rs": "20fa8d9337e72ff82eaf47375e9da6a7a473d0b4010cf763287707df690cbe16",
+    "tests/fixtures/conformance/programs.json": "5d6c2b2877a3a0e85bbd175b7bbb2620749e231ba69ec4533753ceed4a6b5e33"
+  },
+  "commands": [
+    "CARGO_HOME=/private/tmp/nexa-cargo-home cargo test --manifest-path avm/Cargo.toml --locked --lib --test conformance --test wasm_execution",
+    "CARGO_HOME=/private/tmp/nexa-cargo-home cargo test --manifest-path avm/Cargo.toml --locked --features wasm --lib --test conformance --test wasm_execution"
+  ],
+  "passed": {
+    "default": 141,
+    "wasm": 144
+  }
+}

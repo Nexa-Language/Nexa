@@ -125,7 +125,8 @@ def select_context(messages: list[dict[str, Any]], max_turns: int | None = None,
     policy = _context_policy.get()
     selected = copy.deepcopy(messages)
     while True:
-        starts = [i for i, message in enumerate(selected) if message["role"] == "user"]
+        # Output correction belongs to the existing user turn, including its byte budget.
+        starts = [i for i, message in enumerate(selected) if message["role"] == "user" and message.get("name") != "nexa_output_correction"]
         fits = policy is None or len(json.dumps(selected + (provider_items or []), ensure_ascii=False).encode()) <= policy[0]
         turns_fit = max_turns is None or len(starts) <= max_turns
         if fits and turns_fit:

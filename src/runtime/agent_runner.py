@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import copy
+import json
 from collections.abc import Callable
 from typing import Any
 
 from openai import APIConnectionError, APITimeoutError, InternalServerError, RateLimitError
+from pydantic import ValidationError
 
 from .artifacts import ArtifactStore
 from .checkpoints import CheckpointConflict
@@ -54,7 +56,8 @@ class AgentRunner:
                 self.context.check()
                 if state.pending_calls:
                     continue
-                self.value = self.validate_output(reply.text)
+                if not self._validate_reply(reply.text):
+                    continue
                 self.context.check()
                 state.output = reply.text
                 state.status = RunStatus.COMPLETED
@@ -71,6 +74,22 @@ class AgentRunner:
         self.context.record("run_stopped", status=state.status.value, error=state.error)
         return state
 
+    def _validate_reply(self, text: str) -> bool:
+        try:
+            self.value = self.validate_output(text)
+            return True
+        except (json.JSONDecodeError, ValidationError) as error:
+            state = self.context.state
+            retries = sum(event["event"] == "output_retry" for event in state.events)
+            if self.response_format is None or retries >= self.context.config.retries:
+                raise
+            state.messages.append({"role": "user", "name": "nexa_output_correction", "content": (
+                "Your previous response did not match the requested JSON output format. "
+                "Return valid JSON matching the provided schema."
+            )})
+            self.context.record("output_retry", attempt=retries + 1, error_type=type(error).__name__)
+            return False
+
     def _request_model(self) -> ModelReply:
         state = self.context.state
         for attempt in range(self.context.config.retries + 1):
@@ -81,12 +100,14 @@ class AgentRunner:
                 raise RunStopped(RunStatus.BUDGET_EXHAUSTED, "Token budget exhausted")
             state.model_calls += 1
             self.context.record("model_started", attempt=attempt + 1, model_call=state.model_calls)
-            exposed = [tool.function_schema() for tool in self.tools.tools.values()] if self.tool_choice != "none" else []
+            allow_tools = self.tool_choice != "none" and state.tool_calls < self.context.config.max_tool_calls
+            exposed = [tool.function_schema() for tool in self.tools.tools.values()] if allow_tools else []
             request = ModelRequest(
                 model=state.model, messages=select_context(state.messages, self.max_history_turns, native=self.provider.name != "chat", provider_items=state.provider_items),
                 tools=exposed, timeout=self.context.remaining(),
                 stream=self.stream, max_output_tokens=self.max_output_tokens, response_format=self.response_format,
-                tool_choice=self.tool_choice if state.tool_calls == 0 else "auto", provider_items=copy.deepcopy(state.provider_items),
+                tool_choice=(self.tool_choice if state.tool_calls == 0 else "auto") if exposed else "none",
+                provider_items=copy.deepcopy(state.provider_items),
                 provider_cursor=state.provider_cursor,
             )
             try:

@@ -134,33 +134,10 @@ impl BytecodeCompiler {
 
     /// 编译 tool
     fn compile_tool(&mut self, tool: &ToolDeclaration) -> AvmResult<()> {
-        // 工具注册
-        let name_idx = self.add_constant(Constant::String(tool.name.clone()));
-
-        // 描述
-        let desc_idx = if let Some(desc) = &tool.description {
-            self.add_constant(Constant::String(desc.clone()))
-        } else {
-            self.add_constant(Constant::Null)
-        };
-
-        // 参数 schema
-        let params_idx = if let Some(params) = &tool.parameters {
-            self.add_constant(Constant::Json(params.clone()))
-        } else {
-            self.add_constant(Constant::Null)
-        };
-
-        self.module
-            .emit(OpCode::PushConst, Some(Operand::U32(name_idx)), None);
-        self.module
-            .emit(OpCode::PushConst, Some(Operand::U32(desc_idx)), None);
-        self.module
-            .emit(OpCode::PushConst, Some(Operand::U32(params_idx)), None);
-        self.module
-            .emit(OpCode::RegisterTool, Some(Operand::U8(3)), None);
-
-        Ok(())
+        Err(AvmError::CompilationError(format!(
+            "Tool {} requires the Python runtime",
+            tool.name
+        )))
     }
 
     /// 编译 protocol

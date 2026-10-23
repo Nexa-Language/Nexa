@@ -2993,6 +2993,11 @@ class CodeGenerator:
         self.code.append(f"{self._indent()}# v2.0 lifecycle hook: {hook_type}")
         self.code.append(f"{self._indent()}def _hook_fn(**_event):")
         self.indent_level += 1
+        if hook_type == "on_error":
+            self.code.append(f"{self._indent()}{stmt.get('error_var', 'e')} = _event.get('error')")
+        if hook_type in {"before_tool", "after_tool"}:
+            self.code.append(f"{self._indent()}if _event.get('tool') != {stmt.get('tool_name')!r}:")
+            self.code.append(f"{self._indent()}    return")
         if not body:
             self.code.append(f"{self._indent()}pass")
         for b in body:

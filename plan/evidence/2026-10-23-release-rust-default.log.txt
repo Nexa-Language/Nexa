@@ -1,0 +1,183 @@
+warning: field `config` is never read
+   --> src/wasm/runtime.rs:541:5
+    |
+528 | pub struct WasmInstance {
+    |            ------------ field in this struct
+...
+541 |     config: WasmConfig,
+    |     ^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `nexa-avm` (lib) generated 1 warning
+   Compiling nexa-avm v2.4.0 (/Users/bytedance/proj/experiment/Nexa/avm)
+warning: unused import: `WasmValue`
+ --> tests/wasm_execution.rs:1:56
+  |
+1 | use nexa_avm::wasm::runtime::{WasmConfig, WasmRuntime, WasmValue};
+  |                                                        ^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: `nexa-avm` (test "wasm_execution") generated 1 warning (run `cargo fix --test "wasm_execution" -p nexa-avm` to apply 1 suggestion)
+warning: `nexa-avm` (lib test) generated 1 warning (1 duplicate)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 2.03s
+     Running unittests src/lib.rs (avm/target/debug/deps/nexa_avm-8f5eefa11fa16528)
+
+running 135 tests
+test bytecode::instructions::tests::test_opcode_values ... ok
+test compiler::lexer::tests::test_tokenize_keywords ... ok
+test compiler::lexer::tests::test_tokenize_string ... ok
+test compiler::lexer::tests::test_tokenize_operators ... ok
+test bytecode::instructions::tests::test_bytecode_module ... ok
+test bytecode::compiler::tests::test_compile_empty_program ... ok
+test bytecode::compiler::tests::test_compile_simple_flow ... ok
+test compiler::parser::tests::test_parse_tool ... ok
+test bytecode::compiler::tests::test_compiler_creation ... ok
+test compiler::parser::tests::test_parse_flow ... ok
+test compiler::lexer::tests::test_tokenize_agent_declaration ... ok
+test compiler::parser::tests::test_parse_agent ... ok
+test compiler::parser::tests::test_parse_pipeline ... ok
+test compiler::parser::tests::test_parser_creation ... ok
+test bytecode::compiler::tests::test_compile_agent ... ok
+test ffi::c_api::tests::test_avm_compile ... ok
+test ffi::c_api::tests::test_avm_compile_null_source ... ok
+test ffi::c_api::tests::test_avm_build_info ... ok
+test ffi::c_api::tests::test_avm_config_c_default ... ok
+test ffi::c_api::tests::test_avm_config ... ok
+test ffi::c_api::tests::test_avm_compile_and_run ... ok
+test ffi::c_api::tests::test_avm_create_destroy ... ok
+test bytecode::instructions::tests::test_serialization ... ok
+test ffi::c_api::tests::test_avm_destroy_null ... ok
+test ffi::c_api::tests::test_avm_error_code ... ok
+test ffi::c_api::tests::test_avm_quick_run ... ok
+test ffi::c_api::tests::test_avm_reset ... ok
+test ffi::c_api::tests::test_avm_result_c ... ok
+test ffi::c_api::tests::test_avm_run_without_compile ... ok
+test ffi::c_api::tests::test_avm_stats ... ok
+test ffi::c_api::tests::test_avm_stats_c_default ... ok
+test ffi::c_api::tests::test_avm_validate ... ok
+test ffi::c_api::tests::test_avm_version ... ok
+test ffi::python::tests::test_avm_py_compile_empty ... ok
+test ffi::python::tests::test_avm_py_compile_invalid ... ok
+test ffi::python::tests::test_avm_py_compile_simple ... ok
+test ffi::python::tests::test_avm_py_creation ... ok
+test ffi::python::tests::test_avm_py_init ... ok
+test ffi::python::tests::test_avm_py_reset ... ok
+test ffi::python::tests::test_compile_result ... ok
+test ffi::python::tests::test_compile_source_convenience ... ok
+test ffi::python::tests::test_execution_result ... ok
+test ffi::python::tests::test_python_module ... ok
+test ffi::python::tests::test_python_value_bool ... ok
+test ffi::python::tests::test_python_value_display ... ok
+test ffi::python::tests::test_python_value_float ... ok
+test ffi::python::tests::test_python_value_int ... ok
+test ffi::python::tests::test_python_value_dict ... ok
+test ffi::python::tests::test_python_value_list ... ok
+test ffi::python::tests::test_python_value_none ... ok
+test ffi::python::tests::test_python_value_string ... ok
+test runtime::agent::tests::test_agent_config ... ok
+test ffi::python::tests::test_run_source_convenience ... ok
+test runtime::agent::tests::test_agent_instance ... ok
+test runtime::jobs::tests::test_calculate_backoff ... ok
+test runtime::jobs::tests::test_memory_backend_cancel ... ok
+test runtime::jobs::tests::test_memory_backend_enqueue_dequeue ... ok
+test runtime::jobs::tests::test_memory_backend_unique_dedup ... ok
+test runtime::jobs::tests::test_job_queue_interface ... ok
+test runtime::jobs::tests::test_priority_from_name ... ok
+test runtime::jobs::tests::test_priority_ordering ... ok
+test runtime::llm::tests::test_llm_client ... ok
+test runtime::result_types::tests::test_nexa_option_none ... ok
+test runtime::result_types::tests::test_nexa_option_some ... ok
+test runtime::result_types::tests::test_nexa_result_err ... ok
+test runtime::result_types::tests::test_nexa_result_ok ... ok
+test runtime::result_types::tests::test_nexa_result_unwrap_or ... ok
+test runtime::result_types::tests::test_propagate_or_else_err_no_handler ... ok
+test runtime::result_types::tests::test_propagate_or_else_err_with_handler ... ok
+test runtime::result_types::tests::test_propagate_or_else_ok ... ok
+test runtime::result_types::tests::test_wrap_agent_result ... ok
+test runtime::tool::tests::test_tool_spec ... ok
+test vm::context_pager::tests::test_add_message ... ok
+test vm::context_pager::tests::test_clear ... ok
+test vm::context_pager::tests::test_compress_old_pages ... ok
+test vm::context_pager::tests::test_context_pager_creation ... ok
+test vm::context_pager::tests::test_cosine_similarity ... ok
+test vm::context_pager::tests::test_compute_embedding ... ok
+test vm::context_pager::tests::test_get_page ... ok
+test vm::context_pager::tests::test_lru_eviction ... ok
+test vm::context_pager::tests::test_memory_page ... ok
+test runtime::tests::test_runtime_creation ... ok
+test runtime::tests::test_run_simple_source ... ok
+test vm::context_pager::tests::test_memory_page_eviction_priority ... ok
+test runtime::tests::test_global_variables ... ok
+test vm::context_pager::tests::test_message_creation ... ok
+test vm::context_pager::tests::test_load_relevant_pages ... ok
+test vm::context_pager::tests::test_paging_config_default ... ok
+test vm::context_pager::tests::test_page_eviction ... ok
+test vm::context_pager::tests::test_stats_hit_rate ... ok
+test vm::cow_memory::tests::test_cow_isolation ... ok
+test vm::cow_memory::tests::test_cow_snapshot_performance ... ok
+test vm::cow_memory::tests::test_tree_of_thoughts_pattern ... ok
+test vm::interpreter::tests::test_interpreter_creation ... ok
+test vm::interpreter::tests::test_create_agent_opcode ... ok
+test vm::scheduler::tests::test_agent_schedule_info ... ok
+test vm::scheduler::tests::test_dag_graph ... ok
+test vm::scheduler::tests::test_dag_graph_cycle_detection ... ok
+test vm::scheduler::tests::test_generate_plan ... ok
+test vm::scheduler::tests::test_parallelism_analysis ... ok
+test vm::cow_memory::tests::test_performance_comparison ... ok
+test vm::scheduler::tests::test_scheduler_config_default ... ok
+test vm::scheduler::tests::test_load_balancing ... ok
+test vm::scheduler::tests::test_smart_scheduler_complete ... ok
+test vm::scheduler::tests::test_smart_scheduler_concurrent_limit ... ok
+test vm::scheduler::tests::test_smart_scheduler_priority ... ok
+test vm::scheduler::tests::test_smart_scheduler_schedule ... ok
+test vm::scheduler::tests::test_smart_scheduler_submit ... ok
+test vm::scheduler::tests::test_system_load ... ok
+test vm::scheduler::tests::test_topological_sort ... ok
+test vm::scheduler::tests::test_tree_of_thoughts_with_cow_and_workstealing ... ok
+test vm::scheduler::tests::test_work_stealing ... ok
+test vm::scheduler::tests::test_work_stealing_scheduler ... ok
+test vm::stack::tests::test_stack_operations ... ok
+test vm::stack::tests::test_value_truthy ... ok
+test wasm::runtime::tests::test_execution_stats ... ok
+test wasm::runtime::tests::test_leb128_parsing ... ok
+test wasm::runtime::tests::test_wasm_config_default ... ok
+test wasm::runtime::tests::test_wasm_instance_memory ... ok
+test wasm::runtime::tests::test_wasm_module_validation ... ok
+test wasm::runtime::tests::test_wasm_runtime_basic ... ok
+test wasm::runtime::tests::test_wasm_runtime_module_management ... ok
+test wasm::runtime::tests::test_wasm_value_types ... ok
+test wasm::sandbox::tests::test_audit_log ... ok
+test wasm::sandbox::tests::test_permission_level ... ok
+test wasm::sandbox::tests::test_resource_limits ... ok
+test wasm::sandbox::tests::test_resource_usage ... ok
+test wasm::sandbox::tests::test_sandbox_config ... ok
+test wasm::sandbox::tests::test_sandbox_config_paths ... ok
+test wasm::sandbox::tests::test_sandbox_instance ... ok
+test wasm::sandbox::tests::test_sandbox_permission ... ok
+test wasm::sandbox::tests::test_wasi_context ... ok
+test wasm::sandbox::tests::test_wasm_sandbox_creation ... ok
+test wasm::sandbox::tests::test_wasm_sandbox_permission_check ... ok
+test vm::scheduler::tests::test_rebalance ... ok
+
+test result: ok. 135 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.02s
+
+     Running tests/conformance.rs (avm/target/debug/deps/conformance-7c24039bbab6fe78)
+
+running 4 tests
+test unsupported_instruction_is_an_error ... ok
+test instruction_budget_stops_an_infinite_loop ... ok
+test tool_declarations_require_the_python_runtime ... ok
+test shared_python_rust_programs ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/wasm_execution.rs (avm/target/debug/deps/wasm_execution-4808018b77ab3485)
+
+running 2 tests
+test malformed_metadata_returns_error_without_panicking ... ok
+test missing_feature_fails_explicitly ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

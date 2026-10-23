@@ -302,7 +302,7 @@ class NexaAgent:
         
         return result
     
-    def _check_ensures_contract(self, result: Any, old_values: Optional[OldValues] = None) -> Any:
+    def _check_ensures_contract(self, result: Any, old_values: Optional[OldValues] = None, *, input_text: Optional[str] = None) -> Any:
         """Design by Contract: 检查后置条件 (ensures) + v1.1 类型检查
         
         如果有契约且 ensures 检查失败:
@@ -325,7 +325,9 @@ class NexaAgent:
             # v1.1: 即使没有 ensures 契约，也执行类型检查
             return self._check_output_type(result)
         
-        context = {"result": result, "input": next((str(message.get("content", "")) for message in reversed(self.messages) if message.get("role") == "user"), "")}
+        if input_text is None:
+            input_text = next((str(message.get("content", "")) for message in reversed(self.messages) if message.get("role") == "user"), "")
+        context = {"result": result, "input": input_text}
         ens_violation = check_ensures(self.contracts, context, result, old_values)
         if ens_violation:
             print(f"[{self.name} Contract] Ensures violated: {ens_violation.args[0]}")
