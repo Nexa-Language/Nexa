@@ -28,6 +28,10 @@
 
 ## 已验证边界与待验收渠道
 
+PR [#2](https://github.com/Nexa-Language/Nexa/pull/2) 首轮远端检查：Python 3.10、3.12 和 Rust 默认/WASM 通过；Python 3.14 为 2159 passed / 1 failed，失败来自旧测试依赖 `Optional` 的字符串显示格式。按 [Python typing 官方契约](https://docs.python.org/3.14/library/typing.html#typing.Optional)改为直接比较 `str | None` 类型，收紧了原先也接受 `NoneType` 的断言。本地类型系统定向测试 79 项通过；运行时代码与全套冻结快照一致，仅该测试在后续 CI 中再次验证。
+
+推送时 GitHub 报告旧 main 的 AnyIO 4.12.1 存在两项告警，修复下界为 4.14.2。本次 uv.lock 和本地验证环境使用 4.15.1，旧 requirements.txt 的固定版本已随打包迁移移除。
+
 语言探测复现了历史 struct/enum 构造、flow requires/ensures、defer 的生成代码执行缺口。控制流末尾的 flow 返回 `None`，`std.json.parse` 返回文本；[探测源码与实际结果](2026-10-23-language-probes.json) 和[运行契约](../../docs/runtime-v2.4.md#语言执行范围)记录了使用边界。示例清单的 63 compiled / 75 total 统计针对编译阶段。
 
 真实 provider 的鉴权、服务端兼容性、质量、费用和延迟、PostgreSQL 集成及 MCP HTTP server 端到端仍待独立验证。MCP stdio、文件副作用、审批、跨进程恢复和验证子进程已经在本地实际执行。Rust 的支持子集及 Clippy 历史 warnings 见原始验证记录。
