@@ -274,6 +274,7 @@ class WorkspaceManager:
                 try:
                     os.unlink(temporary, dir_fd=parent)
                 except FileNotFoundError:
+                    # Cleanup is idempotent when a concurrent writer already removed the temporary file.
                     pass
 
     def _preserved_directory(self, item: PreservedFile) -> str:
