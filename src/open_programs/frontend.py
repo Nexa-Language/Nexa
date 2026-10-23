@@ -27,7 +27,7 @@ from .model import (
 )
 
 _GRAMMAR = r'''
-start: version? program
+start: version program
 version: "language" STRING
 program: "program" NAME parameters? "{" program_item* "}"
 ?program_item: "environment" NAME -> environment
@@ -175,10 +175,14 @@ def _goal_fields(node: Node, source: SourceBundle) -> GoalSpec:
             data[kind] = tuple(_path(item) for item in _nodes(_nodes(child)[0]))
         elif kind == "depends":
             data["depends_on"] = tuple(_tokens(_nodes(child)[0]))
-        elif kind == "ensure":
-            checks.append(_path(_nodes(child)[0]))
-        elif kind == "review":
-            reviews.append(json.loads(_tokens(child)[0]))
+        elif kind in {"ensure", "review"}:
+            name = _path(_nodes(child)[0]) if kind == "ensure" else json.loads(_tokens(child)[0])
+            clauses = checks if kind == "ensure" else reviews
+            if kind == "ensure" and name == "typecheck":
+                raise ProgramError("reserved_requirement", "typecheck is supplied by the compiler", span=_span(child, source))
+            if name in clauses:
+                raise ProgramError("duplicate_requirement", f"Repeated {kind}: {name}", span=_span(child, source))
+            clauses.append(name)
     data.update(checks=tuple(checks), reviews=tuple(reviews))
     return GoalSpec.model_validate(data)
 

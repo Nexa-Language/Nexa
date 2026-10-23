@@ -112,3 +112,46 @@ def test_diagnostics_locate_the_obligation_that_needs_repair() -> None:
     report = check_source(SOURCE.replace("repair(request)", "missing(request)"))
     assert report.diagnostics[0].span.line == 19
     assert report.diagnostics[0].obligation == "missing"
+
+
+def test_check_requires_explicit_language_version() -> None:
+    report = check_source(SOURCE.removeprefix('language "3.0"\n'))
+    assert not report.ok
+    assert report.diagnostics[0].code == "syntax_error"
+    assert report.diagnostics[0].span.line == 1
+
+
+def test_cli_check_requires_explicit_language_version(tmp_path: Path) -> None:
+    root = Path(__file__).resolve().parents[2]
+    source = tmp_path / "unversioned.nx"
+    source.write_text(SOURCE.removeprefix('language "3.0"\n'))
+    result = subprocess.run([sys.executable, "-m", "src.cli", "check", str(source), "--json"], cwd=root, capture_output=True, text=True, check=False)
+    assert result.returncode == 1
+    assert json.loads(result.stdout)["diagnostics"][0]["code"] == "syntax_error"
+
+
+@pytest.mark.parametrize(("clause", "line"), [('ensure checks.regression', 16), ('review model("compatibility")', 17)])
+def test_duplicate_acceptance_clauses_are_source_diagnostics(clause: str, line: int) -> None:
+    report = check_source(SOURCE.replace(clause, clause + "\n        " + clause))
+    assert not report.ok
+    diagnostic = report.diagnostics[0]
+    assert diagnostic.code == "duplicate_requirement"
+    assert diagnostic.obligation == "repair"
+    assert diagnostic.span.path == "demo.nx" and diagnostic.span.line == line
+
+
+def test_distinct_acceptance_clauses_remain_valid() -> None:
+    source = SOURCE.replace('ensure checks.regression', 'ensure checks.regression ensure checks.other')
+    source = source.replace('review model("compatibility")', 'review model("compatibility") review model("checks.regression")')
+    report = check_source(source)
+    assert report.ok, report.diagnostics
+    goal = report.program.goals[1]
+    assert goal.checks == ("checks.regression", "checks.other")
+    assert goal.reviews == ("compatibility", "checks.regression")
+
+
+def test_builtin_typecheck_cannot_be_redeclared() -> None:
+    report = check_source(SOURCE.replace('ensure checks.regression', 'ensure typecheck'))
+    assert not report.ok
+    assert report.diagnostics[0].code == "reserved_requirement"
+    assert report.diagnostics[0].span.line == 15

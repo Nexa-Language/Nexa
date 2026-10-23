@@ -4,9 +4,9 @@ Version: Nexa 3.0.0 Python reference implementation. This document defines the s
 
 ## Language and compilation
 
-Use `language "3.0"` followed by `program Name(parameters) { ... }`. The canonical `compile_program` API dispatches explicit versions; existing `compile_source` and `compile_file` retain their 2.4 Python-lowering contract. `nexa check file.nx --json` parses and checks Open Programs without creating a provider.
+The `language "3.0"` declaration is required, followed by `program Name(parameters) { ... }`. The canonical `compile_program` API dispatches explicit versions; existing `compile_source` and `compile_file` retain their 2.4 Python-lowering contract. `nexa check file.nx --json` parses and checks Open Programs without creating a provider.
 
-A goal declares parameters, a return type, a nonempty intent, and optional stage, context, capabilities, checks, reviews and dependencies. Supported boundary types are Int, Float, String, Bool, Unit, Json, Patch, Repository and ChangeRequest. JSON-encoded values are checked at the boundary; arbitrary Python implementations are checked inside OCI before their results become usable.
+A goal declares parameters, a return type, a nonempty intent, and optional stage, context, capabilities, checks, reviews and dependencies. Each `ensure` name and each `review` criterion must be unique within its kind; the automatic `typecheck` requirement is reserved. Repeated clauses produce a diagnostic at the duplicate source location. Supported boundary types are Int, Float, String, Bool, Unit, Json, Patch, Repository and ChangeRequest. JSON-encoded values are checked at the boundary; arbitrary Python implementations are checked inside OCI before their results become usable.
 
 `implementation open` leaves an obligation. `implementation value <JSON>` supplies a literal; `implementation python "..."` supplies a Python function `solve(inputs)` executed only inside OCI. Build goals default to stage build; event-triggered goals use stage runtime. Build goals cannot depend on runtime goals. Dependencies form a DAG and are available to implementations in `inputs["dependencies"]`.
 
