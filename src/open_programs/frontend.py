@@ -270,5 +270,6 @@ def diagnostic_context(source: SourceBundle, report: CheckReport) -> dict[str, o
         program = _nodes(tree, "program")[0]
         known = [_tokens(goal)[0] for goal in _nodes(program, "goal")]
     except UnexpectedInput:
+        # The report already carries syntax errors; malformed source has no reliable symbol table.
         pass
     return {"diagnostics": [diagnostic.model_dump(mode="json") for diagnostic in report.diagnostics], "known_goals": known}
