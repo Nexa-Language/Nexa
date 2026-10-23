@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa 2.4.0 — an agent-native language and reliable runtime with native model protocols, tool approvals and durable execution.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa — Harness Native Agent Language">
+  <meta property="og:description" content="Nexa 2.4.0 connects .nx programs to reliable agent execution, native providers and checkpoints.">
+  <meta property="og:image" content="https://www.nexa-lang.com/assets/nexa-logo.png">
+  <meta property="og:url" content="https://www.nexa-lang.com/blog/2026-10-v2.4-release.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Nexa 2.4.0 — Reliable Agent Execution · Nexa Blog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       NAVIGATION v2
+       ═══════════════════════════════════════════════════════════════════ -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="../index.html">Home <span class="chevron">▾</span></a>
+          <div class="nav-dropdown">
+            <a href="../index.html#features">Features</a>
+            <a href="../index.html#code">Code</a>
+            <a href="../index.html#architecture">Architecture</a>
+          </div>
+        </li>
+        <li class="nav-item"><a href="index.html">Blog</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener">Docs</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← All posts</a>
+    <div class="post-date">October 23, 2026</div>
+    <h1>Nexa 2.4.0: from language declarations to reliable agent execution</h1>
+    <div class="post-tags"><span class="tag">v2.4.0</span><span class="tag">Release</span><span class="tag">Harness Native</span></div>
+    <div class="post-body">
+      <p>Nexa lets humans and models express agents, tools, protocols and control flow in the same <code>.nx</code> program. Version 2.4 connects that language to a shared compiler and a reliable execution lifecycle.</p>
+      <p>The Python distribution, source package and checksums are available in the <a href="https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0">2.4.0 GitHub Release</a>. The full source archive also includes the Rust AVM, examples and tests.</p>
+      <h2>One compiler, one execution lifecycle</h2>
+      <p>CLI, SDK and embedded API now share recursive include resolution, AST normalization, source diagnostics and generated Python checks. AgentRunner handles text, structured output, streaming, tools, budgets and terminal states through one execution path.</p>
+      <p>Native Chat Completions, Responses and Anthropic adapters retain their protocol state, including opaque reasoning items and signed thinking blocks. Explicit run states make completion, failure, approval, timeout and budget exhaustion visible to callers.</p>
+      <h2>Approvals and recovery follow the actual work</h2>
+      <p>Tool dispatch checks the declared exposure set and argument schema before execution. High-risk tools wait for explicit approval. SQLite checkpoints record revisions, pending calls, usage and a tool journal.</p>
+      <p>The journal records a tool start before an external effect. Completed results can be reused during recovery; uncertain outcomes require reconciliation. Nexa Code uses this path to read a workspace, request approval for changes, edit files and run verification commands.</p>
+      <p>For follow-up tasks, <code>NexaAgent.continue_run()</code> creates a new run from settled conversation history with fresh budgets, deadlines and approvals. Native provider history is retained, and parent/session identifiers connect the evidence across turns. Editor integrations can use the original declaration locations returned by <code>inspect --format json</code>.</p>
+      <h2>Install the official wheel</h2>
+      <p>Use Python 3.10+ in an activated virtual environment:</p>
+      <pre><code>python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v2.4.0/nexa_lang-2.4.0-py3-none-any.whl
+nexa --version</code></pre>
+      <p>The <code>nexa-lang</code> name on PyPI belongs to another project. Install using this exact GitHub URL. Optional Anthropic, terminal and MCP dependencies are covered in the <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md#install-a-release">installation guide</a>.</p>
+      <p>Save this as <code>hello.nx</code>, then run <code>nexa run hello.nx</code>. It prints <code>42</code> without model credentials:</p>
+      <pre data-language="nexa"><code>flow main {
+    result = 23 + 19;
+    print(result);
+}</code></pre>
+      <h2>Verification with a stated scope</h2>
+      <p>The local macOS arm64 / Python 3.12.13 snapshot passed <strong>2,160 Python tests</strong>; five PostgreSQL cases were skipped and three benchmark cases excluded. Rust passed 140 tests with default features and 143 with WASM. The example inventory contains 63 compiling programs and 12 historical drafts with recorded reasons.</p>
+      <p>Tests exercise real subprocess crashes, MCP stdio sessions, file edits, approvals and verification commands. The model responses are deterministic fixtures. Real-provider authentication, compatibility, quality, cost and latency remain to be measured; MCP HTTP server end-to-end testing is also pending.</p>
+      <p><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/plan/evidence/2026-10-23-release-validation.md">Read the verification record</a> for environments, commands and logs. CI covers Python 3.10/3.12/3.14 and Rust default/WASM on Linux.</p>
+      <p>Historical syntax still has execution gaps in struct/enum construction, flow requires/ensures and defer. The <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/runtime-v2.4.md">runtime contract</a> records these limits and the behavior of flow return values and JSON text.</p>
+      <h2>Migration and supported boundaries</h2>
+      <ul>
+        <li><code>verify</code> failure stops the success path; <code>exit_when</code> compares exact states.</li>
+        <li>Approval waiting time counts toward the run deadline. Resume requires the same program, provider, workspace and budgets.</li>
+        <li>Ordinary Python tools execute on the host and cancel cooperatively. A sandbox declaration requires an actual isolated executor.</li>
+        <li>Snapshots restore memory and conversation state. External effects retain their actual state.</li>
+        <li>Project-local <code>.nxs</code> settings now correctly override parent-directory settings. Check the selected endpoint and model when migrating.</li>
+        <li>Rust supports arithmetic, variables, control flow and Agent calls; full tools and Harness behavior use Python. Optional Wasmtime 48 LTS execution supports scalar modules, memory and execution limits.</li>
+      </ul>
+      <p>See the <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/release_notes/v2.4.0.md">complete release notes</a> and <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/runtime-v2.4.md">runtime contract</a> before migrating existing agents.</p>
+      <h2>Build from the release source</h2>
+      <pre><code>git clone --branch v2.4.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
+cd Nexa
+uv sync --locked --all-extras
+uv run nexa --version</code></pre>
+      <p>Download <code>SHA256SUMS</code> alongside the Python packages and verify them with <code>shasum -a 256 -c SHA256SUMS</code>. The release tag identifies the same source used for the packages and this site.</p>
+    </div>
+  </article>
+  <script src="../js/main.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

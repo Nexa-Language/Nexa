@@ -16,7 +16,7 @@
 # along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 # ========================================================================
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 from .secrets import DEFAULT_MODEL_CONFIG, DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 from .contracts import ContractSpec, ContractClause, ContractViolation, check_requires, check_ensures, capture_old_values, OldValues
 from .type_system import TypeChecker, TypeViolation, TypeMode, get_type_mode, TypeInferrer, PrimitiveTypeExpr, AliasTypeExpr
@@ -26,6 +26,9 @@ import json
 import os
 import sys
 import hashlib
+import threading
+from .run_state import RunConfig, RunState, RunStatus, RunStopped
+from .providers import ChatCompletionsProvider, ModelProvider
 
 class NexaQuotaExceededError(Exception):
     pass
@@ -55,7 +58,7 @@ class NexaAgent:
                  max_history_turns=None, experience=None, timeout: int = 30, retry: int = 3,
                  contracts=None, output_format: str = "", output_schema=None,
                  max_tool_calls: int = 10, tool_call_strategy: str = "auto",
-                 context_spec=None):
+                 context_spec=None, provider_api: Optional[str] = None):
         # v2.2.1: Context-as-Structure — context behaviour declared at construction
         self.context_spec = ContextSpec.from_dict(context_spec) if isinstance(context_spec, dict) else context_spec
         self._last_context: Optional[AgentContext] = None
@@ -64,6 +67,8 @@ class NexaAgent:
         self._last_output_text: str = ""
 
         self.name = name
+        self._run_lock = threading.RLock()
+        self.last_run: Optional[RunState] = None
         self.system_prompt = prompt
         if role:
             self.system_prompt = f"Role: {role}. {self.system_prompt}".strip()
@@ -92,6 +97,12 @@ class NexaAgent:
         self.model = model or nexa_secrets.get_model_config().get("strong", DEFAULT_MODEL_CONFIG["strong"])
         if "/" in self.model:
             self.provider, self.model = self.model.split("/", 1)
+        self.provider_api = provider_api or ("anthropic" if self.provider == "anthropic" else "chat")
+        if self.provider_api not in {"chat", "responses", "anthropic"}:
+            raise ValueError(f"Unsupported provider API: {self.provider_api}")
+        self._native_client: Any = None
+        self._provider_items: List[Dict[str, Any]] = []
+        self._provider_cursor = 0
             
         self.memory_scope = memory_scope
         # protocol 已在上面处理
@@ -174,21 +185,47 @@ class NexaAgent:
         """Use the configured weak model for low-cost context summaries."""
         return nexa_secrets.get_model_config().get("weak", DEFAULT_MODEL_CONFIG["weak"])
 
+    def _provider_adapter(self) -> ModelProvider:
+        from .native_providers import AnthropicProvider, ResponsesProvider
+
+        if self.provider_api == "responses":
+            return ResponsesProvider(self._get_client)
+        if self.provider_api == "anthropic":
+            return AnthropicProvider(self._get_anthropic_client)
+        return ChatCompletionsProvider(self._get_client)
+
+    def _get_anthropic_client(self) -> Any:
+        with self._run_lock:
+            if self._native_client is not None:
+                return self._native_client
+            from anthropic import Anthropic
+
+            api_key = nexa_secrets.get("ANTHROPIC_API_KEY")
+            base_url = nexa_secrets.get("ANTHROPIC_BASE_URL")
+            if not api_key:
+                raise ValueError("ANTHROPIC_API_KEY is required for the native Anthropic API")
+            options = {"api_key": api_key, "max_retries": 0}
+            if base_url:
+                options["base_url"] = base_url
+            self._native_client = Anthropic(**options)
+            return self._native_client
+
     def _get_client(self) -> OpenAI:
         """Create the OpenAI-compatible client only when a model call is required."""
-        if self.client is not None:
+        with self._run_lock:
+            if self.client is not None:
+                return self.client
+
+            api_key, base_url = self._resolve_provider_config()
+            if not api_key:
+                raise ValueError(
+                    f"API key not found for provider '{self.provider}'. "
+                    f"Configure secrets.nxs with API_KEY or {self.provider.upper()}_API_KEY before running this agent."
+                )
+
+            self._client_base_url = base_url
+            self.client = OpenAI(api_key=api_key, base_url=base_url, max_retries=0)
             return self.client
-
-        api_key, base_url = self._resolve_provider_config()
-        if not api_key:
-            raise ValueError(
-                f"API key not found for provider '{self.provider}'. "
-                f"Configure secrets.nxs with API_KEY or {self.provider.upper()}_API_KEY before running this agent."
-            )
-
-        self._client_base_url = base_url
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
-        return self.client
 
     # v1.1: 渐进式类型系统 — 初始化 Agent 级别类型检查器
     _type_checker_instance = None
@@ -288,7 +325,7 @@ class NexaAgent:
             # v1.1: 即使没有 ensures 契约，也执行类型检查
             return self._check_output_type(result)
         
-        context = {"result": result, "input": str(self.messages[-1].get("content", "")) if self.messages else ""}
+        context = {"result": result, "input": next((str(message.get("content", "")) for message in reversed(self.messages) if message.get("role") == "user"), "")}
         ens_violation = check_ensures(self.contracts, context, result, old_values)
         if ens_violation:
             print(f"[{self.name} Contract] Ensures violated: {ens_violation.args[0]}")
@@ -374,230 +411,57 @@ class NexaAgent:
                     except Exception as e:
                         _debug_print(f"[{self.name} Context Compaction Failed]: {e}")
 
-    def run(self, *args) -> str:
-        import signal
-        import threading
-        from contextlib import contextmanager
-        
-        # Design by Contract: 检查前置条件 (requires)
-        if self.contracts and self.contracts.has_requires():
-            context = {"input": " ".join([str(arg) for arg in args]), "args": args}
-            req_violation = check_requires(self.contracts, context)
-            if req_violation:
-                print(f"[{self.name} Contract] Requires violated: {req_violation.args[0]}")
-                # Agent requires 失败: 跳过执行，返回错误信息
-                # 如果有 fallback 配置，走 fallback；否则抛异常
-                raise ContractViolation(
-                    req_violation.args[0],
-                    clause_type=req_violation.clause_type,
-                    clause=req_violation.clause,
-                    context=req_violation.context,
-                    is_semantic=req_violation.is_semantic
-                )
-        
-        # Design by Contract: 捕获 old() 值（用于后置条件比较）
-        old_values = None
-        if self.contracts and self.contracts.has_ensures():
-            context_for_old = {"input": " ".join([str(arg) for arg in args]), "args": args}
-            old_values = capture_old_values(self.contracts, context_for_old)
-        
-        @contextmanager
-        def timeout_context(seconds):
-            """超时上下文管理器
-            
-            注意：signal.SIGALRM 只能在主线程工作。
-            在子线程（如 dag_fanout 的 ThreadPoolExecutor）中，
-            我们跳过 signal 超时机制，依赖 API 客户端自身的超时。
-            """
-            def timeout_handler(signum, frame):
-                raise NexaTimeoutError(f"Agent {self.name} execution timed out after {seconds} seconds")
-            
-            # 检测是否在主线程 - signal 只能在主线程工作
-            is_main_thread = threading.current_thread() is threading.main_thread()
-            
-            # 只在主线程且非 Windows 系统上使用 SIGALRM
-            if hasattr(signal, 'SIGALRM') and is_main_thread:
-                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
-                signal.alarm(seconds)
-                try:
-                    yield
-                finally:
-                    signal.alarm(0)
-                    signal.signal(signal.SIGALRM, old_handler)
-            else:
-                # Windows 系统不支持 SIGALRM，直接执行
-                yield
-        
-        # v2.2.1: Context-as-Structure — apply upstream AgentContext if present
-        upstream_context = None
-        plain_args = []
-        for arg in args:
-            if isinstance(arg, AgentContext):
-                upstream_context = arg
-            else:
-                plain_args.append(arg)
+    def run(self, *args) -> Any:
+        """Run one turn in the legacy serialized conversation; execute() starts an isolated run."""
+        from .agent_execution import execute_agent
 
-        user_input = " ".join([str(arg) for arg in plain_args])
+        with self._run_lock:
+            outcome = execute_agent(self, args, history=self.messages, on_text=lambda text: print(text, end="", flush=True))
+            self.last_run = outcome.state
+            if not outcome.state.success:
+                if outcome.state.status == RunStatus.TIMED_OUT:
+                    raise NexaTimeoutError(outcome.state.error)
+                if outcome.state.status == RunStatus.BUDGET_EXHAUSTED:
+                    raise NexaQuotaExceededError(outcome.state.error)
+                if outcome.exception is not None:
+                    raise outcome.exception
+                raise RunStopped(outcome.state.status, outcome.state.error or outcome.state.status.value)
+            self.messages = outcome.state.messages
+            self._provider_items = outcome.state.provider_items
+            self._provider_cursor = outcome.state.provider_cursor
+            self._last_context = outcome.context
+            self._last_output_text = str(outcome.value)
+            self._tool_results = [{"call_id": key, **entry} for key, entry in outcome.state.tool_journal.items()]
+            self._save_memory()
+            return outcome.value
 
-        # If an upstream AgentContext was passed and this agent declares
-        # source=upstream, inherit the declared fields now (before we append
-        # our own user message).
-        if upstream_context is not None and self.context_spec and self.context_spec.source == "upstream":
-            upstream_context.apply_to(self, self.context_spec.inherit)
+    def execute(self, *args: Any, config: Optional[RunConfig] = None, state: Optional[RunState] = None,
+                cancel: Optional[threading.Event] = None, save=None, on_event=None, on_text=None, provider=None) -> RunState:
+        """Execute or resume an isolated run. Messages and counters live in the returned RunState."""
+        from .agent_execution import execute_agent
 
-        # Pull context from memory if specified
-        context = global_memory.get_context(self.memory_scope)
-        if context:
-            user_input += f"\n[Context]: {context}"
+        return execute_agent(self, args, config=config, state=state, cancel=cancel, save=save,
+                             on_event=on_event, on_text=on_text, provider=provider).state
 
-        _debug_print(f"\n> [{self.name} received]: {user_input}")
-        self.messages.append({"role": "user", "content": user_input})
-        
-        self._compact_context()
-        
-        # v2.1: Reset tool call counter for this request
-        self._tool_call_count = 0
+    def continue_run(self, previous: RunState, *args: Any, config: Optional[RunConfig] = None,
+                     cancel: Optional[threading.Event] = None, save: Optional[Callable[[RunState], None]] = None,
+                     on_event: Optional[Callable[[Dict[str, Any]], None]] = None,
+                     on_text: Optional[Callable[[str], None]] = None, provider: Optional[ModelProvider] = None) -> RunState:
+        """Start a new turn with settled history, fresh budgets and new approvals."""
+        from .conversations import continue_agent
+        return continue_agent(self, previous, args, config=config, cancel=cancel, save=save,
+                              on_event=on_event, on_text=on_text, provider=provider)
 
-        kwargs = {
-            "model": self.model,
-        }
-        if self.max_tokens:
-            kwargs["max_tokens"] = self.max_tokens
+    async def aexecute(self, *args: Any, **kwargs: Any) -> RunState:
+        """Async adapter with cooperative cancellation at model and tool boundaries."""
+        import asyncio
 
-        # v2.1: Structured output (response_format)
-        if self.output_format == "json":
-            if self.output_schema:
-                kwargs["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": {
-                        "name": f"{self.name}_schema",
-                        "schema": self.output_schema.model_json_schema() if hasattr(self.output_schema, 'model_json_schema') else {"type": "object"}
-                    }
-                }
-            else:
-                kwargs["response_format"] = {"type": "json_object"}
-            
-        if self.tools:
-            kwargs["tools"] = [{"type": "function", "function": t} for t in self.tools]
-            
-        # 使用可配置的 retry 次数
-        retries = self.retry
-        
-        # Tool Execution Loop
-        while True:
-            # v2.1: Tool call strategy enforcement
-            if self.tool_call_strategy == "none" and self.tools:
-                self.tools = []
-                if "tools" in kwargs:
-                    del kwargs["tools"]
-            elif self.tool_call_strategy == "required" and self._tool_call_count == 0 and self.tools:
-                kwargs["tool_choice"] = "required"
-
-            # v2.1: Max tool calls enforcement
-            if self._tool_call_count >= self.max_tool_calls:
-                _debug_print(f"[{self.name}] Max tool calls ({self.max_tool_calls}) reached, forcing final answer")
-                if "tools" in kwargs:
-                    del kwargs["tools"]
-                if "tool_choice" in kwargs:
-                    del kwargs["tool_choice"]
-            kwargs["messages"] = self.messages
-            
-            cached_result = self._check_cache(kwargs)
-            if cached_result is not None:
-                _debug_print(f"< [{self.name} replied from CACHE]: {cached_result}\n")
-                self.messages.append({"role": "assistant", "content": cached_result})
-                self._save_memory()
-                return self._snapshot_context(self._check_ensures_contract(cached_result, old_values))
-
-            try:
-                with timeout_context(self.timeout):
-                    if self.stream and not self.tools and not self.protocol:
-                        kwargs["stream"] = True
-                        _debug_print(f"< [{self.name} replied]: ", end="")
-                        sys.stdout.flush()
-                        response = self._get_client().chat.completions.create(**kwargs)
-                        accumulated_reply = ""
-                        for chunk in response:
-                            content = chunk.choices[0].delta.content
-                            if content:
-                                sys.stdout.write(content)
-                                sys.stdout.flush()
-                                accumulated_reply += content
-                        print("\n")
-                        self.messages.append({"role": "assistant", "content": accumulated_reply})
-                        self._write_cache(kwargs, accumulated_reply)
-                        self._save_memory()
-                        return self._check_ensures_contract(accumulated_reply, old_values)
-                    
-                    # Non-streaming or Tool/Protocol mode
-                    if "stream" in kwargs:
-                        del kwargs["stream"]
-                        
-                    # v2.3.1: Show "Thinking..." spinner during LLM call in quiet mode
-                    if os.environ.get("NEXA_QUIET"):
-                        try:
-                            from .ui import _console, _RICH_AVAILABLE
-                            if _RICH_AVAILABLE and _console:
-                                with _console.status("[dim]Thinking...[/dim]", spinner="dots"):
-                                    response = self._get_client().chat.completions.create(**kwargs)
-                            else:
-                                response = self._get_client().chat.completions.create(**kwargs)
-                        except Exception:
-                            response = self._get_client().chat.completions.create(**kwargs)
-                    else:
-                        response = self._get_client().chat.completions.create(**kwargs)
-                    msg = response.choices[0].message
-                    
-                    if msg.tool_calls:
-                        self._tool_call_count += 1  # v2.1: increment tool call counter
-                        msg_dict = msg.dict(exclude_none=True) if hasattr(msg, "dict") else dict(msg)
-                        self.messages.append(msg_dict)
-                        for tc in msg.tool_calls:
-                            _debug_print(f"[{self.name} requested TOOL CALL]: {tc.function.name} -> {tc.function.arguments}")
-                            result = execute_tool(tc.function.name, tc.function.arguments)
-                            tool_message = {
-                                "role": "tool",
-                                "tool_call_id": tc.id,
-                                "name": tc.function.name,
-                                "content": result
-                            }
-                            self.messages.append(tool_message)
-                        continue
-                    else:
-                        reply = msg.content or ""
-                        
-                        if self.protocol:
-                            try:
-                                parsed_reply = json.loads(reply)
-                                # 验证并返回 Pydantic 模型实例
-                                validated = self.protocol.model_validate(parsed_reply)
-                                self.messages.append({"role": "assistant", "content": reply})
-                                _debug_print(f"< [{self.name} replied (JSON)]: {reply}\n")
-                                self._write_cache(kwargs, reply)
-                                self._save_memory()
-                                return self._check_ensures_contract(validated, old_values)  # 返回 Pydantic 模型实例，支持属性访问
-                                
-                            except Exception as e:
-                                retries -= 1
-                                if retries <= 0:
-                                    raise ValueError(f"Agent {self.name} failed to conform to protocol {self.protocol.__name__}: {str(e)}")
-                                _debug_print(f"\n[{self.name} Schema Error, Retrying] {str(e)}")
-                                self.messages.append({"role": "assistant", "content": reply})
-                                self.messages.append({"role": "system", "content": f"Your last response failed schema validation. Please fix and return valid JSON. Error: {str(e)}"})
-                                continue
-                        
-                        self.messages.append({"role": "assistant", "content": reply})
-                        _debug_print(f"< [{self.name} replied]: {reply}\n")
-                        self._write_cache(kwargs, reply)
-                        self._save_memory()
-                        return self._snapshot_context(self._check_ensures_contract(reply, old_values))
-
-            except NexaTimeoutError as e:
-                retries -= 1
-                if retries <= 0:
-                    raise
-                _debug_print(f"\n[{self.name} Timeout, Retrying... ({retries} attempts left)]")
-                continue
+        cancel = kwargs.setdefault("cancel", threading.Event())
+        try:
+            return await asyncio.to_thread(self.execute, *args, **kwargs)
+        except asyncio.CancelledError:
+            cancel.set()
+            raise
 
     def _snapshot_context(self, result: Any) -> Any:
         """v2.2.1: After run(), snapshot the agent state into an AgentContext.
@@ -650,8 +514,6 @@ class NexaAgent:
         """
         创建 Agent 克隆 - 使用 Copy-on-Write (COW) 实现 O(1) 时间复杂度
         
-        论文声称：COW snapshot 性能提升可达 200,000x (0.1ms vs 20,178ms deep copy)
-        
         使用 COW 状态共享数据，只在修改时才创建本地副本。
         这对于 Tree-of-Thoughts 等需要大量分支的场景非常高效。
         
@@ -695,7 +557,14 @@ class NexaAgent:
             cache=cache,
             max_history_turns=max_history_turns,
             timeout=timeout,
-            retry=retry
+            retry=retry,
+            output_schema=kwargs.get("output_schema", self.output_schema),
+            output_format=kwargs.get("output_format", self.output_format),
+            max_tool_calls=kwargs.get("max_tool_calls", self.max_tool_calls),
+            tool_call_strategy=kwargs.get("tool_call_strategy", self.tool_call_strategy),
+            contracts=kwargs.get("contracts", self.contracts),
+            context_spec=kwargs.get("context_spec", self.context_spec),
+            provider_api=kwargs.get("provider_api", self.provider_api),
         )
         
         # 替换为共享的 COW 状态
@@ -746,7 +615,14 @@ class NexaAgent:
             cache=cache,
             max_history_turns=max_history_turns,
             timeout=timeout,
-            retry=retry
+            retry=retry,
+            output_schema=kwargs.get("output_schema", self.output_schema),
+            output_format=kwargs.get("output_format", self.output_format),
+            max_tool_calls=kwargs.get("max_tool_calls", self.max_tool_calls),
+            tool_call_strategy=kwargs.get("tool_call_strategy", self.tool_call_strategy),
+            contracts=kwargs.get("contracts", self.contracts),
+            context_spec=kwargs.get("context_spec", self.context_spec),
+            provider_api=kwargs.get("provider_api", self.provider_api),
         )
         
         new_agent._cow_state = new_cow_state

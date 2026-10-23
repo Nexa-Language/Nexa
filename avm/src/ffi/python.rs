@@ -670,9 +670,9 @@ mod tests {
 
     #[test]
     fn test_python_value_float() {
-        let val = PythonValue::float_val(3.14);
-        assert!((val.as_float().unwrap() - 3.14).abs() < 1e-6);
-        assert_eq!(val.as_int(), Some(3));
+        let val = PythonValue::float_val(1.125);
+        assert!((val.as_float().unwrap() - 1.125).abs() < 1e-6);
+        assert_eq!(val.as_int(), Some(1));
         assert_eq!(val.type_name(), "float");
     }
 

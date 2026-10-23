@@ -1,0 +1,6 @@
+[
+  {"name": "integer_precision", "source": "flow main { result = 9007199254740993 + 2; }", "expected": 9007199254740995},
+  {"name": "true_division", "source": "flow main { result = 5 / 2; }", "expected": 2.5},
+  {"name": "local_variables", "source": "flow main { first = 3; result = first * 4; }", "expected": 12},
+  {"name": "agent_call", "source": "agent Echo { prompt: \"Repeat accurately\" } flow main { result = Echo.run(\"hello\"); }", "expected": "fixture reply", "model_reply": "fixture reply", "agent_input": "hello"}
+]

@@ -61,9 +61,11 @@ impl AgentInstance {
         }
     }
 
-    pub fn run(&mut self, input: &str) -> AvmResult<String> {
-        self.history.push(input.to_string());
-        Ok(format!("[{}]: {}", self.config.name, input))
+    pub fn run(&mut self, _input: &str) -> AvmResult<String> {
+        Err(crate::utils::error::AvmError::NotImplemented(
+            "AgentInstance requires a provider executor; use Interpreter::set_agent_executor"
+                .into(),
+        ))
     }
 
     pub fn config(&self) -> &AgentConfig {
@@ -94,7 +96,10 @@ impl AgentRegistry {
     }
 
     pub fn create_agent(&mut self, name: &str) -> AvmResult<&AgentInstance> {
-        let config = self.templates.get(name).cloned()
+        let config = self
+            .templates
+            .get(name)
+            .cloned()
             .ok_or_else(|| AvmError::AgentNotFound(name.to_string()))?;
         let instance = AgentInstance::new(config);
         self.agents.insert(name.to_string(), instance);
@@ -106,7 +111,9 @@ impl AgentRegistry {
     }
 
     pub fn run_agent(&mut self, name: &str, input: &str) -> AvmResult<String> {
-        let agent = self.agents.get_mut(name)
+        let agent = self
+            .agents
+            .get_mut(name)
             .ok_or_else(|| AvmError::AgentNotFound(name.to_string()))?;
         agent.run(input)
     }
@@ -132,7 +139,6 @@ mod tests {
     fn test_agent_instance() {
         let config = AgentConfig::new("test");
         let mut agent = AgentInstance::new(config);
-        let result = agent.run("Hello").unwrap();
-        assert!(result.contains("test"));
+        assert!(agent.run("Hello").is_err());
     }
 }

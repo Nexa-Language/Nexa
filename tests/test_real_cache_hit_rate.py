@@ -9,6 +9,9 @@
     python tests/test_real_cache_hit_rate.py
 """
 
+import pytest
+import random
+
 import sys
 import os
 import time
@@ -153,6 +156,7 @@ def test_cache_semantic_match():
         shutil.rmtree(cache_dir, ignore_errors=True)
 
 
+@pytest.mark.benchmark
 def test_cache_hit_rate_realistic():
     """
     测试真实场景下的缓存命中率
@@ -193,10 +197,10 @@ def test_cache_hit_rate_realistic():
         total_queries = 1000
         hits = 0
         
+        rng = random.Random(0)
         # 80% 热点查询
         for _ in range(int(total_queries * 0.8)):
-            import random
-            q = random.choice(hot_questions)
+            q = rng.choice(hot_questions)
             messages = [{"role": "user", "content": q}]
             result = manager.get(messages, "minimax-m2.5", use_semantic=True)
             if result:

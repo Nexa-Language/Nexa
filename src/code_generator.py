@@ -33,7 +33,7 @@ from src.runtime.evaluator import nexa_semantic_eval, nexa_intent_routing
 from src.runtime.orchestrator import join_agents, nexa_pipeline, nexa_context_pipeline
 from src.runtime.dag_orchestrator import dag_fanout, dag_merge, dag_branch, dag_parallel_map, SmartRouter
 from src.runtime.memory import global_memory
-from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP
+from src.runtime.stdlib import STD_TOOLS_SCHEMA, STD_NAMESPACE_MAP, call_stdlib as _nexa_std_call
 # v2.2.1: Terminal UI functions (rich-based rendering)
 from src.runtime.stdlib import (_std_ui_banner, _std_ui_markdown, _std_ui_code, _std_ui_panel, _std_ui_thinking, _std_ui_success, _std_ui_error, _std_ui_warning, _std_ui_info, _std_ui_input, _std_ui_agent_reply, _std_ui_tool_call)
 from src.runtime.secrets import nexa_secrets
@@ -67,6 +67,7 @@ from src.runtime.concurrent import NexaChannel, NexaTask, NexaSchedule, NexaConc
 # P2-4: Template System (模板系统)
 from src.runtime.template import NexaTemplateRenderer, TemplateContentParser, _nexa_tpl_escape, _nexa_tpl_join, _nexa_tpl_safe_str, FILTER_REGISTRY, render_string, template, compile_template, render, agent_template_prompt, agent_template_slot_fill, agent_template_register, agent_template_list, agent_template_unregister
 # v2.0: Harness Native Runtime
+from src.runtime.flow_runtime import spawn_actor as _nexa_spawn_actor, set_context_policy as _nexa_set_context_policy, fork_calls as _nexa_fork_calls, isolated_call as _nexa_isolated_call, flow_scope as _nexa_flow_scope, context_scope as _nexa_context_scope, loop_steps as _nexa_loop_steps, exit_condition as _nexa_exit_condition, register_hook as _nexa_register_hook, reflect as _nexa_reflect, snapshot_scope as _nexa_snapshot, restore_scope as _nexa_restore
 from src.runtime.harness_kernel import HarnessKernel, HarnessRuntimeMode, AutoLoopConfig, StepResult, AutoLoopResult, ContextScope, get_kernel, reset_kernel
 from src.runtime.execution_engine import ExecutionEngine
 from src.runtime.context_manager import ContextManager, estimate_tokens
@@ -172,9 +173,9 @@ def _nexa_interp_str(value):
 """
 
 class CodeGenerator:
-    """
-    负责将 Nexa AST 转换为等价执行逻辑的 Python 代码
-    """
+    """负责将 Nexa AST 转换为等价执行逻辑的 Python 代码。"""
+
+    source_path: str = ""
     def __init__(self, ast):
         self.ast = ast
         self.code = [BOILERPLATE]
@@ -276,6 +277,8 @@ class CodeGenerator:
         self.code.append("if __name__ == \"__main__\":")
         if has_flow_main:
             self.code.append("    flow_main()")
+        elif not self.flows:
+            self.code.append("    pass")
         else:
             # 如果没有 flow main,运行所有定义的 flow
             for f in self.flows:
@@ -912,38 +915,11 @@ class CodeGenerator:
         # 3. Register in LOCAL_TOOLS so execute_tool can find it
         self.code.append(f"from src.runtime.tools_registry import LOCAL_TOOLS")
         self.code.append(f"LOCAL_TOOLS['{fn_name}'] = {fn_name}")
+        self.code.append(f"__tool_{fn_name}_schema['_handler'] = {fn_name}")
+        self.code.append(f"__tool_{fn_name}_schema['requires_approval'] = {tool.get('requires_approval', False)!r}")
+        self.code.append(f"__tool_{fn_name}_schema['sandbox'] = {tool.get('sandbox', False)!r}")
+        self.code.append(f"__tool_{fn_name}_schema['risk_level'] = {tool.get('risk_level', 'low')!r}")
         self.code.append(f"")
-
-    def _generate_output_schema_function(self, agent_name: str, schema_json: str):
-        """v2.1: 为 output_schema 生成 Pydantic 模型创建函数"""
-        self.code.append(f"""
-def _generate_output_schema_{agent_name}():
-    import json
-    try:
-        schema_dict = json.loads('''{schema_json}''')
-        from pydantic import BaseModel, Field
-        from typing import List, Optional
-        # 动态生成 field definitions
-        fields = {{}}
-        for key, type_str in schema_dict.items():
-            if isinstance(type_str, list) and len(type_str) > 0 and isinstance(type_str[0], dict):
-                # 嵌套对象列表
-                nested_fields = {{k: _get_pydantic_type(v) for k, v in type_str[0].items()}}
-                NestedModel = type(f"{{key.title()}}Model", (BaseModel,), {{"__annotations__": nested_fields}})
-                fields[key] = (List[NestedModel], Field(default_factory=list))
-            elif isinstance(type_str, list):
-                fields[key] = (List[str], Field(default_factory=list))
-            else:
-                fields[key] = (_get_pydantic_type(type_str), Field(...))
-        DynamicModel = type(f"{agent_name}Schema", (BaseModel,), {{"__annotations__": fields}})
-        return DynamicModel
-    except Exception:
-        return None
-
-def _get_pydantic_type(type_str: str):
-    mapping = {{"string": str, "number": float, "integer": int, "boolean": bool}}
-    return mapping.get(type_str, str)
-""")
 
     def _generate_agents(self):
         for agent in self.agents:
@@ -976,9 +952,9 @@ def _get_pydantic_type(type_str: str):
             role_raw = properties.get("role", "")
             role = role_raw  # 保留原始值,不 strip
             memory_scope = properties.get("memory", '"local"').strip('"')
-            stream_val = properties.get("stream", '"false"').strip('"').lower()
+            stream_val = str(properties.get("stream", '"false"')).strip('"').lower()
             stream = "True" if stream_val == "true" else "False"
-            cache_val = properties.get("cache", '"false"').strip('"').lower()
+            cache_val = str(properties.get("cache", '"false"')).strip('"').lower()
             cache = "True" if cache_val == "true" else "False"
             max_history_turns = properties.get("max_history_turns", 'None').strip('"')
             experience = properties.get("experience", '""').strip('"')
@@ -993,7 +969,7 @@ def _get_pydantic_type(type_str: str):
                     continue
                 if t.endswith(".md"):
                     # Parse dynamic skills from markdown
-                    md_path = os.path.join(os.path.dirname(self.source_path) if hasattr(self, 'source_path') else ".", t)
+                    md_path = os.path.join(os.path.dirname(agent.get("_source_path", self.source_path)), t)
                     try:
                         with open(md_path, "r", encoding="utf-8") as mdf:
                             md_content = mdf.read()
@@ -1054,18 +1030,10 @@ def _get_pydantic_type(type_str: str):
             
             self.code.append(f'{name} = NexaAgent(')
             self.code.append(f'    name="{name}",')
-            # 处理多行 prompt,使用三引号
-            if '\n' in prompt:
-                self.code.append(f'    prompt="""{prompt}""",')
-            else:
-                self.code.append(f'    prompt="{prompt}",')
-            self.code.append(f'    model="{model}",')
-            # 处理多行 role,使用三引号
-            if '\n' in role:
-                self.code.append(f'    role="""{role}""",')
-            else:
-                self.code.append(f'    role="{role}",')
-            self.code.append(f'    memory_scope="{memory_scope}",')
+            self.code.append(f'    prompt={prompt!r},')
+            self.code.append(f'    model={model!r},')
+            self.code.append(f'    role={role!r},')
+            self.code.append(f'    memory_scope={memory_scope!r},')
             self.code.append(f'    stream={stream},')
             self.code.append(f'    cache={cache},')
             if max_history_turns != "None":
@@ -1087,14 +1055,16 @@ def _get_pydantic_type(type_str: str):
             output_schema_raw = properties.get("output_schema", None)
             if output_schema_raw and isinstance(output_schema_raw, dict) and output_schema_raw.get("type") == "json_object":
                 # Generate Pydantic model from schema
-                self.code.append(f'    output_schema=_generate_output_schema_{name}(),')
-                self._generate_output_schema_function(name, output_schema_raw.get("value", "{}"))
+                self.code.append(f'    output_schema=__import__("src.runtime.output_schema", fromlist=["build_schema"]).build_schema({name!r}, {output_schema_raw.get("value", "{}")!r}),')
             max_tool_calls_val = properties.get("max_tool_calls", "10")
             if isinstance(max_tool_calls_val, str):
                 max_tool_calls_val = max_tool_calls_val.strip('"')
             self.code.append(f'    max_tool_calls={max_tool_calls_val},')
             tool_call_strategy = properties.get("tool_call_strategy", '"auto"').strip('"')
             self.code.append(f'    tool_call_strategy="{tool_call_strategy}",')
+            provider_api = properties.get("provider_api")
+            if provider_api:
+                self.code.append(f'    provider_api={provider_api.strip(chr(34))!r},')
             # Design by Contract: 将契约规格传递给 NexaAgent
             if contract_code:
                 self.code.append(f'    contracts={contract_code},')
@@ -1103,7 +1073,7 @@ def _get_pydantic_type(type_str: str):
             context_spec = agent.get("context_spec")
             if context_spec and isinstance(context_spec, dict):
                 import json as _json
-                spec_json = _json.dumps(context_spec, ensure_ascii=False)
+                spec_json = repr(context_spec)
                 self.code.append(f',\n    context_spec={spec_json}')
             self.code.append(f')\n')
             
@@ -1773,7 +1743,10 @@ def _get_pydantic_type(type_str: str):
             params = flow.get("params", [])
             # v1.1: 参数带类型标注注释
             param_str = ", ".join([p["name"] for p in params]) if params else ""
+            self.code.append('@_nexa_flow_scope')
             self.code.append(f'def flow_{name}({param_str}):')
+            self._snapshot_variables = {}
+            self._flow_variables = sorted({node['target'] for node in self._walk_harness(flow['body']) if node.get('type') == 'AssignmentStatement' and isinstance(node.get('target'), str)})
             self.indent_level += 1
             
             # v1.1: 渐进式类型系统 — 参数类型检查
@@ -1816,7 +1789,7 @@ def _get_pydantic_type(type_str: str):
                 
                 # 捕获 old() 值
                 if ensures_clauses:
-                    self.code.append(f'{self._indent()}__old_values = capture_old_values({contract_var}, __ctx if requires_clauses else {{}})')
+                    self.code.append(f'{self._indent()}__old_values = capture_old_values({contract_var}, {"__ctx" if requires_clauses else "{}"})')
             
             # P3-5: Check for defer statements in flow body
             has_defers = any(
@@ -1855,16 +1828,19 @@ def _get_pydantic_type(type_str: str):
             
             # Auto-add return of last assigned variable at end of flow
             # Find the last assignment statement in the flow body
-            last_var = "result"  # default fallback
+            last_var = "None"
             for stmt in reversed(flow["body"]):
                 if isinstance(stmt, dict):
                     stmt_type = stmt.get("type", "")
                     if stmt_type == "AssignmentStatement":
                         last_var = stmt.get("target", stmt.get("name", "result"))
                         break
+                    elif stmt_type == "AwaitStmt" and stmt.get("var_name"):
+                        last_var = stmt["var_name"]
+                        break
                     elif stmt_type in ("PrintStatement", "ExpressionStatement"):
                         continue  # skip print/expression statements
-                    elif stmt_type in ("AutoLoopStmt", "WithContextStmt", "TryAgentStmt"):
+                    elif stmt_type in ("AutoLoopStmt", "WithContextStmt", "TryAgentStmt", "RestoreStmt", "SnapshotStmt", "VerifyStmt", "LifecycleHook", "ReflectStmt"):
                         continue  # skip block statements
                     else:
                         break  # stop at first non-assignment, non-print
@@ -2335,9 +2311,9 @@ def _get_pydantic_type(type_str: str):
             
             if fast_match:
                 # pass fast_match as third arg
-                self.code.append(f"{self._indent()}if nexa_semantic_eval(\"{cond}\", {target}, r\"{fast_match}\"):")
+                self.code.append(f"{self._indent()}if nexa_semantic_eval({cond!r}, {target}, {fast_match!r}):")
             else:
-                self.code.append(f"{self._indent()}if nexa_semantic_eval(\"{cond}\", {target}):")
+                self.code.append(f"{self._indent()}if nexa_semantic_eval({cond!r}, {target}):")
             
             self.indent_level += 1
             for sub_stmt in stmt.get("consequence", []):
@@ -2522,7 +2498,7 @@ def _get_pydantic_type(type_str: str):
         elif ex_type == "InterpolatedString":
             return self._generate_interpolated_string(expr.get("parts", []))
         elif ex_type == "StringLiteral":
-            return f'"{expr["value"]}"'
+            return repr(expr["value"])
         elif ex_type == "PropertyAccess":
             base = expr["base"]
             if isinstance(base, str):
@@ -2646,7 +2622,8 @@ def _get_pydantic_type(type_str: str):
             # Map std.ui.X → _std_ui_X; other std.ns.X → ns_fn
             if ns == "ui":
                 return f"_std_ui_{fn}({args_str})"
-            return f"{ns}_{fn}({args_str})"
+            suffix = f", {args_str}" if args_str else ""
+            return f"_nexa_std_call({ns!r}, {fn!r}{suffix})"
         elif ex_type == "DAGBranchExpression":
             # 条件分支表达式: dag_branch(input, condition_fn, true_agent, false_agent)
             input_str = self._resolve_expression(expr["input"])
@@ -2889,58 +2866,35 @@ def _get_pydantic_type(type_str: str):
     #  v2.0: Harness Native Code Generation
     # ═══════════════════════════════════════════════════════════════════
 
+    @staticmethod
+    def _walk_harness(value):
+        from src.ast_utils import walk_nodes
+        return walk_nodes(value)
+
     def _generate_autoloop(self, stmt):
-        """Generate autoloop ReAct cycle code.
-
-        v2.0 redesign: Generate a real while loop instead of kernel.run_autoloop()
-        so that interactive primitives (input, break, if) work naturally inside the loop.
-        The HarnessKernel config is still used for max_steps and exit_when tracking.
-        """
-        max_steps = stmt.get("max_steps", 50)
-        exit_when = stmt.get("exit_when", None)
-        timeout = stmt.get("timeout", None)
         body = stmt.get("body", [])
-
-        self.code.append(f"{self._indent()}# v2.0 autoloop: ReAct cycle (E-dimension)")
-        self.code.append(f"{self._indent()}_kernel = get_kernel()")
-        # Build AutoLoopConfig as a single line
-        config_parts = [f"max_steps={max_steps}"]
-        if exit_when:
-            config_parts.append(f"exit_when=\"{exit_when}\"")
-        if timeout:
-            config_parts.append(f"timeout={timeout}")
-        config_str = ", ".join(config_parts)
-        self.code.append(f"{self._indent()}_config = AutoLoopConfig({config_str})")
-        self.code.append(f"{self._indent()}_step_count = 0")
-        self.code.append(f"{self._indent()}_start_time = time.time() if _config.timeout else 0")
-        self.code.append(f"{self._indent()}while _step_count < _config.max_steps:")
+        token = f"_loop_step_{len(self.code)}"
+        self.code.append(f"{self._indent()}for {token} in _nexa_loop_steps({stmt.get('max_steps', 50)!r}, {stmt.get('timeout')!r}):")
         self.indent_level += 1
-        self.code.append(f"{self._indent()}_step_count += 1")
-        # Timeout check
-        if timeout:
-            self.code.append(f"{self._indent()}if _config.timeout and (time.time() - _start_time) > _config.timeout:")
-            self.indent_level += 1
-            self.code.append(f"{self._indent()}print(f'autoloop timeout after {{_config.timeout}}s')")
-            self.code.append(f"{self._indent()}break")
-            self.indent_level -= 1
-        # Generate body statements
-        for b in body:
-            self._generate_statement(b)
+        if not body:
+            self.code.append(f"{self._indent()}pass")
+        for child in body:
+            self._generate_statement(child)
+        assignments = [node['target'] for node in self._walk_harness(body) if node.get('type') == 'AssignmentStatement']
+        if stmt.get('exit_when') and assignments:
+            self.code.append(f"{self._indent()}if _nexa_exit_condition({stmt['exit_when']!r}, {assignments[-1]}):")
+            self.code.append(f"{self._indent()}    break")
         self.indent_level -= 1
-        self.code.append(f"{self._indent()}# autoloop completed")
 
     def _generate_with_context(self, stmt):
-        """Generate with_context scope code."""
-        max_tokens = stmt.get("max_tokens", 100000)
-        strategy = stmt.get("strategy", "sliding_window")
-        body = stmt.get("body", [])
-
-        self.code.append(f"{self._indent()}# v2.0 with_context: context scope")
-        self.code.append(f"{self._indent()}_cm = ContextManager(kernel=get_kernel())")
-        self.code.append(f"{self._indent()}_cm.enter_scope('scope', {{'max_tokens': {max_tokens}, 'strategy': '{strategy}'}})")
-        for b in body:
-            self._generate_statement(b)
-        self.code.append(f"{self._indent()}_cm.exit_scope('scope')")
+        config = stmt.get("config", stmt)
+        self.code.append(f"{self._indent()}with _nexa_context_scope({config.get('max_tokens', 100000)!r}, {config.get('strategy', 'sliding_window')!r}):")
+        self.indent_level += 1
+        for child in stmt.get('body', []):
+            self._generate_statement(child)
+        if not stmt.get('body'):
+            self.code.append(f"{self._indent()}pass")
+        self.indent_level -= 1
 
     def _generate_try_agent(self, stmt):
         """Generate try_agent/catch_correction code."""
@@ -2952,6 +2906,8 @@ def _get_pydantic_type(type_str: str):
         self.indent_level += 1
         for b in try_body:
             self._generate_statement(b)
+        if not try_body:
+            self.code.append(f"{self._indent()}pass")
         self.indent_level -= 1
         for cb in catch_branches:
             error_var = cb.get("error_var", "e")
@@ -2959,44 +2915,36 @@ def _get_pydantic_type(type_str: str):
             correction_body = cb.get("correction_body", [])
             self.code.append(f"{self._indent()}except {error_type} as {error_var}:")
             self.indent_level += 1
-            self.code.append(f"{self._indent()}# catch_correction: reflect and retry")
+            if not correction_body:
+                self.code.append(f"{self._indent()}pass")
             for b in correction_body:
                 self._generate_statement(b)
             self.indent_level -= 1
 
     def _generate_snapshot(self, stmt):
-        """Generate snapshot code."""
-        var_name = stmt.get("var_name", "_snap_id")
-        label = stmt.get("label", "")
-        self.code.append(f"{self._indent()}# v2.0 snapshot")
-        self.code.append(f"{self._indent()}_store = StateStore()")
-        self.code.append(f"{self._indent()}{var_name} = _store.snapshot(label='{label}')")
+        name = stmt.get('var_name') or '_snap_id'
+        variables = [var for var in getattr(self, '_flow_variables', []) if var != name]
+        self._snapshot_variables[name] = variables
+        agents = ', '.join(agent['name'] for agent in self.agents)
+        self.code.append(f"{self._indent()}{name} = _nexa_snapshot({{key: value for key, value in locals().items() if key in {variables!r}}}, [{agents}])")
 
     def _generate_restore(self, stmt):
-        """Generate restore code."""
-        target_var = stmt.get("target_var", "_snap_id")
-        self.code.append(f"{self._indent()}# v2.0 restore")
-        self.code.append(f"{self._indent()}_store.restore({target_var})")
+        name = stmt.get('target_var', '_snap_id')
+        self.code.append(f"{self._indent()}_restored_values = _nexa_restore({name})")
+        for variable in self._snapshot_variables.get(name, []):
+            self.code.append(f"{self._indent()}{variable} = _restored_values.get({variable!r})")
 
     def _generate_fork(self, stmt):
-        """Generate fork code."""
-        branches = stmt.get("branches", [])
-        merge_strategy = stmt.get("merge_strategy", "best_of")
-        branch_names = [b.get("name", f"branch_{i}") for i, b in enumerate(branches)]
-        names_list = "[" + ", ".join(f'"{n}"' for n in branch_names) + "]"
-
-        self.code.append(f"{self._indent()}# v2.0 fork: parallel exploration")
-        self.code.append(f"{self._indent()}_store = StateStore()")
-        self.code.append(f"{self._indent()}_branches = _store.fork({names_list})")
-        for i, branch in enumerate(branches):
-            name = branch_names[i]
-            body = branch.get("body", [])
-            self.code.append(f"{self._indent()}# Branch: {name}")
-            self.code.append(f"{self._indent()}_bid = _branches['{name}']")
-            for b in body:
-                self._generate_statement(b)
-            self.code.append(f"{self._indent()}_store.complete_branch(_bid, 'result')")
-        self.code.append(f"{self._indent()}_merge_result = _store.merge(strategy='{merge_strategy}')")
+        calls = []
+        for branch in stmt.get('branches', []):
+            expr = branch.get('expr', branch)
+            if expr.get('type') == 'MethodCallExpression' and expr.get('method') == 'run':
+                args = ', '.join(self._resolve_expression(arg) for arg in expr.get('arguments', []))
+                expression = f"_nexa_isolated_call({expr['object']}{', ' if args else ''}{args})"
+            else:
+                expression = self._resolve_expression(expr)
+            calls.append(f"lambda: {expression}")
+        self.code.append(f"{self._indent()}_merge_result = _nexa_fork_calls([{', '.join(calls)}], {stmt.get('merge_strategy', 'all')!r})")
 
     def _generate_verify(self, stmt):
         """Generate verify code."""
@@ -3020,14 +2968,14 @@ def _get_pydantic_type(type_str: str):
             self.code.append(f"{self._indent()}_vr = _ei.verify_semantic({condition_str}, {target_str})")
         else:
             self.code.append(f"{self._indent()}_vr = _ei.verify_satisfies({target_str}, {condition_str})")
-        self.code.append(f"{self._indent()}if not _vr.passed and _vr.correction_hint:")
-        self.code.append(f"{self._indent()}    print(f'[verify] FAIL: {{_vr.correction_hint}}')")
+        self.code.append(f"{self._indent()}if not _vr.passed:")
+        self.code.append(f"{self._indent()}    raise AssertionError(_vr.correction_hint or _vr.details)")
 
     def _generate_reflect(self, stmt):
         """Generate reflect code."""
         text = stmt.get("text", "")
         self.code.append(f"{self._indent()}# v2.0 reflect: self-reflection injection")
-        self.code.append(f"{self._indent()}print(f'[reflect] {text}')")
+        self.code.append(f"{self._indent()}_nexa_reflect({text!r})")
 
     def _generate_unharnessed(self, stmt):
         """Generate unharnessed code (passthrough)."""
@@ -3041,55 +2989,36 @@ def _get_pydantic_type(type_str: str):
         hook_type = stmt.get("hook_type", "before_step")
         body = stmt.get("body", [])
         self.code.append(f"{self._indent()}# v2.0 lifecycle hook: {hook_type}")
-        self.code.append(f"{self._indent()}_hooks = LifecycleHookManager()")
-        self.code.append(f"{self._indent()}def _hook_fn():")
+        self.code.append(f"{self._indent()}def _hook_fn(**_event):")
         self.indent_level += 1
+        if not body:
+            self.code.append(f"{self._indent()}pass")
         for b in body:
             self._generate_statement(b)
         self.indent_level -= 1
-        self.code.append(f"{self._indent()}_hooks.register('{hook_type}', _hook_fn)")
+        self.code.append(f"{self._indent()}_nexa_register_hook('{hook_type}', _hook_fn)")
 
     def _generate_context_policy(self, stmt):
         """Generate context_policy code."""
         max_tokens = stmt.get("max_tokens", 100000)
         strategy = stmt.get("strategy", "sliding_window")
         self.code.append(f"{self._indent()}# v2.0 context_policy: agent-level context declaration")
-        self.code.append(f"{self._indent()}_ctx_policy = {{'max_tokens': {max_tokens}, 'strategy': '{strategy}'}}")
+        self.code.append(f"{self._indent()}_nexa_set_context_policy({max_tokens!r}, {strategy!r})")
 
     def _generate_spawn(self, stmt):
-        """Generate spawn code."""
-        var_name = stmt.get("var_name", "")
-        agent_name = stmt.get("agent_name", "")
-        args = stmt.get("args", [])
-        args_str = ", ".join(self._resolve_expression(a) if isinstance(a, dict) else str(a) for a in args)
-
-        self.code.append(f"{self._indent()}# v2.0 spawn: create actor")
-        self.code.append(f"{self._indent()}_actor_sys = ActorSystem()")
-        if var_name:
-            self.code.append(f"{self._indent()}{var_name} = _actor_sys.spawn('{agent_name}', lambda actor_id, actor_name, mailbox, **kw: {agent_name}({args_str}))")
-        else:
-            self.code.append(f"{self._indent()}_actor_sys.spawn('{agent_name}', lambda actor_id, actor_name, mailbox, **kw: {agent_name}({args_str}))")
+        args = ", ".join(self._resolve_expression(arg) for arg in stmt.get("args", []))
+        assignment = f"{stmt['var_name']} = " if stmt.get("var_name") else ""
+        self.code.append(f"{self._indent()}{assignment}_nexa_spawn_actor({stmt['agent_name']}{', ' if args else ''}{args})")
 
     def _generate_pass(self, stmt):
-        """Generate pass code."""
-        target = stmt.get("target", "")
-        message = stmt.get("message", "")
-        target_str = self._resolve_expression(target) if isinstance(target, dict) else str(target)
-        msg_str = self._resolve_expression(message) if isinstance(message, dict) else f'"{message}"'
-        self.code.append(f"{self._indent()}# v2.0 pass: send message")
-        self.code.append(f"{self._indent()}_actor_sys.pass_message({target_str}, {msg_str})")
+        self.code.append(f"{self._indent()}{stmt['target_actor']}.send({self._resolve_expression(stmt['message'])})")
 
     def _generate_await(self, stmt):
-        """Generate await code."""
-        actor_var = stmt.get("actor_var", "")
-        self.code.append(f"{self._indent()}# v2.0 await: wait for actor")
-        self.code.append(f"{self._indent()}_result = _actor_sys.await_result({actor_var})")
+        assignment = f"{stmt['var_name']} = " if stmt.get("var_name") else ""
+        self.code.append(f"{self._indent()}{assignment}{stmt['actor_var']}.join()")
 
     def _generate_receive(self, stmt):
-        """Generate receive code."""
-        type_expr = stmt.get("type_expr", None)
-        self.code.append(f"{self._indent()}# v2.0 receive: get message")
-        self.code.append(f"{self._indent()}_msg = _actor_sys.receive(actor_id)")
+        raise ValueError("receive() requires a custom actor handler; Agent actors consume pass inputs automatically")
 
     def _generate_tool_annotation(self, stmt):
         """Generate @tool annotation code."""

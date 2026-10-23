@@ -45,7 +45,7 @@ from src.ial.primitives import (
     Check, CheckOp, AgentAssertion, ProtocolCheck, PipelineCheck,
     SemanticCheck, Http, Cli, CodeQuality, ReadFile, FunctionCall,
     PropertyCheck, InvariantCheck, Primitive, CheckResult, 
-    ScenarioResult, FeatureResult
+    ScenarioResult, FeatureResult, CheckStatus
 )
 
 
@@ -365,7 +365,7 @@ def _execute_agent_assertion(assertion: AgentAssertion,
     
     # 策略 3: 无可用 runtime → 标记为 skipped
     return CheckResult(
-        passed=True,  # Skipped counts as "not failed"
+        passed=False, status=CheckStatus.SKIP,
         primitive=assertion,
         message=f"Agent '{agent_name}' not available for execution (skipped)",
         actual=None
@@ -439,21 +439,7 @@ def _execute_protocol_check(proto_check: ProtocolCheck,
             actual=data
         )
     
-    # 策略 3: 基本 schema 检查 — 数据不为空即视为通过
-    if data is not None:
-        return CheckResult(
-            passed=True,
-            primitive=proto_check,
-            message=f"Protocol '{protocol_name}' basic check passed (data exists)",
-            actual=data
-        )
-    
-    return CheckResult(
-        passed=False,
-        primitive=proto_check,
-        message=f"Protocol '{protocol_name}' check failed: no data available",
-        actual=None
-    )
+    return CheckResult(False, proto_check, f"Protocol '{protocol_name}' schema unavailable (skipped)", data, CheckStatus.SKIP)
 
 
 def _execute_pipeline_check(pipeline_check: PipelineCheck,
@@ -529,77 +515,32 @@ def _execute_pipeline_check(pipeline_check: PipelineCheck,
     
     # 无 runtime → 标记为 skipped
     return CheckResult(
-        passed=True,
+        passed=False, status=CheckStatus.SKIP,
         primitive=pipeline_check,
         message=f"Pipeline '{pipeline_expr}' skipped (no runtime available)",
         actual=None
     )
 
 
-def _execute_semantic_check(semantic_check: SemanticCheck,
-                            context: Dict[str, Any]) -> CheckResult:
-    """
-    执行语义检查 — 用 LLM 判断输出是否符合语义预期
-    
-    如果有 LLM API 可用 → 实际调用 LLM 判断
-    否则 → 基于关键词匹配做启发式判断
-    """
-    actual = semantic_check.actual or context.get("output", "")
-    intent = semantic_check.intent
-    
-    # 策略 1: 使用 Nexa 的 semantic_if 机制 (LLM 判断)
-    # 检查是否有 LLM 可用
-    api_key = os.environ.get("NEXA_API_KEY")
-    
-    if api_key:
-        try:
-            from src.runtime.evaluator import nexa_semantic_eval
-            result = nexa_semantic_eval(actual, intent)
-            passed = result.lower() in ("yes", "true", "1", "pass")
-            return CheckResult(
-                passed=passed,
-                primitive=semantic_check,
-                message=f"SemanticCheck(LLM): '{intent}' → {result}",
-                actual=actual
-            )
-        except Exception:
-            pass
-    
-    # 策略 2: 启发式关键词匹配 — 检查 intent 中的关键词是否出现在 actual 中
-    # 从 intent 中提取关键词（去掉引号内容作为匹配目标）
-    keywords = re.findall(r'[\'"](\w+)[\'"]', intent)
-    if not keywords:
-        # 没有引号 → 提取所有非停用词
-        stop_words = {"a", "an", "the", "is", "are", "was", "were", "be", "been",
-                      "with", "and", "or", "not", "in", "on", "at", "to", "for",
-                      "of", "by", "from", "as", "that", "this", "it", "they", "we"}
-        words = re.findall(r'\b\w+\b', intent.lower())
-        keywords = [w for w in words if w not in stop_words and len(w) > 2]
-    
-    if keywords and actual:
-        matched = [kw for kw in keywords if kw.lower() in actual.lower()]
-        if matched:
-            return CheckResult(
-                passed=True,
-                primitive=semantic_check,
-                message=f"SemanticCheck(heuristic): keywords {matched} found in output",
-                actual=actual
-            )
-        else:
-            return CheckResult(
-                passed=False,
-                primitive=semantic_check,
-                message=f"SemanticCheck(heuristic): no keywords from '{intent}' found in output",
-                actual=actual
-            )
-    
-    # 无法判断 → 标记为 skipped
-    return CheckResult(
-        passed=True,
-        primitive=semantic_check,
-        message=f"SemanticCheck: '{intent}' (no LLM or heuristic match available, skipped)",
-        actual=actual
-    )
+def _execute_semantic_check(semantic_check: SemanticCheck, context: Dict[str, Any]) -> CheckResult:
+    actual = semantic_check.actual if semantic_check.actual is not None else context.get("output")
+    if actual is None or actual == "":
+        return CheckResult(False, semantic_check, "Semantic check has no output to verify", status=CheckStatus.FAIL)
+    evaluator = context.get("semantic_evaluator")
+    if evaluator is None and os.environ.get("NEXA_API_KEY"):
+        from src.runtime.evaluator import nexa_semantic_eval
+        evaluator = nexa_semantic_eval
+    if evaluator is None:
+        return CheckResult(False, semantic_check, "Semantic evaluator is unavailable (skipped)", actual, CheckStatus.SKIP)
+    try:
+        result = evaluator(actual, semantic_check.intent)
+        if isinstance(result, str) and result.strip().lower() in {"yes", "true", "1", "pass", "no", "false", "0", "fail"}:
+            result = result.strip().lower() in {"yes", "true", "1", "pass"}
+        if type(result) is not bool:
+            raise TypeError("Semantic evaluator must return a boolean verdict")
+        return CheckResult(result, semantic_check, f"Semantic evaluator verdict: {result}", actual)
+    except Exception as error:
+        return CheckResult(False, semantic_check, f"Semantic evaluator failed: {type(error).__name__}", actual, CheckStatus.ERROR)
 
 
 def _execute_http(http: Http, context: Dict[str, Any]) -> CheckResult:
@@ -807,7 +748,7 @@ def _execute_function_call(func_call: FunctionCall,
             )
     
     return CheckResult(
-        passed=True,
+        passed=False, status=CheckStatus.SKIP,
         primitive=func_call,
         message=f"Function '{func_call.function_name}' not available (skipped)",
         actual=None
@@ -864,7 +805,7 @@ def _execute_invariant_check(inv_check: InvariantCheck,
     # 不变式检查需要 runtime 环境来评估表达式
     # 简化实现：标记为 skipped
     return CheckResult(
-        passed=True,
+        passed=False, status=CheckStatus.SKIP,
         primitive=inv_check,
         message=f"Invariant '{inv_check.invariant_name}' check skipped (no expression evaluator)",
         actual=None

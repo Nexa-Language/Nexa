@@ -1156,7 +1156,7 @@ class TestCodeGeneratorConcurrent:
         gen = CodeGenerator({'type': 'Program', 'includes': [], 'body': []})
         expr = {'type': 'ScheduleExpression', 'interval': {'type': 'StringLiteral', 'value': '5s'}, 'handler': {'type': 'Identifier', 'value': 'tick'}}
         result = gen._resolve_expression(expr)
-        assert result == 'schedule("5s", tick)'
+        assert result == "schedule('5s', tick)"
 
     def test_resolve_select_expression(self):
         from src.code_generator import CodeGenerator

@@ -516,7 +516,7 @@ impl SmartScheduler {
         }
 
         // 从优先级队列中取出最高优先级任务
-        while let Some(mut task) = self.ready_queue.pop() {
+        if let Some(mut task) = self.ready_queue.pop() {
             task.state = NodeState::Running;
             task.started_at = Some(Instant::now());
             self.running.insert(task.agent_id, task.clone());

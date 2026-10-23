@@ -18,27 +18,35 @@
 
 from openai import OpenAI
 import os
+from threading import Lock
+from typing import Any
 
 from .secrets import DEFAULT_OPENAI_COMPATIBLE_BASE_URL, nexa_secrets
 
-# 动态获取配置
-_base_url = nexa_secrets.get("BASE_URL")
-_api_key = nexa_secrets.get("API_KEY")
+class LazyClient:
+    """Resolve credentials only when an evaluation actually needs a provider."""
 
-# 如果没有配置，使用默认值
-if not _base_url:
-    _base_url = DEFAULT_OPENAI_COMPATIBLE_BASE_URL
+    def __init__(self) -> None:
+        self._client: OpenAI | None = None
+        self._lock = Lock()
+        self._configuration: tuple[str, str] | None = None
 
-if not _api_key:
-    # 在开发阶段，如果没有配置，给出警告而不是报错
-    print("[Warning] API key not configured. Please create secrets.nxs with API_KEY.")
-    print("[Warning] Using fallback configuration for development.")
-    _api_key = os.environ.get("NEXA_DEV_API_KEY", "")
+    def __getattr__(self, name: str) -> Any:
+        base_url = nexa_secrets.get("BASE_URL") or DEFAULT_OPENAI_COMPATIBLE_BASE_URL
+        api_key = nexa_secrets.get("API_KEY") or os.environ.get("NEXA_DEV_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("Provider credentials are required for model evaluation; configure API_KEY before execution")
+        with self._lock:
+            if self._client is None or self._configuration != (base_url, api_key):
+                previous = self._client
+                self._client = OpenAI(base_url=base_url, api_key=api_key)
+                self._configuration = (base_url, api_key)
+                if previous is not None:
+                    previous.close()
+            return getattr(self._client, name)
 
-client = OpenAI(
-    base_url=_base_url,
-    api_key=_api_key
-)
+
+client = LazyClient()
 
 # 从 secrets 获取模型配置（动态函数，支持 config 切换）
 def _get_model_config():

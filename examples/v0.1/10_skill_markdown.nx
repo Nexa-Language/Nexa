@@ -1,4 +1,4 @@
-agent StreamBot uses "examples/SKILLS.md" {
+agent StreamBot uses "../_archive/misc/SKILLS.md" {
     model: "minimax/minimax-m2.5",
     stream: "true",
     memory: "persistent",

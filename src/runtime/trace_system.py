@@ -21,6 +21,7 @@ Version: 2.0.0-alpha.4
 from __future__ import annotations
 
 import json
+import copy
 import time
 import hashlib
 import logging
@@ -171,6 +172,7 @@ class TraceSystem:
 
     def __init__(self) -> None:
         self._steps: Dict[str, TraceStep] = {}
+        self._events: List[Dict[str, Any]] = []
         self._reflections: Dict[str, TraceReflection] = {}
         self._errors: Dict[str, TraceError] = {}
         self._step_order: List[str] = []  # Ordered list of step IDs
@@ -179,6 +181,11 @@ class TraceSystem:
         self._reflection_counter = 0
         self._error_counter = 0
         self._start_time = time.time()
+
+    def log(self, event_type: str, data: Dict[str, Any]) -> None:
+        """Record a kernel event without pretending it is a model reasoning step."""
+        with self._lock:
+            self._events.append({"type": event_type, "timestamp": time.time(), "data": copy.deepcopy(data)})
 
     # ─── Recording ───
 
@@ -430,7 +437,7 @@ class TraceSystem:
         """
         with self._lock:
             # Collect all events with timestamps
-            events = []
+            events = copy.deepcopy(self._events)
 
             for step_id in self._step_order:
                 step = self._steps.get(step_id)
@@ -500,6 +507,7 @@ class TraceSystem:
         """Clear all trace data (for testing)."""
         with self._lock:
             self._steps = {}
+            self._events = []
             self._reflections = {}
             self._errors = {}
             self._step_order = []

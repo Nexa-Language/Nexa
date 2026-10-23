@@ -1,0 +1,39 @@
+name: Nexa checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked --all-extras
+      - run: uv run pytest -m "not benchmark"
+      - run: uv build --no-build-isolation
+      - name: Check maintained compiler and runtime boundaries
+        run: |
+          files="src/compiler.py src/ast_utils.py src/_version.py tests/conftest.py tests/test_packaging.py tests/test_compiler_integration.py setup.py stdlib/__init__.py src/agent_cli.py src/runtime/agent_execution.py src/runtime/agent_runner.py src/runtime/artifacts.py src/runtime/checkpoints.py src/runtime/conversations.py src/runtime/flow_runtime.py src/runtime/flow_actors.py src/runtime/output_schema.py src/runtime/mcp_client.py src/runtime/native_providers.py src/runtime/parallel_runs.py src/runtime/providers.py src/runtime/run_state.py src/runtime/tool_dispatch.py src/runtime/workspace_tools.py"
+          uv run ruff check $files
+          uv run isort --check-only $files
+          uv run ty check $files
+
+  avm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo test --manifest-path avm/Cargo.toml --locked --lib --test conformance --test wasm_execution
+      - run: cargo test --manifest-path avm/Cargo.toml --locked --features wasm --lib --test conformance --test wasm_execution

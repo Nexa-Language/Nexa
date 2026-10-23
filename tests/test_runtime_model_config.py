@@ -62,7 +62,7 @@ def test_agent_client_falls_back_to_configured_openai_compatible_base(monkeypatc
         agent = NexaAgent(name="test_agent", prompt="test")
         agent._get_client()
 
-    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL)
+    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL, max_retries=0)
 
 
 def test_agent_openai_provider_uses_configured_compatible_base(monkeypatch):
@@ -81,7 +81,7 @@ def test_agent_openai_provider_uses_configured_compatible_base(monkeypatch):
         agent = NexaAgent(name="test_agent", prompt="test")
         agent._get_client()
 
-    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL)
+    mock_openai.assert_called_once_with(api_key="test-key", base_url=DEFAULT_OPENAI_COMPATIBLE_BASE_URL, max_retries=0)
 
 
 def test_compactor_uses_configured_weak_model_without_eager_client():

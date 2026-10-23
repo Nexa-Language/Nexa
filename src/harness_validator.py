@@ -21,6 +21,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type
 
+from src.ast_utils import normalize_ast, walk_nodes
+
 
 # ═══════════════════════════════════════════════════════════════════════
 #  Core Types
@@ -110,6 +112,14 @@ class HarnessReport:
 #  AST Helpers — extract Harness primitives from AST
 # ═══════════════════════════════════════════════════════════════════════
 
+def _location(node: Dict) -> Optional[str]:
+    path = node.get("_source_path")
+    if path is None:
+        return None
+    span = node.get("_span", {})
+    return f"{path}:{span.get('line', 1)}:{span.get('column', 1)}"
+
+
 def _node_type(node: Any) -> str:
     """Extract type string from an AST node (dict or dataclass)."""
     if isinstance(node, dict):
@@ -130,30 +140,12 @@ def _flatten_body(ast: Dict) -> List[Any]:
 
 def _collect_nodes_by_type(body: List[Any], target_type: str) -> List[Any]:
     """Recursively collect all nodes of a given type from the AST body."""
-    results = []
-    for node in body:
-        if _node_type(node) == target_type:
-            results.append(node)
-        # Recurse into nested bodies
-        if isinstance(node, dict):
-            for key in ("body", "try_body", "correction_body", "then_body", "else_body"):
-                nested = node.get(key, [])
-                if isinstance(nested, list):
-                    results.extend(_collect_nodes_by_type(nested, target_type))
-    return results
+    return [node for node in walk_nodes(normalize_ast(body)) if _node_type(node) == target_type]
 
 
 def _collect_all_nodes(body: List[Any]) -> List[Any]:
-    """Recursively collect all nodes from the AST body."""
-    results = []
-    for node in body:
-        results.append(node)
-        if isinstance(node, dict):
-            for key in ("body", "try_body", "correction_body", "then_body", "else_body"):
-                nested = node.get(key, [])
-                if isinstance(nested, list):
-                    results.extend(_collect_all_nodes(nested))
-    return results
+    """Collect nodes across all statement and expression containers."""
+    return list(walk_nodes(normalize_ast(body)))
 
 
 # ═══════════════════════════════════════════════════════════════════════
@@ -187,6 +179,7 @@ class ExecutionChecker(DimensionChecker):
                 report.add_error(HarnessViolation(
                     dimension=HarnessDimension.E,
                     severity="error",
+                    location=_location(node_dict),
                     rule_id="E-001",
                     message="autoloop must specify either exit_when or max_steps to prevent infinite loops",
                     suggestion="Add: autoloop max_steps: 50 exit_when: \"resolved\" { ... }",
@@ -200,6 +193,7 @@ class ExecutionChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.E,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="E-002",
                     message=f"autoloop max_steps={max_steps} exceeds recommended limit (1000)",
                     suggestion="Consider reducing max_steps or adding a timeout constraint",
@@ -212,6 +206,7 @@ class ExecutionChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.E,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="E-003",
                     message="autoloop without timeout may hang indefinitely in production",
                     suggestion="Add: timeout: 300 (seconds)",
@@ -225,6 +220,7 @@ class ExecutionChecker(DimensionChecker):
                 report.add_error(HarnessViolation(
                     dimension=HarnessDimension.E,
                     severity="error",
+                    location=_location(node_dict),
                     rule_id="E-004",
                     message="try_agent must have at least one catch_correction branch for AI error recovery",
                     suggestion="Add: catch_correction(e: ToolError) { reflect `Error: #{e}. Retry.`; }",
@@ -243,6 +239,7 @@ class ExecutionChecker(DimensionChecker):
                     report.add_warning(HarnessViolation(
                         dimension=HarnessDimension.E,
                         severity="warning",
+                        location=_location(node_dict),
                         rule_id="E-005",
                         message="catch_correction without reflect — AI may not self-correct effectively",
                         suggestion="Add reflect statement in catch_correction body",
@@ -268,6 +265,7 @@ class ToolChecker(DimensionChecker):
                 report.add_error(HarnessViolation(
                     dimension=HarnessDimension.T,
                     severity="error",
+                    location=_location(node_dict),
                     rule_id="T-001",
                     message="@tool annotation must include a non-empty description for Agent comprehension",
                     suggestion="Add: @tool(\"Execute shell commands safely\")",
@@ -282,6 +280,7 @@ class ToolChecker(DimensionChecker):
                 report.add_error(HarnessViolation(
                     dimension=HarnessDimension.T,
                     severity="error",
+                    location=_location(node_dict),
                     rule_id="T-002",
                     message=f"@tool with risk_level='{risk}' must set requires_approval: true",
                     suggestion="Add: requires_approval: true to @tool config",
@@ -296,6 +295,7 @@ class ToolChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.T,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="T-003",
                     message=f"@tool with risk_level='{risk}' should enable sandbox for isolation",
                     suggestion="Add: sandbox: true to @tool config",
@@ -309,6 +309,7 @@ class ToolChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.T,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="T-004",
                     message="@tool fn without return type — Agent may misinterpret output",
                     suggestion="Add return type: fn name(params): string { ... }",
@@ -335,6 +336,7 @@ class ContextChecker(DimensionChecker):
                 report.add_error(HarnessViolation(
                     dimension=HarnessDimension.C,
                     severity="error",
+                    location=_location(node_dict),
                     rule_id="C-001",
                     message="with_context must specify max_tokens to prevent context overflow",
                     suggestion="Add: with_context max_tokens: 100000 { ... }",
@@ -352,6 +354,7 @@ class ContextChecker(DimensionChecker):
                         report.add_warning(HarnessViolation(
                             dimension=HarnessDimension.C,
                             severity="warning",
+                            location=_location(node_dict),
                             rule_id="C-002",
                             message=f"with_context max_tokens={mt} exceeds recommended limit (200K)",
                             suggestion="Consider reducing max_tokens or using importance_weighted strategy",
@@ -367,6 +370,7 @@ class ContextChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.C,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="C-003",
                     message="context_policy without strategy — default sliding_window may not be optimal",
                     suggestion="Add: strategy: importance_weighted or strategy: sliding_window",
@@ -427,7 +431,7 @@ class ContextChecker(DimensionChecker):
                         rule_id="C-004",
                         message=(
                             f"Context incompatible in pipeline '{upstream_name} >> {downstream_name}': "
-                            f"output_schema='{out_schema}' is not a subtype of input_schema='{in_schema}'"
+                            f"output_schema='{out_schema}' does not match input_schema='{in_schema}' (nominal schema check)"
                         ),
                         suggestion=(
                             f"Align {upstream_name}.context.output_schema with "
@@ -476,6 +480,7 @@ class StateChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.S,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="S-001",
                     message=f"restore('{target_var}') references undefined snapshot variable",
                     suggestion=f"Define snapshot first: {target_var} = snapshot();",
@@ -489,6 +494,7 @@ class StateChecker(DimensionChecker):
                 report.add_error(HarnessViolation(
                     dimension=HarnessDimension.S,
                     severity="error",
+                    location=_location(node_dict),
                     rule_id="S-002",
                     message="fork must have at least 2 branches for meaningful parallel exploration",
                     suggestion="Add more branches: fork [A.run(x), B.run(x), C.run(x)] merge best;",
@@ -503,6 +509,7 @@ class StateChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.S,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="S-003",
                     message=f"fork merge strategy '{strategy}' is not standard (best/first/all/vote)",
                     suggestion="Use one of: best, first, all, vote",
@@ -530,6 +537,7 @@ class LifecycleChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.L,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="L-001",
                     message=f"{hook_type} hook with empty body — consider removing or adding trace logic",
                     suggestion="Add body: { trace.log(\"step event\"); } or remove the hook",
@@ -545,6 +553,7 @@ class LifecycleChecker(DimensionChecker):
                     report.add_warning(HarnessViolation(
                         dimension=HarnessDimension.L,
                         severity="warning",
+                        location=_location(node_dict),
                         rule_id="L-002",
                         message="on_error hook without error binding — error details unavailable",
                         suggestion="Add: on_error(e: ToolError) { ... }",
@@ -558,6 +567,7 @@ class LifecycleChecker(DimensionChecker):
                 report.add_warning(HarnessViolation(
                     dimension=HarnessDimension.L,
                     severity="warning",
+                    location=_location(node_dict),
                     rule_id="L-003",
                     message="reflect with empty text — no self-correction guidance for Agent",
                     suggestion="Add meaningful reflection text: reflect `Error: #{e}. Retry with different approach.`",
@@ -585,6 +595,7 @@ class VerificationChecker(DimensionChecker):
                     report.add_error(HarnessViolation(
                         dimension=HarnessDimension.V,
                         severity="error",
+                        location=_location(node_dict),
                         rule_id="V-001",
                         message="verify satisfies must specify a type or protocol to check against",
                         suggestion="Add: verify result satisfies AuthProtocol;",
@@ -600,6 +611,7 @@ class VerificationChecker(DimensionChecker):
                     report.add_warning(HarnessViolation(
                         dimension=HarnessDimension.V,
                         severity="warning",
+                        location=_location(node_dict),
                         rule_id="V-002",
                         message="verify semantic with short condition — may be too vague for LLM evaluation",
                         suggestion="Use more specific condition: verify \"output contains valid authentication token\" against result;",
@@ -611,6 +623,7 @@ class VerificationChecker(DimensionChecker):
             report.add_warning(HarnessViolation(
                 dimension=HarnessDimension.V,
                 severity="warning",
+                location=_location(autoloops[0]),
                 rule_id="V-003",
                 message="autoloop without verify — no acceptance criteria for autonomous execution",
                 suggestion="Add verify statement: verify result satisfies ExpectedOutput;",
@@ -730,6 +743,7 @@ class HarnessValidator:
         if self.mode == HarnessMode.OFF:
             return HarnessReport()
 
+        ast = normalize_ast(ast)
         report = HarnessReport()
 
         # Run per-dimension checkers
@@ -757,4 +771,7 @@ class HarnessValidator:
                 report.errors.append(violation)
             report.warnings = []
 
+        for violation in report.errors + report.warnings + report.info:
+            if violation.location is None:
+                violation.location = _location(ast)
         return report

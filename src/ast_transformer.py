@@ -606,9 +606,10 @@ class PassStmt:
 class AwaitStmt:
     """await Actor 结果等待"""
     actor_var: str = ""
+    var_name: Optional[str] = None
 
     def to_dict(self) -> Dict:
-        return {"type": "AwaitStmt", "actor_var": self.actor_var}
+        return {"type": "AwaitStmt", "actor_var": self.actor_var, "var_name": self.var_name}
 
 
 @dataclass
@@ -626,6 +627,16 @@ class NexaTransformer(Transformer):
     Nexa 原生的轻量级 JSON / Dict 抽象语法树（AST）
     """
     
+    def _call_userfunc(self, tree, new_children=None):
+        result = super()._call_userfunc(tree, new_children)
+        if getattr(self, "include_spans", False) and not tree.meta.empty:
+            span = {"line": tree.meta.line, "column": tree.meta.column, "end_line": tree.meta.end_line, "end_column": tree.meta.end_column}
+            if isinstance(result, dict) and str(result.get("type", ""))[:1].isupper():
+                result.setdefault("_span", span)
+            elif hasattr(result, "to_dict") and not hasattr(result, "_span"):
+                result._span = span
+        return result
+
     # Nexa keywords that must never be parsed as identifiers
     _NEXA_KEYWORDS = frozenset({
         'defer', 'if', 'else', 'for', 'each', 'in', 'while', 'break', 'continue',
@@ -785,7 +796,7 @@ class NexaTransformer(Transformer):
             for alt in args:
                 if isinstance(alt, list):
                     scores.append(sum(NexaTransformer._score_ast_node(item) for item in alt))
-                elif isinstance(alt, dict):
+                elif isinstance(alt, dict) or hasattr(alt, "to_dict"):
                     scores.append(NexaTransformer._score_ast_node(alt))
                 else:
                     scores.append(0)
@@ -992,7 +1003,7 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def tool_param(self, args):
         name = str(args[0])
-        type_str = str(args[1]) if len(args) > 1 else "string"
+        type_str = args[1] if len(args) > 1 else "string"
         default = args[2] if len(args) > 2 else None
         return {"name": name, "type": type_str, "default": default}
 
@@ -1125,6 +1136,10 @@ class NexaTransformer(Transformer):
                     config = transformed
                 else:
                     body.append(transformed)
+            elif isinstance(arg, list):
+                body.extend(arg)
+            elif hasattr(arg, "to_dict"):
+                body.append(arg)
 
         return WithContextStmt(config=config, body=body)
 
@@ -1189,7 +1204,9 @@ class NexaTransformer(Transformer):
         correction_body = []
 
         for arg in args:
-            if isinstance(arg, dict):
+            if isinstance(arg, list):
+                correction_body.extend(arg)
+            elif isinstance(arg, dict):
                 if arg.get("_type") == "error_binding":
                     error_var = arg.get("var", "e")
                     error_type = arg.get("type", "ToolError")
@@ -1372,32 +1389,9 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def spawn_stmt(self, args):
-        """spawn → SpawnStmt"""
-        var_name = None
-        agent_name = ""
-        spawn_args = []
-
-        for arg in args:
-            s = str(arg).strip()
-            if s == "spawn" or s == "(" or s == ")" or s == ";":
-                continue
-            elif s == "=":
-                continue
-            elif not var_name and not agent_name:
-                # First identifier could be var_name or agent_name
-                # If next arg is "spawn", this is var_name
-                var_name = s
-            elif not agent_name:
-                agent_name = s
-            else:
-                spawn_args.append(arg)
-
-        # If only one meaningful identifier, it's the agent_name
-        if var_name and not agent_name:
-            agent_name = var_name
-            var_name = None
-
-        return SpawnStmt(var_name=var_name, agent_name=agent_name, args=spawn_args)
+        values = [arg for arg in args if arg is not None]
+        arguments = values.pop() if values and isinstance(values[-1], list) else []
+        return SpawnStmt(var_name=str(values[0]) if len(values) == 2 else None, agent_name=str(values[-1]), args=arguments)
 
     @v_args(inline=False)
     def pass_stmt(self, args):
@@ -1408,9 +1402,8 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=False)
     def await_stmt(self, args):
-        """await → AwaitStmt"""
-        actor_var = str(args[0]).strip() if args else ""
-        return AwaitStmt(actor_var=actor_var)
+        values = [arg for arg in args if arg is not None]
+        return AwaitStmt(actor_var=str(values[-1]), var_name=str(values[0]) if len(values) == 2 else None)
 
     @v_args(inline=False)
     def receive_stmt(self, args):
@@ -1752,7 +1745,25 @@ class NexaTransformer(Transformer):
 
     @v_args(inline=True)
     def json_pair(self, k, v):
-        return (str(k).strip('"'), str(v).strip('"'))
+        return (json.loads(str(k)), v)
+
+    @v_args(inline=True)
+    def json_string(self, value):
+        return json.loads(str(value))
+
+    @v_args(inline=False)
+    def json_array(self, values):
+        return [value for value in values if value is not None]
+
+    @v_args(inline=True)
+    def json_integer(self, value):
+        return int(value)
+
+    def json_true(self, values):
+        return True
+
+    def json_false(self, values):
+        return False
 
     # ===== P1-3: Background Job System (后台任务系统) =====
 
@@ -2546,7 +2557,7 @@ class NexaTransformer(Transformer):
     @v_args(inline=True)
     def json_object_val(self, obj):
         """v2.1: 处理 json_object 作为 agent 属性值"""
-        return {"type": "json_object", "value": str(obj)}
+        return {"type": "json_object", "value": obj}
 
     @v_args(inline=False)
     def fallback_list_val(self, args):
@@ -2976,6 +2987,11 @@ class NexaTransformer(Transformer):
         }
 
     @v_args(inline=False)
+    def print_stmt(self, args):
+        values = args[0] if args and isinstance(args[0], list) else [arg for arg in args if arg is not None]
+        return {"type": "ExpressionStatement", "expression": {"type": "FunctionCallExpression", "function": "print", "arguments": values}}
+
+    @v_args(inline=False)
     def expr_stmt(self, args):
         return {
             "type": "ExpressionStatement",
@@ -3169,7 +3185,8 @@ class NexaTransformer(Transformer):
     @v_args(inline=False)
     def semantic_if_stmt(self, args):
         condition = str(args[0]).strip('"')
-        fast_match = str(args[1]).strip('"') if args[1] else None
+        token = str(args[1]) if args[1] else ""
+        fast_match = token[2:-1] if token.startswith('r"') else token[1:-1] if token else None
         target = str(args[2])
         consequence = args[3]
         alternative = args[4] if len(args) > 4 and args[4] else []
@@ -3761,7 +3778,7 @@ class NexaTransformer(Transformer):
     @v_args(inline=True)
     def string_expr(self, s):
         'P3-1: Enhanced string_expr — detects #{...} interpolation in string content.\nWithout interpolation: returns StringLiteral.\nWith interpolation: returns InterpolatedString with parts.'
-        raw = str(s).strip('"')
+        raw = json.loads(str(s).replace(r'\#', r'\\#'), strict=False)
         # Try to parse interpolation
         interp_result = self._parse_string_interpolation(raw)
         if interp_result is not None:
@@ -3881,7 +3898,7 @@ class NexaTransformer(Transformer):
             "type": "StdCallExpression",
             "namespace": str(args[0]),
             "function": str(args[1]),
-            "arguments": args[2] if len(args) > 2 else []
+            "arguments": (args[2] or []) if len(args) > 2 else []
         }
 
     @v_args(inline=False)
@@ -4001,7 +4018,7 @@ class NexaTransformer(Transformer):
     @v_args(inline=True)
     def string_expr(self, s):
         'P3-1: Enhanced string_expr — detects #{...} interpolation in string content.\nWithout interpolation: returns StringLiteral.\nWith interpolation: returns InterpolatedString with parts.'
-        raw = str(s).strip('"')
+        raw = json.loads(str(s).replace(r'\#', r'\\#'), strict=False)
         interp_result = NexaTransformer._parse_string_interpolation(raw)
         if interp_result is not None:
             return interp_result

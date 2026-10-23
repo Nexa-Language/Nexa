@@ -95,7 +95,7 @@ class TestHarnessKernel:
             nonlocal step_num
             step_num += 1
             if step_num >= 3:
-                return StepResult(observation="Task resolved successfully")
+                return StepResult(observation="resolved")
             return StepResult(observation="Still working...")
 
         result = k.run_autoloop(config, step_fn)
@@ -197,7 +197,7 @@ class TestExecutionEngine:
             nonlocal step_num
             step_num += 1
             if step_num >= 5:
-                return StepResult(observation="Task resolved")
+                return StepResult(observation="resolved")
             return StepResult(observation="Working...")
 
         result = engine.run_loop(config, step_fn)
@@ -614,7 +614,7 @@ class TestIntegration:
             step_num += 1
             cm.add_message("assistant", f"Step {step_num} result")
             if step_num >= 3:
-                return StepResult(observation="Task done successfully")
+                return StepResult(observation="done")
             return StepResult(observation="Working...")
 
         result = k.run_autoloop(config, step_fn)
@@ -687,7 +687,7 @@ class TestIntegration:
             if step_num >= 5:
                 return StepResult(
                     action="final_step",
-                    observation="Task resolved successfully",
+                    observation="resolved",
                     success=True,
                 )
             return StepResult(

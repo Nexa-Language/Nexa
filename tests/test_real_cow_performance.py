@@ -9,6 +9,8 @@
     python tests/test_real_cow_performance.py
 """
 
+import pytest
+
 import sys
 import os
 import time
@@ -49,6 +51,7 @@ def test_cow_state_basic():
     print("✓ COW 状态基本功能测试通过")
 
 
+@pytest.mark.benchmark
 def test_cow_vs_deep_copy_performance():
     """
     COW 快照 vs 深拷贝性能对比测试
@@ -110,6 +113,7 @@ def test_cow_vs_deep_copy_performance():
     return results
 
 
+@pytest.mark.benchmark
 def test_tree_of_thoughts_pattern():
     """
     Tree-of-Thoughts 模式性能测试

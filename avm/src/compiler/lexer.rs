@@ -42,7 +42,7 @@ pub enum Token {
     Test,
     #[token("include")]
     Include,
-    
+
     // v1.1: 渐进式类型系统关键字
     #[token("type")]
     Type,
@@ -52,7 +52,7 @@ pub enum Token {
     ResultType,
     #[token("unit")]
     UnitType,
-    
+
     // Agent 属性
     #[token("role")]
     Role,
@@ -64,7 +64,7 @@ pub enum Token {
     Uses,
     #[token("implements")]
     Implements,
-    
+
     // 控制流
     #[token("match")]
     Match,
@@ -102,7 +102,7 @@ pub enum Token {
     Std,
     #[token("img")]
     Img,
-    
+
     // 修饰器关键字
     #[token("limit")]
     Limit,
@@ -112,7 +112,7 @@ pub enum Token {
     Retry,
     #[token("temperature")]
     Temperature,
-    
+
     // 控制流关键字
     #[token("assert")]
     Assert,
@@ -122,7 +122,7 @@ pub enum Token {
     Break,
     #[token("continue")]
     Continue,
-    
+
     // Design by Contract (契约式编程) 关键字 - v1.1
     #[token("requires")]
     Requires,
@@ -130,7 +130,7 @@ pub enum Token {
     Ensures,
     #[token("invariant")]
     Invariant,
-    
+
     // P1-3: Background Job System 关键字
     #[token("job")]
     Job,
@@ -140,7 +140,7 @@ pub enum Token {
     Perform,
     #[token("on_failure")]
     OnFailure,
-    
+
     // v1.1: 类型系统操作符
     #[token("->")]
     TypeArrow,
@@ -148,7 +148,7 @@ pub enum Token {
     TypePipe,
     #[token("?")]
     TypeQuestion,
-    
+
     // 操作符
     #[token(">>")]
     Pipeline,
@@ -162,12 +162,22 @@ pub enum Token {
     ParallelFork,
     #[token("&&")]
     ParallelMerge,
-    
+
     // 比较操作符 (用于契约表达式和传统条件)
     // 使用 regex 优先匹配多字符操作符（>= 优先于 >, <= 优先于 <）
     #[regex(r">=|<=|==|!=|>|<")]
     CmpOp,
-    
+
+    #[token("+")]
+    Plus,
+    #[token("-")]
+    Minus,
+    #[token("*")]
+    Star,
+    #[token("/")]
+    Slash,
+    #[token("%")]
+    Percent,
     // 分隔符
     #[token("{")]
     LBrace,
@@ -195,22 +205,22 @@ pub enum Token {
     Assign,
     #[token("@")]
     At,
-    
+
     // 字面量
     #[token("null")]
     Null,
-    
+
     #[token("true", |_| true)]
     #[token("false", |_| false)]
     Bool(bool),
-    
+
     #[regex(r#""[^"]*""#, |lex| {
         let s = lex.slice();
         // 移除首尾引号
         s[1..s.len()-1].to_string()
     })]
     String(String),
-    
+
     // 正则表达式字面量 r"..."
     #[regex(r#"r"[^"]*""#, |lex| {
         let s = lex.slice();
@@ -218,23 +228,23 @@ pub enum Token {
         s[2..s.len()-1].to_string()
     })]
     Regex(String),
-    
+
     #[regex(r"[0-9]+", |lex| lex.slice().parse().ok())]
     Int(i64),
-    
+
     #[regex(r"[0-9]+\.[0-9]+", |lex| lex.slice().parse().ok())]
     Float(f64),
-    
+
     #[regex(r"[a-zA-Z_][a-zA-Z0-9_]*")]
     Identifier,
-    
+
     // 注释和空白
     #[regex(r"//[^\n]*")]
     Comment,
-    
+
     #[regex(r"/\*([^*]|\*[^/])*\*/")]
     BlockComment,
-    
+
     #[regex(r"[ \t\n\r\f]+")]
     Whitespace,
 }
@@ -258,6 +268,11 @@ impl Token {
     /// 获取 token 的名称
     pub fn name(&self) -> &'static str {
         match self {
+            Token::Plus => "+",
+            Token::Minus => "-",
+            Token::Star => "*",
+            Token::Slash => "/",
+            Token::Percent => "%",
             Token::Agent => "agent",
             Token::Tool => "tool",
             Token::Flow => "flow",
@@ -371,14 +386,14 @@ pub fn tokenize(source: &str) -> LexerResult {
     let mut lexer = Lexer::<Token>::new(source);
     let mut tokens = Vec::new();
     let mut errors = Vec::new();
-    
+
     while let Some(result) = lexer.next() {
         let span = Span {
             start: lexer.span().start,
             end: lexer.span().end,
         };
         let text = lexer.slice().to_string();
-        
+
         match result {
             Ok(token) => {
                 match token {
@@ -386,11 +401,7 @@ pub fn tokenize(source: &str) -> LexerResult {
                         // 跳过空白和注释
                     }
                     _ => {
-                        tokens.push(TokenWithSpan {
-                            token,
-                            span,
-                            text,
-                        });
+                        tokens.push(TokenWithSpan { token, span, text });
                     }
                 }
             }
@@ -399,51 +410,51 @@ pub fn tokenize(source: &str) -> LexerResult {
             }
         }
     }
-    
+
     LexerResult { tokens, errors }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[test]
     fn test_tokenize_keywords() {
         let source = "agent flow tool";
         let result = tokenize(source);
-        
+
         assert_eq!(result.tokens.len(), 3);
         assert_eq!(result.tokens[0].token, Token::Agent);
         assert_eq!(result.tokens[1].token, Token::Flow);
         assert_eq!(result.tokens[2].token, Token::Tool);
     }
-    
+
     #[test]
     fn test_tokenize_operators() {
         let source = ">> |>> &>> ??";
         let result = tokenize(source);
-        
+
         assert_eq!(result.tokens.len(), 4);
         assert_eq!(result.tokens[0].token, Token::Pipeline);
         assert_eq!(result.tokens[1].token, Token::Fork);
         assert_eq!(result.tokens[2].token, Token::Merge);
         assert_eq!(result.tokens[3].token, Token::Branch);
     }
-    
+
     #[test]
     fn test_tokenize_string() {
         let source = r#""hello world""#;
         let result = tokenize(source);
-        
+
         assert_eq!(result.tokens.len(), 1);
         assert!(matches!(result.tokens[0].token, Token::String(_)));
     }
-    
+
     #[test]
     fn test_tokenize_agent_declaration() {
         let source = r#"agent TestAgent { role: "test" }"#;
         let result = tokenize(source);
-        
+
         assert!(result.errors.is_empty());
         assert!(result.tokens.len() > 0);
     }

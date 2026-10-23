@@ -993,16 +993,13 @@ server 8080 {
     route GET "/health" => health_check
 }
 '''
-        try:
-            ast = parse(code)
-            body = ast.get("body", [])
-            server_nodes = [n for n in body if isinstance(n, dict) and n.get("type") == "ServerDeclaration"]
-            if server_nodes:
-                assert server_nodes[0]["port"] == 8080
-        except Exception:
-            # Parser may not support full syntax yet, skip gracefully
-            pytest.skip("Parser does not fully support server_decl syntax yet")
-    
+        ast = parse(code)
+        body = ast.get("body", [])
+        server_nodes = [n for n in body if isinstance(n, dict) and n.get("type") == "ServerDeclaration"]
+        assert server_nodes
+        assert server_nodes[0]["port"] == 8080
+
+
     def test_parse_route_with_params(self):
         """解析带参数的 route"""
         from src.nexa_parser import parse
@@ -1012,17 +1009,15 @@ server 3000 {
     route GET "/users/{id}" => get_user
 }
 '''
-        try:
-            ast = parse(code)
-            body = ast.get("body", [])
-            server_nodes = [n for n in body if isinstance(n, dict) and n.get("type") == "ServerDeclaration"]
-            if server_nodes:
-                routes = server_nodes[0].get("routes", [])
-                if routes:
-                    assert routes[0]["pattern"] == "/users/{id}"
-        except Exception:
-            pytest.skip("Parser does not fully support server_decl syntax yet")
-    
+        ast = parse(code)
+        body = ast.get("body", [])
+        server_nodes = [n for n in body if isinstance(n, dict) and n.get("type") == "ServerDeclaration"]
+        assert server_nodes
+        routes = server_nodes[0].get("routes", [])
+        assert routes
+        assert routes[0]["pattern"] == "/users/{id}"
+
+
     def test_parse_semantic_route(self):
         """解析语义路由"""
         from src.nexa_parser import parse
@@ -1032,21 +1027,13 @@ server 8080 {
     semantic route "/help" => HelpBot
 }
 '''
-        try:
-            ast = parse(code)
-            body = ast.get("body", [])
-            server_nodes = [n for n in body if isinstance(n, dict) and n.get("type") == "ServerDeclaration"]
-            if server_nodes:
-                routes = server_nodes[0].get("routes", [])
-                if routes:
-                    assert routes[0].get("handler_type") == "semantic"
-        except Exception:
-            pytest.skip("Parser does not fully support semantic route syntax yet")
-
-
-# =============================================================================
-# parse_server_block + format 边界测试 (2 tests)
-# =============================================================================
+        ast = parse(code)
+        body = ast.get("body", [])
+        server_nodes = [n for n in body if isinstance(n, dict) and n.get("type") == "ServerDeclaration"]
+        assert server_nodes
+        routes = server_nodes[0].get("routes", [])
+        assert routes
+        assert routes[0].get("handler_type") == "semantic"
 
 class TestEdgeCases:
     """边界情况测试"""

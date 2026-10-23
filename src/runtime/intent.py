@@ -45,6 +45,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 from dataclasses import dataclass, field
 
+from src.ial.primitives import CheckStatus
+
 from src.ial import (
     Vocabulary, TermEntry, Check, CheckOp, AgentAssertion, ProtocolCheck,
     PipelineCheck, SemanticCheck, CheckResult, ScenarioResult, FeatureResult,
@@ -744,7 +746,9 @@ class IntentRunner:
             
             if not is_implemented:
                 print(Colors.yellow(f"⏭️  Feature '{feature.name}' ({feature.id}) — not implemented"))
-                feature_result.passed = True  # 未实现视为 skipped
+                feature_result.passed = False
+                feature_result.status = CheckStatus.SKIP
+                feature_results.append(feature_result)
                 continue
             
             print(Colors.blue(f"📋 Feature: {feature.name} ({feature.id})"))
@@ -774,7 +778,7 @@ class IntentRunner:
                     scenario_result.results.append(result)
                     self._print_check_result(result)
                 
-                scenario_result.passed = all(r.passed for r in scenario_result.results)
+                scenario_result.passed = bool(scenario_result.results) and all(r.passed for r in scenario_result.results)
                 feature_result.scenario_results.append(scenario_result)
                 
                 # 场景结果摘要
@@ -784,7 +788,7 @@ class IntentRunner:
                 print(f"    {symbol} {scenario.name}: {passed_count}/{total_count} checks passed")
                 print()
             
-            feature_result.passed = all(sr.passed for sr in feature_result.scenario_results)
+            feature_result.passed = bool(feature_result.scenario_results) and all(sr.passed for sr in feature_result.scenario_results)
             feature_results.append(feature_result)
         
         # 总结果摘要
@@ -1017,8 +1021,8 @@ class IntentRunner:
         """
         打印单个检查结果（彩色）
         """
-        if result.passed:
-            if "skipped" in result.message.lower():
+        if result.passed or result.status == CheckStatus.SKIP:
+            if result.status == CheckStatus.SKIP:
                 symbol = Colors.yellow("⏭️")
             else:
                 symbol = Colors.green("✓")
@@ -1057,7 +1061,7 @@ class IntentRunner:
         skipped_checks = sum(
             1 for fr in feature_results 
             for sr in fr.scenario_results 
-            for r in sr.results if r.passed and "skipped" in r.message.lower()
+            for r in sr.results if r.status == CheckStatus.SKIP
         )
         
         all_passed = all(fr.passed for fr in feature_results)

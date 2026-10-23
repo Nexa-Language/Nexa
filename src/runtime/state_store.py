@@ -2,14 +2,14 @@
 Nexa v2.0 StateStore — 三层存储 (COW + KV + Vector)
 
 StateStore 实现 Harness S-dimension 的运行时核心，负责：
-  - snapshot/restore: 基于 CowAgentState 的 O(1) COW 快照/回溯
+  - snapshot/restore: 深拷贝隔离的快照/回溯
   - fork: 多分支并行探索 (Tree-of-Thoughts)
   - merge: 分支结果合并
   - store_experience/retrieve_experience: Vector Store 经验存取
 
 Design Rationale:
-  - COW 快照: 基于 CowAgentState，O(1) 时间复杂度
-  - Fork 树: 每个分支是独立的 COW 快照，可独立演进
+  - 隔离快照: 复制嵌套状态，成本随状态大小增长
+  - Fork 树: 每个分支是独立的状态副本，可独立演进
   - Merge 策略: best_of / vote / weighted_average
   - Vector Store: 简易 cosine similarity 搜索，存储 Agent 经验
 
@@ -26,6 +26,7 @@ import hashlib
 import logging
 import threading
 from dataclasses import dataclass, field
+from functools import wraps
 from typing import Any, Dict, List, Optional, Set, Tuple
 
 logger = logging.getLogger("nexa.state_store")
@@ -102,12 +103,20 @@ class MergeResult:
 #  StateStore — S-Dimension Runtime
 # ═══════════════════════════════════════════════════════════════════════
 
+def _synchronized(method):
+    @wraps(method)
+    def wrapped(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return wrapped
+
+
 class StateStore:
     """
     Three-layer state store for Agent state management.
 
     Implements the S-dimension runtime:
-      - snapshot(): Create O(1) COW snapshot
+      - snapshot(): Create an isolated snapshot
       - restore(): Restore to a previous snapshot
       - fork(): Create parallel branches for exploration
       - merge(): Merge branch results
@@ -125,7 +134,7 @@ class StateStore:
         self._current_state: Dict[str, Any] = {}
         self._snapshots: Dict[str, SnapshotEntry] = {}
         self._branches: Dict[str, ForkBranch] = {}
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._snapshot_count = 0
         self._fork_count = 0
 
@@ -133,15 +142,18 @@ class StateStore:
 
     def get_state(self, key: str, default: Any = None) -> Any:
         """Get a state value by key."""
-        return self._current_state.get(key, default)
+        with self._lock:
+            return copy.deepcopy(self._current_state.get(key, default))
 
     def set_state(self, key: str, value: Any) -> None:
         """Set a state value."""
-        self._current_state[key] = value
+        with self._lock:
+            self._current_state[key] = copy.deepcopy(value)
 
     def get_all_state(self) -> Dict[str, Any]:
         """Get the entire current state."""
-        return dict(self._current_state)
+        with self._lock:
+            return copy.deepcopy(self._current_state)
 
     def delete_state(self, key: str) -> bool:
         """Delete a state key."""
@@ -152,12 +164,10 @@ class StateStore:
 
     # ─── Snapshot / Restore ───
 
+    @_synchronized
     def snapshot(self, label: str = "") -> str:
         """
-        Create an O(1) COW snapshot of the current state.
-
-        Uses shallow copy for O(1) performance. Deep copy of
-        mutable values is deferred until modification (COW principle).
+        Create an isolated snapshot, including nested mutable values.
 
         Args:
             label: Optional human-readable label
@@ -168,9 +178,8 @@ class StateStore:
         self._snapshot_count += 1
         snapshot_id = f"snap_{self._snapshot_count}_{hashlib.md5(str(time.time()).encode()).hexdigest()[:6]}"
 
-        # Shallow copy for O(1) — COW principle
-        # Deep values will be copied on write
-        state_copy = copy.copy(self._current_state)
+        # Snapshots own their nested values; arbitrary Python containers are mutable.
+        state_copy = copy.deepcopy(self._current_state)
 
         entry = SnapshotEntry(
             snapshot_id=snapshot_id,
@@ -201,8 +210,8 @@ class StateStore:
                 logger.warning(f"Snapshot not found: {snapshot_id}")
                 return False
 
-            # Restore state (shallow copy of snapshot state)
-            self._current_state = copy.copy(entry.state)
+            # Restore an independent working copy.
+            self._current_state = copy.deepcopy(entry.state)
 
         logger.info(f"State restored to snapshot: {snapshot_id}")
         return True
@@ -210,12 +219,12 @@ class StateStore:
     def get_snapshot(self, snapshot_id: str) -> Optional[SnapshotEntry]:
         """Get a snapshot entry by ID."""
         with self._lock:
-            return self._snapshots.get(snapshot_id)
+            return copy.deepcopy(self._snapshots.get(snapshot_id))
 
     def list_snapshots(self) -> List[SnapshotEntry]:
         """List all snapshots."""
         with self._lock:
-            return list(self._snapshots.values())
+            return copy.deepcopy(list(self._snapshots.values()))
 
     def delete_snapshot(self, snapshot_id: str) -> bool:
         """Delete a snapshot."""
@@ -227,11 +236,12 @@ class StateStore:
 
     # ─── Fork / Merge ───
 
+    @_synchronized
     def fork(self, branch_names: List[str], label: str = "") -> Dict[str, str]:
         """
         Create parallel fork branches from the current state.
 
-        Each branch gets a COW copy of the current state and can
+        Each branch gets an isolated copy of the current state and can
         evolve independently.
 
         Args:
@@ -250,7 +260,7 @@ class StateStore:
             branch_id = f"fork_{self._fork_count}_{hashlib.md5(f'{name}:{time.time()}'.encode()).hexdigest()[:6]}"
 
             # Each branch gets a copy of the current state
-            branch_state = copy.copy(self._current_state)
+            branch_state = copy.deepcopy(self._snapshots[snap_id].state)
 
             branch = ForkBranch(
                 branch_id=branch_id,
@@ -271,14 +281,14 @@ class StateStore:
     def get_branch(self, branch_id: str) -> Optional[ForkBranch]:
         """Get a fork branch by ID."""
         with self._lock:
-            return self._branches.get(branch_id)
+            return copy.deepcopy(self._branches.get(branch_id))
 
     def get_branch_state(self, branch_id: str) -> Optional[Dict]:
         """Get a branch's state."""
         with self._lock:
             branch = self._branches.get(branch_id)
             if branch:
-                return dict(branch.state)
+                return copy.deepcopy(branch.state)
             return None
 
     def set_branch_state(self, branch_id: str, key: str, value: Any) -> bool:
@@ -286,7 +296,7 @@ class StateStore:
         with self._lock:
             branch = self._branches.get(branch_id)
             if branch and branch.status == "active":
-                branch.state[key] = value
+                branch.state[key] = copy.deepcopy(value)
                 return True
             return False
 
@@ -295,7 +305,7 @@ class StateStore:
         with self._lock:
             branch = self._branches.get(branch_id)
             if branch:
-                branch.result = result
+                branch.result = copy.deepcopy(result)
                 branch.status = "completed"
                 branch.completed_at = time.time()
                 return True
@@ -311,6 +321,7 @@ class StateStore:
                 return True
             return False
 
+    @_synchronized
     def merge(self, strategy: str = "best_of") -> MergeResult:
         """
         Merge completed fork branches.
@@ -364,12 +375,12 @@ class StateStore:
                     branches[bid].status = "merged"
 
             # Set current state to winning branch's state
-            self._current_state = copy.copy(winning.state)
+            self._current_state = copy.deepcopy(winning.state)
 
             return MergeResult(
                 merge_strategy="best_of",
                 winning_branch=best_branch,
-                merged_state=dict(winning.state),
+                merged_state=copy.deepcopy(winning.state),
                 branch_results={bid: branch.result for bid, branch in branches.items()},
                 confidence=best_score,
             )
@@ -395,12 +406,12 @@ class StateStore:
             if bid not in winning_bids:
                 branches[bid].status = "merged"
 
-        self._current_state = copy.copy(winning.state)
+        self._current_state = copy.deepcopy(winning.state)
 
         return MergeResult(
             merge_strategy="vote",
             winning_branch=winning_bid,
-            merged_state=dict(winning.state),
+            merged_state=copy.deepcopy(winning.state),
             branch_results={bid: branch.result for bid, branch in branches.items()},
             confidence=len(winning_bids) / len(branches),
         )
@@ -461,6 +472,7 @@ class StateStore:
 
     # ─── Statistics ───
 
+    @_synchronized
     def get_stats(self) -> Dict:
         """Get state store statistics."""
         with self._lock:

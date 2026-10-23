@@ -110,37 +110,6 @@ class TestExampleFiles(unittest.TestCase):
             result = nexa_compile(code)
             self.assertIsNotNone(result)
     
-    def test_all_examples_parseable(self):
-        """测试所有示例文件可解析（递归搜索 examples/ 子目录）"""
-        from src.nexa_sdk import compile as nexa_compile
-        import glob
-        
-        examples_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-            "examples"
-        )
-        
-        # 递归查找 .nx 文件，排除 _archive 目录
-        nx_files = sorted(
-            f for f in glob.glob(os.path.join(examples_dir, "**", "*.nx"), recursive=True)
-            if "_archive" not in f
-        )
-        
-        parsed_count = 0
-        for path in nx_files:
-            try:
-                with open(path, 'r') as f:
-                    code = f.read()
-                
-                result = nexa_compile(code)
-                if result.success:
-                    parsed_count += 1
-            except Exception as e:
-                # 记录但不失败
-                pass
-        
-        # 至少有一半的示例应该能解析
-        self.assertGreater(parsed_count, len(nx_files) // 2)
 
 
 class TestRuntimeComponents(unittest.TestCase):

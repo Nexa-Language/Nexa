@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "backend": "python",
+  "version": "3.12.13",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "samples": 1000,
+  "warmup": 50,
+  "concurrency": 1,
+  "provider_calls": 0,
+  "scope": "compiled flow invocation, including flow runtime scope",
+  "cases": [
+    {
+      "name": "integer_precision",
+      "initialization_ms": 145.685417,
+      "median_us": 0.542,
+      "p95_us": 0.584
+    },
+    {
+      "name": "true_division",
+      "initialization_ms": 92.639833,
+      "median_us": 0.5,
+      "p95_us": 0.542
+    },
+    {
+      "name": "local_variables",
+      "initialization_ms": 84.704583,
+      "median_us": 0.5,
+      "p95_us": 0.667
+    }
+  ]
+}

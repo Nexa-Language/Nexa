@@ -341,79 +341,56 @@ class ToolRegistry:
         Returns:
             ToolExecutionResult with execution outcome
         """
-        import time
+        from .tool_dispatch import ToolDispatcher, ToolSpec
 
         with self._lock:
             fn = self._tools.get(tool_name)
             schema = self._schemas.get(tool_name)
-
-        if fn is None:
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                success=False,
-                error=f"Tool '{tool_name}' not found in registry",
-            )
-
-        self._execution_count += 1
-
-        # ─── HITL Approval Check ───
-        if schema and schema.requires_approval:
-            approved = self._check_approval(tool_name, schema, arguments)
-            if not approved:
-                return ToolExecutionResult(
-                    tool_name=tool_name,
-                    success=False,
-                    error=f"Tool '{tool_name}' execution denied by HITL approval",
-                    approved=False,
-                )
-
-        # ─── Execute ───
-        start_time = time.time()
-        try:
-            result = fn(**arguments)
-            execution_time = time.time() - start_time
-
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                success=True,
-                result=result,
-                approved=True,
-                execution_time=execution_time,
-                sandboxed=schema.sandbox if schema else False,
-            )
-
-        except Exception as e:
-            execution_time = time.time() - start_time
-            return ToolExecutionResult(
-                tool_name=tool_name,
-                success=False,
-                error=str(e),
-                approved=True,
-                execution_time=execution_time,
-            )
+        if fn is None or schema is None:
+            return ToolExecutionResult(tool_name=tool_name, success=False, error=f"Tool '{tool_name}' not found in registry")
+        spec = ToolSpec(
+            name=tool_name,
+            description=schema.description,
+            parameters={"type": "object", "properties": schema.parameters, "required": schema.required},
+            handler=fn,
+            requires_approval=schema.requires_approval,
+            risk_level=schema.risk_level,
+            sandbox=schema.sandbox,
+        )
+        approval = None
+        if (schema.requires_approval or schema.risk_level in {"high", "critical"}) and self._hitl_manager is not None:
+            approval = self._check_approval(tool_name, schema, arguments)
+        outcome = ToolDispatcher([spec]).dispatch(tool_name, arguments, approved=approval)
+        if outcome.status == "completed":
+            with self._lock:
+                self._execution_count += 1
+        return ToolExecutionResult(
+            tool_name=tool_name,
+            success=outcome.status == "completed",
+            result=outcome.value,
+            error=outcome.error,
+            approved=outcome.status != "waiting_approval" and approval is not False,
+            execution_time=outcome.duration,
+            sandboxed=outcome.sandboxed,
+        )
 
     def _check_approval(self, tool_name: str, schema: ToolSchema, arguments: Dict) -> bool:
         """
-        Check HITL approval for a high-risk tool execution.
-
-        If HITLManager is available, delegates to it.
-        Otherwise, auto-approves in WARN mode and denies in STRICT mode.
+        Check an explicitly configured approval manager.
         """
-        if self._hitl_manager:
-            try:
-                return self._hitl_manager.request_approval(
-                    tool_name=tool_name,
-                    risk_level=schema.risk_level,
-                    arguments=arguments,
-                )
-            except Exception:
-                logger.warning(f"HITL approval check failed for {tool_name}")
-                return False
-
-        # No HITL manager: auto-approve (WARN mode behavior)
-        logger.warning(f"Auto-approving high-risk tool '{tool_name}' "
-                       f"(no HITL manager configured)")
-        return True
+        if self._hitl_manager is None:
+            return False
+        try:
+            if hasattr(self._hitl_manager, "request_approval"):
+                return self._hitl_manager.request_approval(tool_name=tool_name, risk_level=schema.risk_level, arguments=arguments) is True
+            return self._hitl_manager.wait_for_human(
+                prompt=f"Approve tool {tool_name}?",
+                timeout=300,
+                context={"tool_name": tool_name, "risk_level": schema.risk_level, "arguments": arguments},
+            ) is True
+        except Exception:
+            logger.warning("HITL approval check failed for %s", tool_name)
+            return False
 
     # ─── Schema Access ───
 

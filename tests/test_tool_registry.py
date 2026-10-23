@@ -180,8 +180,8 @@ class TestToolRegistry:
         assert result.success is False
         assert "Tool failed" in result.error
 
-    def test_execute_high_risk_auto_approved(self):
-        """High-risk tool auto-approved when no HITL manager."""
+    def test_execute_high_risk_requires_approval_manager(self):
+        """High-risk tool waits when no approval manager is configured."""
         registry = ToolRegistry()
 
         def dangerous_tool(cmd: str) -> str:
@@ -193,8 +193,8 @@ class TestToolRegistry:
         )
 
         result = registry.execute("dangerous_tool", {"cmd": "rm -rf /"})
-        assert result.success is True
-        assert result.approved is True
+        assert result.success is False
+        assert result.approved is False
 
     def test_execute_high_risk_hitl_denied(self):
         """High-risk tool denied by HITL manager."""

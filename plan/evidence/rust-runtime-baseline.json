@@ -1,0 +1,32 @@
+{
+  "arch": "aarch64",
+  "backend": "rust",
+  "cases": [
+    {
+      "initialization_ms": 0.396542,
+      "median_us": 3.7079999999999997,
+      "name": "integer_precision",
+      "p95_us": 4.082999999999999
+    },
+    {
+      "initialization_ms": 0.034917,
+      "median_us": 1.625,
+      "name": "true_division",
+      "p95_us": 1.75
+    },
+    {
+      "initialization_ms": 0.020375,
+      "median_us": 2.2079999999999997,
+      "name": "local_variables",
+      "p95_us": 2.3329999999999997
+    }
+  ],
+  "concurrency": 1,
+  "os": "macos",
+  "profile": "debug",
+  "provider_calls": 0,
+  "samples": 1000,
+  "schema_version": 1,
+  "scope": "interpreter initialization, bytecode clone/load and execution",
+  "warmup": 50
+}

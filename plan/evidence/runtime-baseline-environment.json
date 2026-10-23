@@ -1,0 +1,12 @@
+{
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "machine": "arm64",
+  "python": "3.12.13",
+  "nexa_version": "2.4.0",
+  "date": "2026-10-23",
+  "branch": "feat/nexa-runtime-modernization",
+  "provider_calls": 0,
+  "cpu": "unavailable",
+  "rustc": "rustc 1.97.1 (8bab26f4f 2026-07-14)",
+  "cargo": "cargo 1.97.1 (c980f4866 2026-06-30)"
+}

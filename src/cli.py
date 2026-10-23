@@ -23,20 +23,12 @@ import shutil
 import time
 from pathlib import Path
 
-# Add src dir to sys.path to allow imports when running directly
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-# Version info — 从单一版本源读取
 from src._version import NEXA_VERSION
-
-from nexa_parser import parse
-from ast_transformer import NexaTransformer
-from code_generator import CodeGenerator
-from harness_validator import HarnessValidator, HarnessMode
-from runtime.inspector import inspect_nexa_file, format_inspect_json, format_inspect_text
-from runtime.validator import validate_nexa_file, format_error_json, format_error_human
-# P1-4: Built-In HTTP Server
-from runtime.http_server import parse_server_block, format_routes_text, format_routes_json
+from src.compiler import compile_file, load_program
+from src.harness_validator import HarnessValidator, HarnessMode
+from src.runtime.inspector import inspect_nexa_file, format_inspect_json, format_inspect_text
+from src.runtime.validator import validate_nexa_file, format_error_json, format_error_human
+from src.runtime.http_server import parse_server_block, format_routes_text, format_routes_json
 
 def build_file(nx_file_path: str, harness_mode: str = "warn") -> str:
     """
@@ -55,76 +47,10 @@ def build_file(nx_file_path: str, harness_mode: str = "warn") -> str:
     
     print(f"🔨 Compiling {input_path} ...")
     try:
-        # Read source
-        with open(input_path, 'r', encoding='utf-8') as f:
-            source_code = f.read()
-
-        # Parse and Transform
-        tree = parse(source_code)
-        transformer = NexaTransformer()
-        ast = transformer.transform(tree)
-
-        # Handle nxlib includes
-        # stdlib search paths: input file dir, then project root stdlib/
-        project_root = Path(__file__).resolve().parent.parent  # Nexa/src/cli.py -> Nexa/
-        stdlib_dir = project_root / "stdlib"
-        
-        if "includes" in ast:
-            for include_stmt in ast["includes"]:
-                inc_rel_path = include_stmt["path"]
-                
-                # Skip .nxs files — they are secrets config, handled by runtime
-                if inc_rel_path.endswith(".nxs"):
-                    continue
-                
-                # Resolve include path: try relative to input file first, then stdlib/
-                inc_full_path = input_path.parent / inc_rel_path
-                if not inc_full_path.exists():
-                    inc_full_path = stdlib_dir / inc_rel_path
-                if not inc_full_path.exists():
-                    # Also try stripping "stdlib/" prefix if user wrote include "stdlib/news.nx"
-                    stripped = inc_rel_path
-                    if stripped.startswith("stdlib/"):
-                        stripped = stripped[7:]
-                    inc_full_path = stdlib_dir / stripped
-                
-                if not inc_full_path.exists():
-                    print(f"❌ Error: Included file '{inc_rel_path}' not found.")
-                    print(f"   Searched: {input_path.parent / inc_rel_path}")
-                    print(f"   Searched: {stdlib_dir / inc_rel_path}")
-                    sys.exit(1)
-                
-                with open(inc_full_path, 'r', encoding='utf-8') as inc_f:
-                    inc_code = inc_f.read()
-                
-                inc_tree = parse(inc_code)
-                inc_ast = transformer.transform(inc_tree)
-                
-                # Merge included bodies to the top of AST
-                ast["body"] = inc_ast["body"] + ast["body"]
-
-        # v2.0: Harness Validation (compile-time)
-        if harness_mode != "off":
-            mode_map = {"strict": HarnessMode.STRICT, "warn": HarnessMode.WARN}
-            hv = HarnessValidator(mode=mode_map.get(harness_mode, HarnessMode.WARN))
-            report = hv.validate(ast)
-            if report.has_errors():
-                if harness_mode == "strict":
-                    print(f"❌ Harness validation failed (strict mode):")
-                    for err in report.errors:
-                        print(f"  • {err}")
-                    sys.exit(1)
-                else:
-                    print(f"⚠️ Harness validation warnings:")
-                    for err in report.errors:
-                        print(f"  • {err}")
-            if report.has_warnings():
-                for warn in report.warnings:
-                    print(f"  ⚡ {warn}")
-
-        # Generate Code
-        generator = CodeGenerator(ast)
-        python_code = generator.generate()
+        compilation = compile_file(input_path, harness_mode=harness_mode)
+        for warning in compilation.diagnostics.warnings:
+            print(f"  ⚡ {warning.rule_id}: {warning.message}")
+        python_code = compilation.python_code
 
         # Write output
         with open(output_path, 'w', encoding='utf-8') as f:
@@ -273,9 +199,7 @@ def routes_file(nx_file_path: str, json_output: bool = False):
         with open(input_path, 'r', encoding='utf-8') as f:
             source_code = f.read()
         
-        tree = parse(source_code)
-        transformer = NexaTransformer()
-        ast = transformer.transform(tree)
+        ast, _ = load_program(source_code, input_path)
         
         # Find ServerDeclaration nodes
         servers = []
@@ -317,7 +241,7 @@ def show_version():
     """
     Display the Nexa version.
     """
-    print(f"Nexa v{NEXA_VERSION}")
+    print(f"Nexa {NEXA_VERSION}")
 
 def intent_check(nx_file_path: str, intent_file_path: str = None, verbose: bool = False):
     """
@@ -386,9 +310,7 @@ def harness_check_file(nx_file_path: str, harness_mode: str = "strict", json_out
         with open(input_path, 'r', encoding='utf-8') as f:
             source_code = f.read()
 
-        tree = parse(source_code)
-        transformer = NexaTransformer()
-        ast = transformer.transform(tree)
+        ast, _ = load_program(source_code, input_path)
 
         mode_map = {"strict": HarnessMode.STRICT, "warn": HarnessMode.WARN, "off": HarnessMode.OFF}
         hv = HarnessValidator(mode=mode_map.get(harness_mode, HarnessMode.STRICT))
@@ -472,9 +394,7 @@ def lint_file(nx_file_path: str, strict: bool = False, warn_untyped: bool = Fals
         with open(input_path, 'r', encoding='utf-8') as f:
             source_code = f.read()
         
-        tree = parse(source_code)
-        transformer = NexaTransformer()
-        ast = transformer.transform(tree)
+        ast, _ = load_program(source_code, input_path)
         
         # Create type checker with specified modes
         checker = TypeChecker(type_mode=type_mode, lint_mode=lint_mode)
@@ -655,6 +575,18 @@ def main():
     run_parser.add_argument("file", help="Path to the .nx source file")
     run_parser.add_argument("--harness", choices=["strict", "warn", "off"], default="warn",
                               help="Harness validation mode (default: warn)")
+
+    agent_parser = subparsers.add_parser("agent", help="Run a declared agent with checkpoints and explicit tool approvals")
+    agent_parser.add_argument("file")
+    agent_parser.add_argument("name")
+    agent_parser.add_argument("task", nargs="?")
+    agent_parser.add_argument("--checkpoint", default=".nexa/runs.sqlite3")
+    agent_parser.add_argument("--resume")
+    approval = agent_parser.add_mutually_exclusive_group()
+    approval.add_argument("--approve")
+    approval.add_argument("--deny")
+    agent_parser.add_argument("--timeout", type=float, default=300.0)
+    agent_parser.add_argument("--max-tool-calls", type=int, default=20)
     
     # Test command
     test_parser = subparsers.add_parser("test", help="Compile and run tests in a .nx file")
@@ -764,6 +696,12 @@ def main():
     elif args.command == "run":
         harness_mode = getattr(args, 'harness', 'warn')
         run_file(args.file, harness_mode=harness_mode)
+    elif args.command == "agent":
+        from src.agent_cli import print_run, run_declared_agent
+        state = run_declared_agent(args.file, args.name, args.task, checkpoint=args.checkpoint,
+                                   resume=args.resume, approve=args.approve, deny=args.deny,
+                                   timeout=args.timeout, max_tool_calls=args.max_tool_calls)
+        sys.exit(print_run(state))
     elif args.command == "test":
         test_file(args.file)
     elif args.command == "inspect":

@@ -1,0 +1,88 @@
+from __future__ import annotations
+
+import importlib.util
+import json
+import sys
+import types
+from pathlib import Path
+from typing import Any
+
+ROOT = Path('/Users/bytedance/proj/experiment/Nexa/src/runtime')
+
+# Skip package initializers so optional providers and credentials stay unused.
+package = types.ModuleType('audit_runtime')
+package.__path__ = [str(ROOT)]
+sys.modules['audit_runtime'] = package
+
+
+def load(name: str) -> types.ModuleType:
+    spec = importlib.util.spec_from_file_location('audit_runtime.' + name, ROOT / (name + '.py'))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def report(case: str, **values: Any) -> None:
+    print(json.dumps({'case': case, **values}))
+
+
+state = load('state_store')
+store = state.StateStore()
+store.set_state('nested', {'items': [1]})
+snapshot = store.snapshot()
+store.get_state('nested')['items'].append(2)
+store.restore(snapshot)
+report('snapshot_nested_restore', expected=[1], actual=store.get_state('nested')['items'])
+
+harness = load('harness_kernel')
+trace = load('trace_system')
+context = load('context_manager')
+kernel = harness.HarnessKernel()
+kernel.register_trace_system(trace.TraceSystem())
+manager = context.ContextManager(kernel)
+try:
+    manager.add_message('user', 'hello')
+except Exception as exc:
+    report('registered_trace_context', error_type=type(exc).__name__, error=str(exc))
+
+# The DAG test uses a pure transform; its Agent type import is never executed.
+agent = types.ModuleType('audit_runtime.agent')
+agent.NexaAgent = object
+sys.modules['audit_runtime.agent'] = agent
+dag = load('dag_orchestrator')
+visits: list[int] = []
+
+
+def transform(value: int, context: dict[str, Any]) -> int:
+    visits.append(value)
+    return value + 1
+
+
+child = dag.DAGNode('child', dag.DAGNodeType.TRANSFORM, transform_fn=transform)
+fork = dag.ForkNode('fork')
+fork.next_nodes = [child]
+executor = dag.DAGExecutor(fork)
+result = executor.run(1)
+report('fork_executes_child_twice', visits=visits, node_result=executor.node_results['child'], returned_result=result)
+
+cache_module = load('cache_manager')
+cache = cache_module.NexaCacheManager(enable_disk_cache=False)
+messages_a = [{'role': 'system', 'content': 'Return German'}, {'role': 'user', 'content': 'Translate hello'}]
+messages_b = [{'role': 'system', 'content': 'Return French'}, {'role': 'user', 'content': 'Translate hello'}]
+cache.set(messages_a, 'model-a', 'Hallo')
+cached = cache.get(messages_b, 'model-b')
+report('semantic_cache_context_model_isolation', expected=None, actual=cached)
+
+tool_module = load('tool_registry')
+registry = tool_module.ToolRegistry()
+
+
+def pure_add_one(value: int) -> int:
+    return value + 1
+
+
+registry.register_from_annotation(pure_add_one, requires_approval=True, sandbox=True)
+tool_result = registry.execute('pure_add_one', {'value': 1})
+report('approval_missing_and_sandbox_metadata', **tool_result.to_dict())

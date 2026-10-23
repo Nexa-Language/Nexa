@@ -49,10 +49,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 # 导入 Nexa 核心组件
-from .nexa_parser import parse
-from .ast_transformer import NexaTransformer
-from .code_generator import CodeGenerator
+from .compiler import compile_file, compile_source
 from .runtime.agent import NexaAgent
+from .runtime.mcp_client import mcp_session_scope
 from .runtime.cache_manager import get_cache_manager, init_cache_manager
 from .runtime.knowledge_graph import get_knowledge_graph
 from .runtime.rbac import get_rbac_manager, Permission, Role
@@ -243,7 +242,7 @@ class ToolBuilder:
 
 # ==================== 核心函数 ====================
 
-def compile(source: str) -> CompileResult:
+def compile(source: str, *, harness_mode: str = "warn") -> CompileResult:
     """
     编译 Nexa 源代码
     
@@ -257,22 +256,12 @@ def compile(source: str) -> CompileResult:
     start = time.time()
     
     try:
-        # 判断是文件还是代码
-        if source.endswith('.nx') and os.path.exists(source):
-            with open(source, 'r', encoding='utf-8') as f:
-                source = f.read()
-        
-        # 解析
-        tree = parse(source)
-        
-        # 转换 AST
-        transformer = NexaTransformer()
-        ast = transformer.transform(tree)
-        
-        # 生成 Python 代码
-        codegen = CodeGenerator(ast)
-        py_code = codegen.generate()
-        
+        if source.endswith('.nx') and os.path.isfile(source):
+            compilation = compile_file(source, harness_mode=harness_mode)
+        else:
+            compilation = compile_source(source, harness_mode=harness_mode)
+        py_code = compilation.python_code
+
         return CompileResult(
             success=True,
             python_code=py_code,
@@ -330,7 +319,7 @@ def run(source: str, inputs: Optional[Dict[str, Any]] = None) -> RunResult:
             sys.modules[module_name] = module
             
             # 捕获输出
-            with contextlib.redirect_stdout(f_out), contextlib.redirect_stderr(f_err):
+            with mcp_session_scope(), contextlib.redirect_stdout(f_out), contextlib.redirect_stderr(f_err):
                 spec.loader.exec_module(module)
                 
                 # 注入输入
@@ -342,6 +331,7 @@ def run(source: str, inputs: Optional[Dict[str, Any]] = None) -> RunResult:
                     result = module.flow_main()
         finally:
             os.unlink(temp_path)
+            sys.modules.pop(module_name, None)
         
         return RunResult(
             success=True,

@@ -76,8 +76,8 @@ def inspect_nexa_file(file_path: str) -> Dict[str, Any]:
 
     # Parse the file
     try:
-        from nexa_parser import parse
-        ast = parse(source_code)
+        from src.compiler import load_program
+        ast, _ = load_program(source_code, source_path=input_path)
     except Exception as e:
         # If parsing fails, still return partial info from regex-based extraction
         return _inspect_from_source(file_path, source_code, parse_error=str(e))
@@ -100,7 +100,7 @@ def _inspect_from_ast(file_path: str, ast: Dict[str, Any], source_code: str) -> 
     implements_annotations = []
 
     # Extract implements annotations from source (comments-based)
-    from nexa_parser import extract_implements_annotations
+    from src.nexa_parser import extract_implements_annotations
     annotations = extract_implements_annotations(source_code)
     if annotations:
         implements_annotations = annotations
@@ -127,29 +127,49 @@ def _inspect_from_ast(file_path: str, ast: Dict[str, Any], source_code: str) -> 
 
         if item_type == "AgentDeclaration":
             agent_info = _extract_agent_info(item, implements_annotations)
+            agent_info.update(_source_location(item))
             agents.append(agent_info)
             agent_names.add(item.get("name", ""))
 
         elif item_type == "ToolDeclaration":
             tool_info = _extract_tool_info(item)
+            tool_info.update(_source_location(item))
             tools.append(tool_info)
             tool_names.add(item.get("name", ""))
 
+        elif item_type == "ToolAnnotation":
+            tool_info = {
+                "name": item["fn_name"],
+                "description": item.get("description", ""),
+                "parameters": {param["name"]: _format_base_type(param.get("type", "string")) for param in item.get("params", [])},
+                "type": "local",
+                "requires_approval": item.get("requires_approval") is True or item.get("requires_approval") == "true",
+                "risk_level": item.get("risk_level", "low"),
+                "sandbox": item.get("sandbox") is True or item.get("sandbox") == "true",
+                **_source_location(item),
+            }
+            tools.append(tool_info)
+            tool_names.add(item["fn_name"])
+
         elif item_type == "ProtocolDeclaration":
             protocol_info = _extract_protocol_info(item)
+            protocol_info.update(_source_location(item))
             protocols.append(protocol_info)
             protocol_names.add(item.get("name", ""))
 
         elif item_type == "FlowDeclaration":
             flow_info = _extract_flow_info(item)
+            flow_info.update(_source_location(item))
             flows.append(flow_info)
 
         elif item_type == "TestDeclaration":
             test_info = _extract_test_info(item)
+            test_info.update(_source_location(item))
             tests.append(test_info)
 
         elif item_type == "TypeDeclaration":
             type_info = _extract_type_info(item)
+            type_info.update(_source_location(item))
             types_list.append(type_info)
 
     # Build summary
@@ -178,6 +198,14 @@ def _inspect_from_ast(file_path: str, ast: Dict[str, Any], source_code: str) -> 
     }
 
     return result
+
+
+def _source_location(node: Dict[str, Any]) -> Dict[str, Any]:
+    span = node.get("_span")
+    source = node.get("_source_path")
+    if not isinstance(span, dict) or not source:
+        return {}
+    return {"source": {"file": source, **span}}
 
 
 def _inspect_from_source(file_path: str, source_code: str, parse_error: str) -> Dict[str, Any]:

@@ -288,6 +288,13 @@ Primitive = Union[
 ]
 
 
+class CheckStatus(str, Enum):
+    PASS = "pass"
+    FAIL = "fail"
+    SKIP = "skip"
+    ERROR = "error"
+
+
 @dataclass
 class CheckResult:
     """
@@ -303,7 +310,13 @@ class CheckResult:
     primitive: Primitive
     message: str = ""
     actual: Any = None
-    
+    status: Optional[CheckStatus] = None
+
+    def __post_init__(self) -> None:
+        if self.status is None:
+            self.status = CheckStatus.PASS if self.passed else CheckStatus.FAIL
+        self.passed = self.status == CheckStatus.PASS
+
     def __repr__(self):
         symbol = "✓" if self.passed else "✗"
         return f"{symbol} {self.primitive}: {self.message}"
@@ -324,6 +337,7 @@ class ScenarioResult:
     feature_id: str
     results: List[CheckResult] = field(default_factory=list)
     passed: bool = True
+    status: Optional[CheckStatus] = None
     
     def __repr__(self):
         symbol = "✓" if self.passed else "✗"
@@ -345,6 +359,7 @@ class FeatureResult:
     feature_name: str
     scenario_results: List[ScenarioResult] = field(default_factory=list)
     passed: bool = True
+    status: Optional[CheckStatus] = None
     
     def __repr__(self):
         symbol = "✓" if self.passed else "✗"

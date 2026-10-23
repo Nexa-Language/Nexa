@@ -20,7 +20,7 @@ along with Nexa.  If not, see <https://www.gnu.org/licenses/>.
 
 //! LLM 运行时
 
-use crate::utils::error::AvmResult;
+use crate::utils::error::{AvmError, AvmResult};
 use std::collections::HashMap;
 
 pub const DEFAULT_LLM_MODEL: &str = "minimax-m2.5";
@@ -63,15 +63,61 @@ impl LlmClient {
 
     pub fn chat(&mut self, messages: &[(&str, &str)], model: Option<&str>) -> AvmResult<String> {
         let model = model.unwrap_or(&self.config.default_model);
-        
-        // 简化实现：模拟响应
-        let last_user_msg = messages.iter()
-            .rev()
-            .find(|(role, _)| *role == "user")
-            .map(|(_, content)| *content)
-            .unwrap_or("");
-        
-        Ok(format!("[{}] Response to: {}", model, last_user_msg))
+        let key = self
+            .config
+            .api_key
+            .as_deref()
+            .filter(|key| !key.is_empty())
+            .ok_or_else(|| AvmError::LlmError("A provider API key is required".into()))?;
+        let endpoint = self
+            .config
+            .base_url
+            .as_deref()
+            .unwrap_or("https://api.openai.com/v1");
+        let client = reqwest::blocking::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .map_err(|error| AvmError::LlmError(error.to_string()))?;
+        let messages: Vec<_> = messages
+            .iter()
+            .map(|(role, content)| serde_json::json!({"role": role, "content": content}))
+            .collect();
+        let response = client
+            .post(format!(
+                "{}/chat/completions",
+                endpoint.trim_end_matches('/')
+            ))
+            .bearer_auth(key)
+            .json(&serde_json::json!({"model": model, "messages": messages}))
+            .send()
+            .map_err(|error| {
+                AvmError::LlmError(format!(
+                    "Provider transport failed: {}",
+                    error.without_url()
+                ))
+            })?;
+        if !response.status().is_success() {
+            return Err(AvmError::LlmError(format!(
+                "Provider HTTP status {}",
+                response.status()
+            )));
+        }
+        let data: serde_json::Value = response
+            .json()
+            .map_err(|_| AvmError::LlmError("Invalid provider JSON".into()))?;
+        let choice = &data["choices"][0];
+        if choice["finish_reason"] != "stop"
+            || !choice["message"]["tool_calls"].is_null()
+            || !choice["message"]["refusal"].is_null()
+        {
+            return Err(AvmError::LlmError(
+                "AVM text provider requires a complete text response without tool calls".into(),
+            ));
+        }
+        choice["message"]["content"]
+            .as_str()
+            .map(str::to_owned)
+            .ok_or_else(|| AvmError::LlmError("Provider omitted text output".into()))
     }
 
     pub fn clear_cache(&mut self) {
@@ -97,8 +143,10 @@ mod tests {
     fn test_llm_client() {
         let mut client = LlmClient::default();
         let messages = vec![("user", "Hello")];
-        let result = client.chat(&messages, None).unwrap();
-        assert!(result.contains("Hello"));
-        assert!(result.contains(DEFAULT_LLM_MODEL));
+        assert!(client
+            .chat(&messages, None)
+            .unwrap_err()
+            .to_string()
+            .contains("API key"));
     }
 }

@@ -1,0 +1,63 @@
+import ast
+import os
+import re
+import sys
+from pathlib import Path
+from types import ModuleType
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+root = Path.cwd()
+sys.path.insert(0, str(root / 'src'))
+from harness_validator import HarnessValidator, HarnessMode
+
+def load_selected(path, names, namespace):
+    parsed = ast.parse(path.read_text())
+    selected = [node for node in parsed.body if isinstance(node, (ast.ClassDef, ast.FunctionDef)) and node.name in names]
+    exec(compile(ast.Module(body=selected, type_ignores=[]), str(path), 'exec'), namespace)
+
+module = ModuleType('audit_ast')
+sys.modules[module.__name__] = module
+module.__dict__.update(dict(dataclass=dataclass, field=field, Optional=Optional, Any=Any, List=List, Dict=Dict))
+load_selected(root / 'src/ast_transformer.py', {'AutoLoopStmt', 'WithContextStmt'}, module.__dict__)
+invalid_loop = module.AutoLoopStmt()
+valid_scope = module.WithContextStmt(config={'max_tokens': 99}, body=[invalid_loop])
+for label, body in [('top_level', [invalid_loop]), ('nested_dataclass', [valid_scope]), ('normalized_dict', [valid_scope.to_dict()])]:
+    report = HarnessValidator(HarnessMode.STRICT).validate({'body': body})
+    print('VALIDATOR', label, sorted({v.rule_id for v in report.errors}))
+
+ns = {'BOILERPLATE': ''}
+load_selected(root / 'src/code_generator.py', {'CodeGenerator'}, ns)
+generator = ns['CodeGenerator']({'body': []})
+generator._generate_with_context(valid_scope.to_dict() | {'body': []})
+print('CONTEXT_GENERATED', '\n'.join(generator.code).strip())
+generator = ns['CodeGenerator']({'body': []})
+generator._generate_autoloop({'max_steps': 3, 'exit_when': 'done', 'body': []})
+print('LOOP_EXIT_WHEN_READS', '\n'.join(generator.code).count('_config.exit_when'))
+
+sys.path.insert(0, str(root / 'src/ial'))
+from primitives import CheckResult, SemanticCheck
+semantic_ns = {'Any': Any, 'Dict': Dict, 'CheckResult': CheckResult, 'SemanticCheck': SemanticCheck, 'os': os, 're': re}
+load_selected(root / 'src/ial/execute.py', {'_execute_semantic_check'}, semantic_ns)
+previous = os.environ.pop('NEXA_API_KEY', None)
+try:
+    for label, actual, intent in [('empty', '', 'response must be correct'), ('negated', 'there is unsafe output', 'output is not unsafe')]:
+        result = semantic_ns['_execute_semantic_check'](SemanticCheck(actual=actual, intent=intent), {})
+        print('IAL', label, result.passed, result.message)
+finally:
+    if previous is not None:
+        os.environ['NEXA_API_KEY'] = previous
+
+import ast
+from pathlib import Path
+path = Path('src/code_generator.py')
+parsed = ast.parse(path.read_text())
+namespace = {'BOILERPLATE': ''}
+selected = [node for node in parsed.body if isinstance(node, ast.ClassDef) and node.name == 'CodeGenerator']
+exec(compile(ast.Module(body=selected, type_ignores=[]), str(path), 'exec'), namespace)
+generated = namespace['CodeGenerator']({'body': [{'type':'ProtocolDeclaration','name':'Sample','fields':{}}]}).generate()
+try:
+    compile(generated, '<generated>', 'exec')
+    print('protocol_only valid Python')
+except SyntaxError as error:
+    print('protocol_only', type(error).__name__, str(error))

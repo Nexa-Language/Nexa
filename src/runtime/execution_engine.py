@@ -149,33 +149,8 @@ class ExecutionEngine:
         return step
 
     def _check_exit_condition(self, condition: str, step: StepResult) -> bool:
-        """
-        Check if the semantic exit_when condition is satisfied.
-
-        Current implementation: substring-based heuristic matching.
-        M4 will upgrade this to LLM-based semantic evaluation.
-        """
-        if not condition or not step.observation:
-            return False
-
-        condition_lower = condition.lower().strip()
-        observation_lower = step.observation.lower()
-
-        # ─── Resolution signal matching ───
-        resolution_signals = {
-            "resolved": ["resolved", "complete", "done", "finished", "success"],
-            "completed": ["completed", "complete", "done", "finished"],
-            "done": ["done", "finished", "complete", "resolved"],
-            "success": ["success", "successful", "resolved", "completed"],
-            "finished": ["finished", "done", "complete", "resolved"],
-        }
-
-        # Check if condition is a known resolution signal
-        if condition_lower in resolution_signals:
-            return any(sig in observation_lower for sig in resolution_signals[condition_lower])
-
-        # ─── Direct substring match ───
-        return condition_lower in observation_lower
+        from .flow_runtime import exit_condition
+        return exit_condition(condition, step.observation)
 
     def _generate_correction_reflection(self, error: str, context: Dict) -> str:
         """

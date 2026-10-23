@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Nexa — The first Harness Native Agent Language. Build autonomous agents with compiler-enforced safety. Write flows, not glue code.">
+  <meta name="description" content="Nexa 2.4.0 — an agent-native language and reliable runtime with native model protocols, tool approvals and durable execution.">
   <meta name="theme-color" content="#0a0a1a">
   <meta property="og:title" content="Nexa — Harness Native Agent Language">
-  <meta property="og:description" content="The first Harness Native Agent Language. Build autonomous agents with compiler-enforced safety.">
+  <meta property="og:description" content="Nexa 2.4.0 connects .nx programs to reliable agent execution, native providers and checkpoints.">
   <meta property="og:image" content="https://www.nexa-lang.com/assets/nexa-logo.png">
   <meta property="og:url" content="https://www.nexa-lang.com">
   <meta name="twitter:card" content="summary_large_image">
@@ -41,7 +41,7 @@
         </li>
         <li class="nav-item"><a href="blog/">Blog</a></li>
         <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
-        <li class="nav-item"><a href="https://docs.nexa-lang.com/" target="_blank" rel="noopener">Docs</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener">Docs</a></li>
         <li class="nav-item">
           <button class="nav-plus-trigger">Nexa<span class="nav-plus">⁺</span> <span class="chevron">▾</span></button>
         </li>
@@ -53,7 +53,7 @@
   <!-- Nexa⁺ Mega Panel -->
   <div class="nexa-plus-panel">
     <div class="nexa-plus-inner">
-      <a href="https://docs.nexa-lang.com/" target="_blank" rel="noopener" class="nexa-plus-card">
+      <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener" class="nexa-plus-card">
         <div class="nexa-plus-icon"><i data-lucide="book-open"></i></div>
         <div class="nexa-plus-info"><h4>Documentation</h4><p>Full language reference, compiler architecture, and quick start guides.</p></div>
       </a>
@@ -87,364 +87,157 @@
     <div class="hero-inner">
       <div class="hero-left">
         <img src="assets/nexa-logo.svg" alt="Nexa" class="hero-logo">
-        <div class="hero-badge"><span class="dot" style="background:#22c55e;"></span> v2.3.1 — Terminal UI + CJK Input</div>
-        <h1>The First<br><span class="gradient-text">Harness Native</span><br>Agent Language</h1>
-        <p class="hero-subtitle">
-          Nexa is the <strong>first Harness Native Agent Language</strong> — where agent safety is enforced by the compiler, not by runtime frameworks. Write flows, not glue code.
-        </p>
+        <a class="hero-badge" href="blog/2026-10-v2.4-release.html"><span class="dot"></span> v2.4.0 — Reliable Agent Execution</a>
+        <h1>The <span class="gradient-text">Harness Native</span><br>Agent Language</h1>
+        <p class="hero-subtitle">Write agents, tools, protocols and flows in <strong>.nx</strong>. Nexa connects language declarations to a runtime with native model protocols, explicit approvals and durable execution.</p>
         <div class="hero-actions">
-          <a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener" class="btn btn-primary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            Star on GitHub
-          </a>
-          
+          <a href="https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0" class="btn btn-primary">Get Nexa 2.4.0</a>
+          <a href="blog/2026-10-v2.4-release.html" class="btn btn-secondary">What’s new</a>
         </div>
-        <div class="hero-install">
-          pip install nexa
-          <button class="copy-btn">Copy</button>
-        </div>
+        <p class="install-note">Python 3.10+ · Run in an activated virtual environment.</p>
+        <div class="hero-install"><code>python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v2.4.0/nexa_lang-2.4.0-py3-none-any.whl</code><button class="copy-btn" aria-label="Copy install command">Copy</button></div>
+        <p class="install-note">Install this GitHub wheel directly. The PyPI name <code>nexa-lang</code> belongs to another project. <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md#install-a-release">Installation guide →</a></p>
       </div>
-
       <div class="hero-right">
         <div class="hero-code">
-          <div class="hero-code-header">
-            <span class="hero-code-dot r"></span><span class="hero-code-dot y"></span><span class="hero-code-dot g"></span>
-            <span class="hero-code-label">bugfixer.nx — Harness Native</span>
-          </div>
-          <pre><span class="cm">// Nexa — Harness Native Agent Language</span>
-<span class="kw">agent</span> <span class="fn">BugFixer</span>(issue: <span class="tp">string</span>) {
-    <span class="kw">system</span> <span class="str">`Fix: #{issue}`</span>
-
-    <span class="cm">// Harness C: Context policy</span>
-    <span class="kw">context_policy</span> {
-        <span class="kw">max_tokens</span>: <span class="tp">100000</span>,
-        <span class="kw">on_overflow</span>: <span class="tp">summarize</span>
-    }
-
-    <span class="cm">// Harness E: Autonomous loop</span>
-    <span class="kw">autoloop</span> <span class="kw">max_steps</span>: <span class="tp">50</span> <span class="kw">exit_when</span>: <span class="str">"resolved"</span> {
-        <span class="cm">// Harness L: AI-native error recovery</span>
-        <span class="kw">try_agent</span> {
-            <span class="fn">step</span>();
-        } <span class="kw">catch_correction</span>(e: <span class="tp">ToolError</span>) {
-            <span class="kw">reflect</span> <span class="str">`Error: #{e}. Retry.`</span>
-        }
-    }
-}</pre>
-        </div>
-        <div class="hero-annotations">
-          <div class="hero-anno"><span class="hero-anno-dot"></span><span class="hero-anno-line"></span>Harness C: compiler-verified context eviction</div>
-          <div class="hero-anno"><span class="hero-anno-dot"></span><span class="hero-anno-line"></span>Harness E: compiler-verified exit condition</div>
-          <div class="hero-anno"><span class="hero-anno-dot"></span><span class="hero-anno-line"></span>Harness L: AI-native self-correction</div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════════
-       FEATURES
-       ═══════════════════════════════════════════════════════════════════ -->
-  <section class="section" id="features">
-    <div class="section-inner">
-      <div class="section-label reveal">Why Nexa</div>
-      <h2 class="section-title reveal">A Language Designed for Agents,<br>Not Adapted for Them</h2>
-      <p class="section-desc reveal">
-        Every other "agent framework" is a library bolted onto a general-purpose language.
-        Nexa is built from the ground up with the <strong>Harness Native</strong> methodology — agent safety, context management, and autonomous execution as first-class language constructs.
-      </p>
-      <div class="features-grid">
-        <div class="feature-card reveal reveal-delay-1">
-          <div class="feature-icon"><i data-lucide="zap"></i></div>
-          <h3>Harness Native Syntax</h3>
-          <p>Agents, tools, protocols, and flows are first-class citizens — not library wrappers. The Harness six-tuple (E, T, C, S, L, V) is enforced at the language level.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-2">
-          <div class="feature-icon"><i data-lucide="shield-check"></i></div>
-          <h3>Compiler-Enforced Safety</h3>
-          <p>26 Harness Validator rules check your code at compile time. Missing exit conditions, untyped tools, context overflow risks — caught before a single line runs.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-3">
-          <div class="feature-icon"><i data-lucide="git-branch-plus"></i></div>
-          <h3>DAG Orchestration</h3>
-          <p>Native fork, merge, pipeline, and conditional branch operators. Compose complex agent workflows as directed acyclic graphs with zero boilerplate.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-4">
-          <div class="feature-icon"><i data-lucide="lock"></i></div>
-          <h3>Gradual Type System</h3>
-          <p>From forgiving to strict — choose your safety level. Structural types, semantic types, Option/Result types, and compile-time protocol verification.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-5">
-          <div class="feature-icon"><i data-lucide="flask-conical"></i></div>
-          <h3>1,800+ Tests</h3>
-          <p>Battle-tested across 16+7 major features. v1.x: Design by Contract, Error Propagation, Pattern Matching, ADTs, Background Jobs, HTTP Server, Database, Auth. v2.0: Harness Native Runtime with autoloop, @tool, with_context, snapshot, reflect, verify, Actor. v2.1: optional Anthropic SDK adapter, hardened runtime (shell=False, path allowlist, safe_eval), and grammar fixes for semantic_if fast_match colon form.</p>
-        </div>
-        <div class="feature-card reveal reveal-delay-6">
-          <div class="feature-icon"><i data-lucide="rocket"></i></div>
-          <h3>AVM Runtime</h3>
-          <p>A Rust-powered Agent Virtual Machine with WASM sandboxing, COW memory, context paging, and work-stealing scheduler — 20× faster than Python transpilation.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ═══════════════════════════════════════════════════════════════════
-       CODE DEMO 1 — Harness Native
-       ═══════════════════════════════════════════════════════════════════ -->
-  <section class="section" id="code">
-    <div class="section-inner">
-      <div class="section-label reveal">Code at a Glance</div>
-      <h2 class="section-title reveal">Harness Native — Safety by Design</h2>
-      <p class="section-desc reveal">In Nexa, the Harness six-tuple (E, T, C, S, L, V) is enforced at the language level. The compiler verifies exit conditions, context policies, and error recovery — before a single line runs.</p>
-      <div class="code-demo">
-        <div class="code-block reveal reveal-delay-1">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.nx — 18 lines, compiler-verified safety</span></div>
-          <pre><span class="comment">// Nexa — Harness Native Agent Language</span>
-<span class="keyword">@tool</span>(<span class="string">"Search codebase with regex"</span>)
-<span class="keyword">fn</span> <span class="function">grep</span>(pattern: <span class="type">string</span>, path: <span class="type">string</span> = <span class="string">"."</span>): <span class="type">string</span> {
-    <span class="keyword">return</span> std.shell.exec(<span class="string">"grep -rn #{pattern} #{path}"</span>);
+          <div class="hero-code-header"><span class="hero-code-dot r"></span><span class="hero-code-dot y"></span><span class="hero-code-dot g"></span><span class="hero-code-label">calculator.nx · model + tool</span></div>
+          <pre data-language="nexa">@tool(&quot;Add two integers&quot;)
+fn add(a: int, b: int): int {
+    python! &quot;&quot;&quot;
+return a + b
+&quot;&quot;&quot;
 }
 
-<span class="keyword">agent</span> <span class="function">BugFixer</span>(issue: <span class="type">string</span>) <span class="keyword">uses</span> grep {
-    <span class="keyword">system</span> <span class="string">`You are an expert engineer. Fix: #{issue}`</span>
+agent Calculator uses add {
+    prompt: &quot;Use add to calculate the answer.&quot;
+    timeout: 60
+    max_tool_calls: 2
+}
 
-    <span class="comment">// Harness C: compiler verifies eviction strategy exists</span>
-    <span class="keyword">context_policy</span> { <span class="keyword">max_tokens</span>: <span class="type">100000</span>, <span class="keyword">on_overflow</span>: <span class="type">summarize</span> }
-
-    <span class="comment">// Harness E: compiler verifies exit condition exists</span>
-    <span class="keyword">autoloop</span> <span class="keyword">max_steps</span>: <span class="type">50</span> <span class="keyword">exit_when</span>: <span class="string">"issue is resolved"</span> {
-        <span class="comment">// Harness L: AI-native error self-correction</span>
-        <span class="keyword">try_agent</span> { <span class="function">step</span>(); }
-        <span class="keyword">catch_correction</span>(e: <span class="type">ToolError</span>) { <span class="keyword">reflect</span> <span class="string">`Error: #{e}. Retry.`</span> }
-    }
+flow main {
+    result = Calculator.run(&quot;What is 23 + 19?&quot;);
+    verify result satisfies string;
+    print(result);
 }</pre>
-          <div class="code-explain">
-            <div class="code-explain-item"><i data-lucide="shield-check"></i><div><strong>Harness C — Context Manager</strong><br>The <code>context_policy</code> block is <em>compiler-verified</em>. If you forget to specify <code>max_tokens</code> or an <code>on_overflow</code> strategy, the Harness Validator rejects your code at compile time — before a single token is sent to the LLM. No more silent context window overflows that degrade model performance mid-task.</div></div>
-            <div class="code-explain-item"><i data-lucide="repeat"></i><div><strong>Harness E — Execution Loop</strong><br><code>autoloop</code> is a first-class language construct, not a while-loop with manual bookkeeping. The compiler enforces that every loop has an <code>exit_when</code> condition or <code>max_steps</code> limit. Infinite agent loops are caught at build time, not discovered at 3 AM when your cloud bill arrives.</div></div>
-            <div class="code-explain-item"><i data-lucide="refresh-cw"></i><div><strong>Harness L — Lifecycle Hooks</strong><br><code>try_agent</code> + <code>catch_correction</code> implements AI-native error recovery. When a tool fails, the error is automatically fed back to the LLM via <code>reflect</code> — triggering self-correction instead of crash-and-burn. Traditional try-catch walks away; Harness L teaches the agent to try again, smarter.</div></div>
-          </div>
         </div>
-        <div class="code-block reveal reveal-delay-2">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">bugfixer.py — 55+ lines, no compile-time safety</span></div>
-          <pre><span class="comment"># Python + LangGraph — manual glue code</span>
-<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
-<span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI
-<span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool
-<span class="keyword">import</span> subprocess, json
+        <p class="install-note">Configure a provider, then run <code>nexa run calculator.nx</code>. The runtime checks the tool arguments and call budget.</p>
+      </div>
+    </div>
+  </section>
 
-<span class="comment"># Manual tool schema — must match OpenAI format exactly</span>
-<span class="keyword">@tool</span>
-<span class="keyword">def</span> <span class="function">grep</span>(pattern: str, path: str = <span class="string">"."</span>) -> str:
-    <span class="string">"""Search codebase with regex"""</span>
-    r = subprocess.run([<span class="string">"grep"</span>,<span class="string">"-rn"</span>,pattern,path],capture_output=<span class="type">True</span>)
-    <span class="keyword">return</span> r.stdout.decode()
-
-<span class="comment"># Manual context management — no auto-eviction</span>
-<span class="keyword">def</span> <span class="function">manage_context</span>(messages, max_tokens=<span class="type">100000</span>):
-    total = sum(len(m[<span class="string">"content"</span>])//<span class="type">4</span> <span class="keyword">for</span> m <span class="keyword">in</span> messages)
-    <span class="keyword">if</span> total > max_tokens * <span class="type">0.8</span>:
-        <span class="keyword">return</span> messages[:<span class="type">5</span>] + messages[-<span class="type">3</span>:]  <span class="comment"># crude truncation</span>
-    <span class="keyword">return</span> messages
-
-<span class="comment"># Manual ReAct loop — no exit condition verification</span>
-<span class="keyword">def</span> <span class="function">bug_fixer</span>(issue: str, max_steps=<span class="type">50</span>):
-    model = ChatOpenAI(model=<span class="string">"minimax-m2.5"</span>)
-    messages = [{<span class="string">"role"</span>:<span class="string">"system"</span>,<span class="string">"content"</span>:<span class="string">f"Fix: {issue}"</span>}]
-    <span class="keyword">for</span> step <span class="keyword">in</span> range(max_steps):
-        response = model.invoke(messages, tools=[grep])
-        messages.append({<span class="string">"role"</span>:<span class="string">"assistant"</span>,<span class="string">"content"</span>:response.content})
-        <span class="keyword">if</span> response.tool_calls:
-            <span class="keyword">for</span> tc <span class="keyword">in</span> response.tool_calls:
-                <span class="keyword">try</span>:
-                    result = tc.execute()
-                    messages.append({<span class="string">"role"</span>:<span class="string">"tool"</span>,<span class="string">"content"</span>:result})
-                <span class="keyword">except</span> Exception <span class="keyword">as</span> e:
-                    messages.append({<span class="string">"role"</span>:<span class="string">"tool"</span>,<span class="string">"content"</span>:<span class="string">f"Error: {e}"</span>})
-        messages = manage_context(messages)
-        <span class="keyword">if</span> <span class="string">"resolved"</span> <span class="keyword">in</span> response.content.lower(): <span class="keyword">break</span>
-    <span class="keyword">return</span> messages[-<span class="type">1</span>][<span class="string">"content"</span>]
-<span class="comment"># No Harness Validator. No sandbox. No trace. No HITL.</span></pre>
+  <section class="section" id="features">
+    <div class="section-inner">
+      <div class="section-label reveal">Nexa 2.4.0</div>
+      <h2 class="section-title reveal">Language declarations.<br>Runtime guarantees you can inspect.</h2>
+      <p class="section-desc reveal">The Harness Native design brings execution, tools, context, state, lifecycle and verification into the language. Version 2.4 connects those declarations across the Python compiler and runtime.</p>
+      <div class="features-grid">
+        <div class="feature-card reveal reveal-delay-1">
+          <div class="feature-icon"><i data-lucide="file-code"></i></div>
+          <h3>One compiler boundary</h3><p>CLI, SDK and embedded API share recursive includes, source diagnostics, Harness validation and generated-code checks.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-2">
+          <div class="feature-icon"><i data-lucide="workflow"></i></div>
+          <h3>One execution lifecycle</h3><p>Text, Protocol and streaming outputs share AgentRunner, explicit run states, call budgets, deadlines and cooperative cancellation.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-3">
+          <div class="feature-icon"><i data-lucide="messages-square"></i></div>
+          <h3>Native model protocols</h3><p>Chat Completions, Responses and Anthropic adapters retain tool calls, usage and native reasoning or thinking state.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-4">
+          <div class="feature-icon"><i data-lucide="shield-check"></i></div>
+          <h3>Tools with explicit authority</h3><p>Tool exposure, argument schemas and approvals are checked before dispatch. Requested isolation requires an actual isolated executor.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-5">
+          <div class="feature-icon"><i data-lucide="database"></i></div>
+          <h3>Durable, inspectable runs</h3><p>SQLite checkpoints, revision checks and a tool journal support recovery. Uncertain side effects pause for reconciliation.</p>
+        </div>
+        <div class="feature-card reveal reveal-delay-6">
+          <div class="feature-icon"><i data-lucide="cpu"></i></div>
+          <h3>A measured Rust subset</h3><p>The AVM shares semantic fixtures with Python. Optional Wasmtime execution covers guest memory, fuel limits and instance state.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       CODE DEMO 2 — More Intent, Less Code
-       ═══════════════════════════════════════════════════════════════════ -->
-  <section class="section">
+  <section class="section" id="code">
     <div class="section-inner">
-      <div class="section-label reveal">Expressiveness</div>
-      <h2 class="section-title reveal">Less Code, More Intent</h2>
-      <p class="section-desc reveal">Multi-agent DAG orchestration that takes 40+ lines of Python takes just 8 lines of Nexa — with compiler-verified topology.</p>
+      <div class="section-label reveal">Start small. Keep the evidence.</div>
+      <h2 class="section-title reveal">From your first flow to a resumable agent</h2>
+      <p class="section-desc reveal">Humans and models use the same source files. Compile offline, configure a provider when needed, and inspect each run’s state and pending calls.</p>
       <div class="code-demo">
         <div class="code-block reveal reveal-delay-1">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">pipeline.nx — 8 lines</span></div>
-          <pre><span class="comment">// Nexa — declarative DAG orchestration</span>
-<span class="keyword">agent</span> <span class="function">Researcher</span> { <span class="keyword">prompt</span>: <span class="string">"Research the given topic."</span> }
-<span class="keyword">agent</span> <span class="function">Analyst</span>   { <span class="keyword">prompt</span>: <span class="string">"Analyze findings quantitatively."</span> }
-<span class="keyword">agent</span> <span class="function">Writer</span>    { <span class="keyword">prompt</span>: <span class="string">"Synthesize into a report."</span> }
-<span class="keyword">agent</span> <span class="function">Reviewer</span>  { <span class="keyword">prompt</span>: <span class="string">"Review for accuracy."</span> }
-
-<span class="keyword">flow</span> <span class="function">main</span>(topic: <span class="type">string</span>) {
-    <span class="comment">// Fork: parallel research + analysis → Merge: review → Pipeline: write</span>
-    result = topic |>> [<span class="function">Researcher</span>, <span class="function">Analyst</span>] &>> <span class="function">Reviewer</span> >> <span class="function">Writer</span>;
-    <span class="function">print</span>(result);
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">hello.nx · no provider required</span></div>
+          <pre data-language="nexa">flow main {
+    result = 23 + 19;
+    print(result);
 }</pre>
-          <div class="code-explain">
-            <div class="code-explain-item"><i data-lucide="git-branch-plus"></i><div><strong>Fork — <code>|>> [A, B]</code></strong><br>Parallel fan-out to multiple agents with a single operator. The compiler statically verifies that every target in the fork list is a declared agent — no runtime NameError surprises. Results are collected concurrently with automatic thread pooling.</div></div>
-            <div class="code-explain-item"><i data-lucide="merge"></i><div><strong>Merge — <code>&>> C</code></strong><br>Combine parallel results into a single downstream agent. Choose your strategy: <code>concat</code> (append all), <code>vote</code> (majority selection), <code>consensus</code> (LLM-mediated agreement), or <code>summarize</code> (intelligent compression). The compiler verifies the merge target exists.</div></div>
-            <div class="code-explain-item"><i data-lucide="arrow-right"></i><div><strong>Pipeline — <code>>> D</code></strong><br>Sequential chaining with automatic type propagation. Output flows left-to-right through each agent. The compiler traces the full pipeline to verify every hop connects a valid agent — catching broken chains before execution.</div></div>
-            <div class="code-explain-item"><i data-lucide="workflow"></i><div><strong>DAG Topology — Compiler-Verified</strong><br>Unlike LangGraph's runtime graph construction, Nexa DAG operators are validated at compile time. The compiler checks for cycles, verifies all node references, and ensures the topology is well-formed — eliminating an entire class of runtime orchestration bugs.</div></div>
-          </div>
+          <div class="code-explain"><p><code>nexa run hello.nx</code> prints <strong>42</strong>. Use <code>nexa build hello.nx</code> to inspect generated Python, or <code>nexa inspect hello.nx --format json</code> for program structure.</p></div>
         </div>
         <div class="code-block reveal reveal-delay-2">
-          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">pipeline.py — 40+ lines</span></div>
-          <pre><span class="comment"># Python + LangGraph — manual DAG construction</span>
-<span class="keyword">from</span> langgraph.graph <span class="keyword">import</span> StateGraph, END
-<span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> ChatOpenAI
-<span class="keyword">from</span> typing <span class="keyword">import</span> TypedDict
-<span class="keyword">import</span> concurrent.futures
+          <div class="code-block-header"><span class="code-dot red"></span><span class="code-dot yellow"></span><span class="code-dot green"></span><span class="code-block-label">Nexa Code · approval and resume</span></div>
+          <pre>nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
+  CodeAssistant "Fix the failing tests" --timeout 900
 
-model = ChatOpenAI(model=<span class="string">"minimax-m2.5"</span>)
-
-<span class="keyword">class</span> <span class="type">State</span>(TypedDict):
-    topic: str; research: str; analysis: str; review: str; report: str
-
-<span class="keyword">def</span> <span class="function">research_node</span>(state: State) -> State:
-    state[<span class="string">"research"</span>] = model.invoke(<span class="string">f"Research: {state['topic']}"</span>)
-    <span class="keyword">return</span> state
-
-<span class="keyword">def</span> <span class="function">analysis_node</span>(state: State) -> State:
-    state[<span class="string">"analysis"</span>] = model.invoke(<span class="string">f"Analyze: {state['topic']}"</span>)
-    <span class="keyword">return</span> state
-
-<span class="keyword">def</span> <span class="function">review_node</span>(state: State) -> State:
-    combined = state[<span class="string">"research"</span>] + <span class="string">"\n"</span> + state[<span class="string">"analysis"</span>]
-    state[<span class="string">"review"</span>] = model.invoke(<span class="string">f"Review: {combined}"</span>)
-    <span class="keyword">return</span> state
-
-<span class="keyword">def</span> <span class="function">writer_node</span>(state: State) -> State:
-    state[<span class="string">"report"</span>] = model.invoke(<span class="string">f"Write report: {state['review']}"</span>)
-    <span class="keyword">return</span> state
-
-<span class="comment"># Manual graph construction — 15+ lines of wiring</span>
-graph = StateGraph(State)
-graph.add_node(<span class="string">"research"</span>, research_node)
-graph.add_node(<span class="string">"analysis"</span>, analysis_node)
-graph.add_node(<span class="string">"review"</span>, review_node)
-graph.add_node(<span class="string">"writer"</span>, writer_node)
-graph.add_edge(<span class="string">"research"</span>, <span class="string">"review"</span>)
-graph.add_edge(<span class="string">"analysis"</span>, <span class="string">"review"</span>)
-graph.add_edge(<span class="string">"review"</span>, <span class="string">"writer"</span>)
-graph.set_entry_point(<span class="string">"research"</span>)
-graph.add_edge(<span class="string">"writer"</span>, END)
-app = graph.compile()
-result = app.invoke({<span class="string">"topic"</span>: <span class="string">"Quantum Computing"</span>})
-<span class="comment"># No compile-time topology verification</span></pre>
+# Inspect pending_calls, then approve a specific call:
+nexa agent /path/to/Nexa/examples/Nexa-Code/main.nx \
+  CodeAssistant --resume RUN_ID --approve CALL_ID</pre>
+          <div class="code-explain"><p>Nexa Code reads files, requests approval for edits and commands, and saves checkpoints. Start it from the workspace you want to edit; the timeout includes approval waiting time. <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/examples/Nexa-Code/README.md">Setup and tool policy →</a></p></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       ARCHITECTURE v2 — Icons + No Wrap
-       ═══════════════════════════════════════════════════════════════════ -->
   <section class="section" id="architecture">
     <div class="section-inner">
       <div class="section-label reveal">Architecture</div>
-      <h2 class="section-title reveal">From Source to Execution</h2>
-      <p class="section-desc reveal">Nexa compiles through a multi-stage pipeline with Harness validation — ensuring safety before a single line runs.</p>
+      <h2 class="section-title reveal">From source to recorded execution</h2>
+      <p class="section-desc reveal">Python is the reference implementation. Compiler diagnostics and runtime checks cooperate across a shared execution path; Rust evolves against an explicit semantic subset.</p>
       <div class="arch-diagram reveal">
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="file-code"></i></div><h4>.nx Source</h4><p>Harness Native DSL</p></div>
-        <span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="search"></i></div><h4>Lark Parser</h4><p>Earley Algorithm</p></div>
-        <span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="git-branch"></i></div><h4>AST Transformer</h4><p>Desugaring + Scoring</p></div>
-        <span class="arch-arrow">→</span>
-        <div class="arch-node" style="border-color: var(--border-glow);"><div class="arch-node-icon"><i data-lucide="shield-check"></i></div><h4>Harness Validator</h4><p>Compile-time Safety</p></div>
-        <span class="arch-arrow">→</span>
-        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="zap"></i></div><h4>Code Generator</h4><p>Python / AVM / WASM</p></div>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="file-code"></i></div><h4>.nx Source</h4><p>Recursive includes</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="git-branch"></i></div><h4>Shared Compiler</h4><p>AST + diagnostics</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="code"></i></div><h4>Python</h4><p>Checked generation</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="workflow"></i></div><h4>AgentRunner</h4><p>Providers + tools</p></div><span class="arch-arrow">→</span>
+        <div class="arch-node"><div class="arch-node-icon"><i data-lucide="database"></i></div><h4>RunState</h4><p>Events + checkpoints</p></div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       STATS
-       ═══════════════════════════════════════════════════════════════════ -->
-  <section class="section">
+  <section class="section" id="verification">
     <div class="section-inner">
+      <div class="section-label reveal">Verification snapshot · October 23, 2026</div>
+      <h2 class="section-title reveal">Published scope. Reproducible checks.</h2>
       <div class="stats-bar">
-        <div class="stat-item reveal reveal-delay-1"><div class="stat-number">23+</div><div class="stat-label">Core Features</div></div>
-        <div class="stat-item reveal reveal-delay-2"><div class="stat-number">1,935</div><div class="stat-label">Tests Passed</div></div>
-        <div class="stat-item reveal reveal-delay-3"><div class="stat-number">12+4</div><div class="stat-label">v2.0 + v2.1 Examples</div></div>
-        <div class="stat-item reveal reveal-delay-4"><div class="stat-number">20×</div><div class="stat-label">AVM vs Python Speed</div></div>
+        <div class="stat-item reveal"><div class="stat-number">2,160</div><div class="stat-label">Python tests passed</div></div>
+        <div class="stat-item reveal"><div class="stat-number">140 / 143</div><div class="stat-label">Rust default / WASM tests</div></div>
+        <div class="stat-item reveal"><div class="stat-number">63</div><div class="stat-label">Examples compile</div></div>
+        <div class="stat-item reveal"><div class="stat-number">3.10+</div><div class="stat-label">Supported Python</div></div>
       </div>
+      <p class="section-desc reveal">Local snapshot: macOS arm64, Python 3.12.13, Rust 1.97.1. Five PostgreSQL cases were skipped; three benchmark cases run separately. Twelve historical examples remain documented drafts. CI covers Python 3.10, 3.12 and 3.14 on Linux.</p>
+      <p class="section-desc reveal">Real process tests cover MCP stdio, crash recovery, file edits and command verification. Model responses use deterministic fixtures; real-provider quality, cost and latency remain to be measured. <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/plan/evidence/2026-10-23-release-validation.md">Read the evidence →</a></p>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       HARNESS — The Six Dimensions
-       ═══════════════════════════════════════════════════════════════════ -->
   <section class="section" id="harness">
     <div class="section-inner">
-      <div class="section-label reveal">Harness H=(E,T,C,S,L,V)</div>
-      <h2 class="section-title reveal">Six Dimensions. One Language. Compiler-Verified.</h2>
-      <p class="section-desc reveal">The Harness six-tuple is not a framework — it's syntax, enforced by the compiler.</p>
-      <div class="harness-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;margin-top:40px;">
-        <div class="harness-card reveal reveal-delay-1" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
-          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">E — Execution</div>
-          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">autoloop max_steps: 10, exit_when: "resolved" { ... }</code>
-          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Autonomous ReAct loop with compiler-enforced exit conditions. No more infinite agent loops.</p>
-        </div>
-        <div class="harness-card reveal reveal-delay-2" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
-          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">T — Tool</div>
-          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">@tool("description") fn my_tool(x: string): string { ... }</code>
-          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Zero-cost tool binding. Compiler auto-generates OpenAI function calling schema from type signature.</p>
-        </div>
-        <div class="harness-card reveal reveal-delay-3" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
-          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">C — Context</div>
-          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">with_context max_tokens: 50000, strategy: sliding_window { ... }</code>
-          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Importance-weighted context paging. Silent context overflow degraded performance — eliminated at language level.</p>
-        </div>
-        <div class="harness-card reveal reveal-delay-4" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
-          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">S — State</div>
-          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">snap = snapshot(); ... restore(snap);</code>
-          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">COW state snapshots with fork/merge for Tree-of-Thoughts exploration. Roll back decisions as a primitive.</p>
-        </div>
-        <div class="harness-card reveal reveal-delay-5" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
-          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">L — Lifecycle</div>
-          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">before_step { ... }; reflect "What went wrong?";</code>
-          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Compiler-enforced lifecycle hooks + AI-native self-reflection. Agents learn instead of crashing.</p>
-        </div>
-        <div class="harness-card reveal reveal-delay-6" style="background:var(--bg-card);border:1px solid var(--border-subtle);border-radius:12px;padding:28px;transition:border-color .3s,transform .3s;">
-          <div style="font-size:1.3rem;font-weight:700;color:var(--accent-primary);margin-bottom:8px;">V — Verify</div>
-          <code style="display:block;background:var(--bg-raised);color:var(--accent-secondary);padding:10px 14px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:.82rem;margin-bottom:10px;overflow-x:auto;white-space:nowrap;">verify result satisfies ExpectedOutput;</code>
-          <p style="color:var(--text-secondary);font-size:.9rem;line-height:1.6;">Compile-time + runtime output verification with multi-model routing. Quality is a language property.</p>
-        </div>
+      <div class="section-label reveal">Migration and execution boundaries</div>
+      <h2 class="section-title reveal">Make completion explicit</h2>
+      <div class="features-grid">
+        <div class="feature-card reveal"><h3>Verification controls success</h3><p>Failed <code>verify</code> checks stop the success path. Loop exit conditions compare exact states. Intent checks distinguish pass, fail, skip and error.</p></div>
+        <div class="feature-card reveal"><h3>Recovery respects side effects</h3><p>Completed tool results can be reused. Unknown outcomes require reconciliation. Snapshots restore in-memory state and conversations; external effects retain their actual state.</p></div>
+        <div class="feature-card reveal"><h3>Isolation is an execution property</h3><p>Ordinary Python tools run on the host and cancel cooperatively. A tool requesting a sandbox requires an isolated executor. The Rust WASM feature covers a documented subset.</p></div>
       </div>
+      <p class="section-desc"><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/runtime-v2.4.md">Read the full runtime contract and migration guide →</a></p>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       CTA
-       ═══════════════════════════════════════════════════════════════════ -->
   <section class="cta-section">
     <div class="section-inner">
-      <h2 class="reveal">Ready to Build the Future of Agents?</h2>
-      <p class="reveal">Join us in making agent programming safe, declarative, and beautiful — with the Harness Native methodology.</p>
-      <div class="cta-actions reveal">
-        <a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener" class="btn btn-primary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          Star on GitHub
-        </a>
-        
-      </div>
+      <h2 class="reveal">Build your next agent in Nexa</h2>
+      <p class="reveal">Download 2.4.0, inspect the release notes, and start with a working .nx program.</p>
+      <div class="cta-actions reveal"><a href="https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0" class="btn btn-primary">Release and checksums</a><a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" class="btn btn-secondary">Build from source</a></div>
     </div>
   </section>
 
-  <!-- ═══════════════════════════════════════════════════════════════════
-       FOOTER v2 — 4 Columns
-       ═══════════════════════════════════════════════════════════════════ -->
   <footer class="footer">
     <div class="footer-grid">
       <div class="footer-col">
@@ -456,7 +249,7 @@ result = app.invoke({<span class="string">"topic"</span>: <span class="string">"
       </div>
       <div class="footer-col">
         <h4>Ecosystem</h4>
-        <a href="https://docs.nexa-lang.com/" target="_blank" rel="noopener">Documentation</a>
+        <a href="https://github.com/Nexa-Language/Nexa/blob/v2.4.0/docs/development.md" target="_blank" rel="noopener">Documentation</a>
         <a href="https://skcc.nexa-lang.com/" target="_blank" rel="noopener">SkCC</a>
         <a href="https://evobench.nexa-lang.com/" target="_blank" rel="noopener">EvoBench</a>
         <a href="https://epicontext.nexa-lang.com/" target="_blank" rel="noopener">EpiContext</a>

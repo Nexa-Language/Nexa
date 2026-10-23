@@ -301,11 +301,15 @@ class TestIntentRunner:
             # 应包含标准词汇 + 用户 Glossary
             assert vocabulary.term_count() > 0
     
-    def test_check_with_demo_files(self):
+    def test_check_with_demo_files(self, tmp_path: Path):
         """使用示例文件执行 check"""
-        nx_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nx")
-        intent_path = str(PROJECT_ROOT / "examples/intent_demo/weather_bot.nxintent")
-        
+        import shutil
+        source = PROJECT_ROOT / "examples/intent_demo"
+        for extension in ("nx", "nxintent"):
+            shutil.copy2(source / f"weather_bot.{extension}", tmp_path)
+        nx_path = str(tmp_path / "weather_bot.nx")
+        intent_path = str(tmp_path / "weather_bot.nxintent")
+
         if Path(nx_path).exists() and Path(intent_path).exists():
             results = self.runner.check(nx_path, intent_file_path=intent_path)
             # 结果应该是 FeatureResult 列表

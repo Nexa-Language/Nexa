@@ -25,6 +25,8 @@ declaration from the ``context { ... }`` block in the agent definition.
 
 from __future__ import annotations
 
+import copy
+
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
@@ -95,9 +97,9 @@ class AgentContext:
         spec = getattr(agent, "context_spec", None)
         return cls(
             agent_name=getattr(agent, "name", ""),
-            messages=list(getattr(agent, "messages", [])),
-            tool_results=list(getattr(agent, "_tool_results", [])),
-            artifacts=dict(getattr(agent, "_artifacts", {})),
+            messages=copy.deepcopy(getattr(agent, "messages", [])),
+            tool_results=copy.deepcopy(getattr(agent, "_tool_results", [])),
+            artifacts=copy.deepcopy(getattr(agent, "_artifacts", {})),
             output_text=getattr(agent, "_last_output_text", ""),
             output_schema=spec.output_schema if spec else None,
         )
@@ -121,7 +123,7 @@ class AgentContext:
             target_messages = list(getattr(target, "messages", []))
             system_msgs = [m for m in target_messages if m.get("role") == "system"]
             new_messages = system_msgs + [
-                m for m in self.messages if m.get("role") != "system"
+                copy.deepcopy(m) for m in self.messages if m.get("role") != "system"
             ]
             target.messages = new_messages
             if self.output_text and self.output_text not in [
@@ -138,12 +140,12 @@ class AgentContext:
 
         if "artifacts" in inherit and self.artifacts:
             current = dict(getattr(target, "_artifacts", {}))
-            current.update(self.artifacts)
+            current.update(copy.deepcopy(self.artifacts))
             target._artifacts = current
 
         if "tool_results" in inherit and self.tool_results:
             current = list(getattr(target, "_tool_results", []))
-            current.extend(self.tool_results)
+            current.extend(copy.deepcopy(self.tool_results))
             target._tool_results = current
 
 

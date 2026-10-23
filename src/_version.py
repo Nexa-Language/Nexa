@@ -23,7 +23,7 @@ Nexa 版本信息 — 单一版本源读取模块
 
 更新版本时只需修改根目录 VERSION 文件，无需改动任何代码文件。
 """
-import os
+from importlib.metadata import version
 from pathlib import Path
 
 
@@ -37,8 +37,7 @@ def _read_version() -> str:
     version_file = Path(__file__).resolve().parent.parent / "VERSION"
     if version_file.exists():
         return version_file.read_text().strip()
-    # Fallback: 如果 VERSION 文件不存在（如 pip install 后）
-    return "2.1.0"
+    return version("nexa-lang")
 
 
 # 纯数字版本号，用于 Python packaging (不带 v 前缀)

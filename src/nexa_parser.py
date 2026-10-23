@@ -172,7 +172,14 @@ protocol_body: IDENTIFIER ":" STRING_LITERAL ","?  -> protocol_body_string
               | IDENTIFIER ":" type_expr ","?       -> protocol_body_typed
 
 json_object: "{" [json_pair ("," json_pair)*] "}"
-json_pair: STRING_LITERAL ":" STRING_LITERAL
+json_pair: STRING_LITERAL ":" json_value
+?json_value: STRING_LITERAL -> json_string
+           | json_object
+           | json_array
+           | INT -> json_integer
+           | "true" -> json_true
+           | "false" -> json_false
+json_array: "[" [json_value ("," json_value)*] "]"
 
 // Agent 修饰器支持: @limit, @timeout, @retry, @temperature
 // Design by Contract: requires/ensures 契约条款放在签名后、函数体前
@@ -222,7 +229,7 @@ use_identifier: IDENTIFIER | IDENTIFIER "." IDENTIFIER -> namespaced_id
 
 // Design by Contract: flow 函数也支持 requires/ensures 契约
 // v1.1: flow 支持返回类型标注 ["->" type_expr]
-flow_decl: "flow" IDENTIFIER ["(" param_list ")"] ["->" type_expr] requires_clause* ensures_clause* block
+flow_decl: "flow" IDENTIFIER ["(" [param_list] ")"] ["->" type_expr] requires_clause* ensures_clause* block
 param_list: param ("," param)*
 param: IDENTIFIER ":" type_expr
 
@@ -315,7 +322,8 @@ python_escape_stmt: "python!" MULTILINE_STRING
 // 保留原有 if_stmt 兼容性 (简化版)
 if_stmt: "if" "(" condition ")" block ["else" block]
 condition: expression CMP_OP expression
-print_stmt: "print" "(" expression ")" ";"?
+print_stmt: "print" "(" [argument_list] ")" ";"?
+          | "print" expression ";"
 
 try_catch_stmt: "try" block "catch" "(" IDENTIFIER ")" block
 assert_stmt: "assert" expression ";"
@@ -623,7 +631,7 @@ lifecycle_hook: "before_step" "{" flow_stmt* "}" -> before_step_hook
 // msg = receive(): string;
 spawn_stmt: [IDENTIFIER "="] "spawn" IDENTIFIER "(" [argument_list] ")" ";"
 pass_stmt: "pass" expression "to" IDENTIFIER ";"
-await_stmt: "await" IDENTIFIER ";"
+await_stmt: [IDENTIFIER "="] "await" IDENTIFIER ";"
 receive_stmt: "receive" "(" ")" [":" type_expr] ";"
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -644,8 +652,8 @@ receive_stmt: "receive" "(" ")" [":" type_expr] ";"
 // v1.0.1-beta: IDENTIFIER 定义
 // 使用负向断言确保关键字不会被当作标识符匹配
 // 注意：使用 \b 边界确保只排除完整关键字，不排除前缀匹配如 test_xxx
-IDENTIFIER: /(?!if\b|else\b|for\b|each\b|in\b|while\b|break\b|continue\b|agent\b|tool\b|flow\b|protocol\b|test\b|match\b|loop\b|until\b|print\b|try\b|catch\b|assert\b|true\b|false\b|join\b|std\b|img\b|requires\b|ensures\b|invariant\b|type\b|unit\b|otherwise\b|job\b|on\b|perform\b|on_failure\b|server\b|group\b|route\b|serve\b|static\b|cors\b|semantic\b|GET\b|POST\b|PUT\b|DELETE\b|PATCH\b|HEAD\b|OPTIONS\b|db\b|connect\b|query\b|execute\b|auth\b|require_auth\b|enable_auth\b|oauth\b|kv\b|open\b|spawn\b|parallel\b|race\b|channel\b|after\b|schedule\b|await\b|select\b|recv\b|send\b|close\b|sleep_ms\b|template\b|defer\b|struct\b|enum\b|trait\b|impl\b|fn\b|let\b|autoloop\b|with_context\b|try_agent\b|catch_correction\b|step\b|reflect\b|snapshot\b|restore\b|fork\b|merge\b|verify\b|satisfies\b|unharnessed\b|pass\b|receive\b|before_step\b|after_step\b|on_error\b|before_tool\b|after_tool\b|context_policy\b|context\b|Option\b|Result\b|Actor\b|Some\b|Ok\b|Err\b)[a-zA-Z_][a-zA-Z0-9_]*/
-STRING_LITERAL: /"[^"]*"/
+IDENTIFIER: /(?!(?:print|autoloop|with_context|try_agent|catch_correction|snapshot|restore|fork|verify|reflect|unharnessed|pass|await|receive|before_step|after_step|on_error|before_tool|after_tool|context_policy)\\b)[a-zA-Z_][a-zA-Z0-9_]*/
+STRING_LITERAL: /"(?:[^"\\\\]|\\\\.)*"/
 MULTILINE_STRING: /\"\"\"([^\""]|\"{1,2}([^\""]|$))*?\"\"\"/
 // P2-4: Template string token (same regex as MULTILINE_STRING, but used with "template" prefix)
 TEMPLATE_STRING: /\"\"\"([^\""]|\"{1,2}([^\""]|$))*?\"\"\"/
@@ -666,10 +674,10 @@ PYTHON_ESCAPE_CLOSE: /<\|end\|>/
 %ignore CPP_COMMENT
 """
 
-def get_parser():
+def get_parser(propagate_positions=False):
     """初始化并返回 Lark 解析器实例"""
     # 使用 Earley 解析器处理歧义语法，transformer 中会选择优先分支
-    return Lark(nexa_grammar, start='program', parser='earley', ambiguity='explicit')
+    return Lark(nexa_grammar, start='program', parser='earley', ambiguity='explicit', propagate_positions=propagate_positions)
 
 def extract_implements_annotations(text):
     """
@@ -730,13 +738,14 @@ def _find_agent_near_line(lines, annotation_line):
     return "unknown"
 
 
-def parse(text):
+def parse(text, *, include_spans=False):
     """解析 Nexa 源代码文本并返回 AST (字典格式)"""
     from src.ast_transformer import NexaTransformer
-    parser = get_parser()
+    parser = get_parser(propagate_positions=include_spans)
     tree = parser.parse(text)
     # 使用转换器将 Lark Tree 转换为字典格式的 AST
     transformer = NexaTransformer()
+    transformer.include_spans = include_spans
     ast = transformer.transform(tree)
     
     # 提取 @implements/@supports 注解并附加到 AST
