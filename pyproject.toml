@@ -48,6 +48,7 @@ stdlib = ["*.nx"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "--disable-socket --allow-unix-socket"
 timeout = 30
 markers = [

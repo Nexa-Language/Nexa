@@ -1,0 +1,21 @@
+language "3.0"
+program Maintain(repo: Repository) {
+    environment developer
+    sandbox repository_image
+    acceptance repo_maintenance
+
+    goal repair(change: ChangeRequest) -> Patch {
+        stage runtime
+        intent "Implement the change.description in the selected Python repository. Produce a reusable Python solve(inputs) that returns a Patch object. All inputs and file entries are Python dictionaries. Read source from inputs['repository']['files'] using file['path'] and file['content']; use inputs['repository_digest'] as base_digest and inputs['file_digests'][path] as before_digest. Return the Patch dictionary directly from solve. Use dictionary indexing, never Python attribute access. Return changes containing path, before_digest and new full UTF-8 content. Respect the selected path scope and preserve unrelated behavior. The reference fixture implements calc.add(a, b); initially it must return the mathematical sum of two numbers."
+        context repo.snapshot
+        capabilities [repo.read, sandbox.exec, sandbox.write]
+        ensure checks.regression
+        review model("The patch fulfills the change request and preserves unrelated public behavior. The implementation obtains the baseline and file digests from its current input; it does not hardcode workspace paths or hashes.")
+        implementation open
+    }
+
+    on change_request as request {
+        let result = resolve repair(request)
+        propose repo.apply(result) requires human.approval
+    }
+}

@@ -78,5 +78,10 @@
     "v1.2/test_match.nx": "No terminal matches '1' in the current parser context, at line 31 col 13",
     "v1.2/test_string_interp.nx": "No terminal matches '=' in the current parser context, at line 19 col 15",
     "v1.2/test_template.nx": "No terminal matches 'l' in the current parser context, at line 4 col 1"
-  }
+  },
+  "open_programs": [
+    "open_programs/compiler_pass.nx",
+    "open_programs/maintain.nx",
+    "open_programs/sum.nx"
+  ]
 }

@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "model": "qwen3.8-max-0902",
+  "environment": "c1f7367fc6e60c40ad7a8da41119018afc895f386d657055dbcfd1e22db947f8",
+  "stages": [
+    {
+      "stage": "clarification_and_solve",
+      "revision": "6e6d31e0e8940191a61c9fa78414ab9951d358d04ac7495369f710f0bbac0a17",
+      "status": "accepted",
+      "reason": "",
+      "candidate": "e3d2274fd0593677341d76204aa8cc108aa51bc274e9d34bb1419d13c98ffa0a",
+      "model_calls": 4,
+      "input_tokens": 4814,
+      "output_tokens": 620,
+      "checks": [
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "edc991002d4643ae023e0a8f93b84e4b959ffbe6b13daedb31da68c15ee5f8e5"
+        },
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "85ce0f25b26145aa2bc262e4f0ae9b65729640dd32e9c331590b280409ba9626"
+        },
+        {
+          "kind": "model_review",
+          "passed": true,
+          "digest": "9df8a35f2b291bf19b01079fc5759248b90b8ee8b6d52b5c5b24f5a4825bf8d9"
+        }
+      ],
+      "activity": "aa6468f47a644542a64050350c6b2c73",
+      "host_unchanged_before_approval": true,
+      "proposal": "f05db170e635b0659d0fd52e9836002950c0ac4de399126294a4c7291d4774b4",
+      "grant": "a7abe7a5e6c98ecf50736ac4ee771af27f1c7f30305e8decb931edfef77986df",
+      "application": "applied"
+    },
+    {
+      "stage": "approval_and_restart",
+      "revision_preserved": true,
+      "application": "applied"
+    },
+    {
+      "stage": "goal_revision",
+      "revision": "77f39b7c19b20bbf91d1a1915ba1a26f715c16918e82f125037febaa13b9d15a",
+      "old_activity_pinned": true,
+      "status": "accepted",
+      "reason": "",
+      "candidate": "02a1acef5431222023949eedaff053fbd135e418df1344d7d7ac823abf80f95a",
+      "model_calls": 2,
+      "input_tokens": 2329,
+      "output_tokens": 296,
+      "checks": [
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "c86fdbe016fff6e49fb013a19b74c98b430e0316e31a4c5cb5b06edbb85f26b2"
+        },
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "015ed5a85860b463799a7119cea55198f466ceab96444a41c11d958affda9a46"
+        },
+        {
+          "kind": "model_review",
+          "passed": true,
+          "digest": "6b6224d9e29ff4467971b6c388c08fae3fe1c078e91ae827d6a2857c92c986b7"
+        }
+      ],
+      "activity": "2d4022088eed427f9116047fc6cacd67",
+      "host_unchanged_before_approval": true,
+      "proposal": "00a0e8dc0cc82611ead8b6af631b938f8ee5d59f01104f4e2355dac2575dcf6a",
+      "grant": "4d52a34905465b67b3bfa0de04d3b78af9b333f7637d72f34c9953661d7c4bff",
+      "application": "applied"
+    },
+    {
+      "stage": "cross_task_reuse",
+      "capsule": "378506429bbda09ea53a8f77532cebf012dbe12bb3d0319b02e8f6cc24351a3b",
+      "same_implementation": true,
+      "incompatible_task": "rejected",
+      "status": "accepted",
+      "reason": "",
+      "candidate": "02a1acef5431222023949eedaff053fbd135e418df1344d7d7ac823abf80f95a",
+      "model_calls": 1,
+      "input_tokens": 1234,
+      "output_tokens": 65,
+      "checks": [
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "d7cc47565d32dde5cc6008f38c57bff2dd1c04a5438ebeb8beff45cb061d4abf"
+        },
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "6992e1f29ac105a4d1583740f031196826114336db5a8367916ba82ccbe5ba33"
+        },
+        {
+          "kind": "model_review",
+          "passed": true,
+          "digest": "b00235c5fd7828018a07ff5b78e3ecee568381f41832ee6461f66d1468204852"
+        }
+      ],
+      "activity": "7bbc666175f940cd8f8a99a87220bee2",
+      "host_unchanged_before_approval": true,
+      "proposal": "aceb57f52ac83c8724185bd476813f8bc589cde5230b761cc4553fb8289d8c7e",
+      "grant": "214af0c95385340fbed9d562446188f4ad7709ec87c6d43997288317be535280",
+      "application": "applied"
+    },
+    {
+      "stage": "dependency_revision",
+      "revision": "7ccb444a4b7f3747e6a4862ad7ccdb9f78fde272d57935b4f36d2963d269d144",
+      "old_evidence_retained": true,
+      "status": "accepted",
+      "reason": "",
+      "candidate": "12d586971ae6f5a1f21d77206c5ea8ddbac5a044d3964863dd9e1ede2fd43198",
+      "model_calls": 2,
+      "input_tokens": 2335,
+      "output_tokens": 310,
+      "checks": [
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "74c3a7d07d5d8a7e0ea23e754387d9026039f6445d76d097571943a858bc16d6"
+        },
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "f7dc6dcbd4705e2b54a62aba89574d9e938ca7a3a1e356eb3472f93734aa4e59"
+        },
+        {
+          "kind": "model_review",
+          "passed": true,
+          "digest": "a1294dd526c5dfccfc3cfa83fb59eaf0a357aca95e56e533a6ee3db54980eaac"
+        }
+      ],
+      "activity": "b1b6b1a64d2747b5860235a867fa1563",
+      "host_unchanged_before_approval": true,
+      "proposal": "4d3c2f7a2044caf86bf3c2f0799c9e58226872186bf3eacf1ca1e768a0fff833",
+      "grant": "69fe1db34d725e152acc65a22e7503296558a1526cdf98e8b34c4bcd167ab271",
+      "application": "applied"
+    },
+    {
+      "stage": "compiler_evolution",
+      "report": "9fb74dc9dbcfb07b359826e7a6734e4bb1809fcd48da9f08b05da07c94cede0a",
+      "seed_failures": [
+        0
+      ],
+      "candidate_failures": [],
+      "bootstrap_identical": true,
+      "bootstrap_generation_requests": 0,
+      "selected": "199cb55c43a1c1444cbe421a058598d320550f8e28f278d47cd3ef1766b1f413",
+      "status": "accepted",
+      "reason": "",
+      "candidate": "09df24bf6eaa940cd43f0be27661cf0390056dc69ff654de39bbeca27c9de9bc",
+      "model_calls": 1,
+      "input_tokens": 401,
+      "output_tokens": 159,
+      "checks": [
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "d284c7accf5ab20004b08bcb4bd53da166aafc231d100c74f519ac1f87d7ea93"
+        },
+        {
+          "kind": "deterministic",
+          "passed": true,
+          "digest": "e844c58892d35a19b1c9edaf1dc2d224acb6d447d4956722cf88f9114edffe08"
+        }
+      ]
+    }
+  ],
+  "status": "passed",
+  "elapsed_seconds": 46.537,
+  "model_calls": 11,
+  "input_tokens": 12075,
+  "output_tokens": 1486
+}

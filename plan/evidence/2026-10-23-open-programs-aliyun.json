@@ -1,0 +1,30 @@
+{
+  "status": "accepted",
+  "reason": "",
+  "provider": "aliyun",
+  "region": "cn-beijing",
+  "model": "qwen3.8-max-0902",
+  "protocol": "chat",
+  "thinking": false,
+  "environment_digest": "77300ce76781f506ec52d5b411ac84bea228a134940eb3c3781b45bf0bd02b11",
+  "elapsed_seconds": 6.014,
+  "model_calls": 2,
+  "input_tokens": 501,
+  "output_tokens": 72,
+  "evidence": [
+    {
+      "kind": "deterministic",
+      "passed": true
+    },
+    {
+      "kind": "deterministic",
+      "passed": true
+    },
+    {
+      "kind": "model_review",
+      "passed": true
+    }
+  ],
+  "artifact_digest": "bd3324bbab9644b0b6557759d1030bea24f59663583b840910242c17a93bf1c9",
+  "locked_replay": true
+}

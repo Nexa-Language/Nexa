@@ -1,0 +1,9 @@
+language "3.0"
+program DiagnosticAdvice {
+    goal advice() -> Json {
+        intent "Implement a Python solve(inputs) diagnostic advice pass. Return an object with a suggestions array. For each diagnostic in inputs.get('diagnostics', []), only when code is unknown_goal: take the missing symbol from message after its last colon and strip whitespace; find the closest name in inputs.get('known_goals', []) using difflib.get_close_matches with n=1 and cutoff=0.6. If a match exists append an object with code unknown_goal and replacement equal to that name. Preserve input order. All other diagnostics produce no suggestions. Never mutate or suppress original diagnostics."
+        capabilities [sandbox.exec]
+        ensure checks.advice
+        implementation open
+    }
+}

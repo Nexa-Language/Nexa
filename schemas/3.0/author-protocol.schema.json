@@ -1,0 +1,528 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "ResolutionBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_model_calls": {
+          "default": 4,
+          "maximum": 100,
+          "minimum": 0,
+          "title": "Max Model Calls",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 20000,
+          "exclusiveMinimum": 0,
+          "title": "Max Tokens",
+          "type": "integer"
+        },
+        "max_output_tokens": {
+          "default": 4096,
+          "exclusiveMinimum": 0,
+          "title": "Max Output Tokens",
+          "type": "integer"
+        },
+        "timeout_seconds": {
+          "default": 120,
+          "exclusiveMinimum": 0,
+          "maximum": 3600,
+          "title": "Timeout Seconds",
+          "type": "number"
+        }
+      },
+      "title": "ResolutionBudget",
+      "type": "object"
+    },
+    "ContextSnapshot": {
+      "additionalProperties": false,
+      "properties": {
+        "subject_digest": {
+          "title": "Subject Digest",
+          "type": "string"
+        },
+        "policy_digest": {
+          "title": "Policy Digest",
+          "type": "string"
+        },
+        "dependencies": {
+          "items": {
+            "$ref": "#/$defs/Dependency"
+          },
+          "title": "Dependencies",
+          "type": "array"
+        },
+        "now": {
+          "minimum": 0,
+          "title": "Now",
+          "type": "number"
+        },
+        "task_id": {
+          "title": "Task Id",
+          "type": "string"
+        },
+        "revoked": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Revoked",
+          "type": "array"
+        }
+      },
+      "required": [
+        "subject_digest",
+        "policy_digest",
+        "dependencies",
+        "now",
+        "task_id"
+      ],
+      "title": "ContextSnapshot",
+      "type": "object"
+    },
+    "Dependency": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "digest": {
+          "minLength": 1,
+          "title": "Digest",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "digest"
+      ],
+      "title": "Dependency",
+      "type": "object"
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "initialize"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "protocol_version": {
+              "const": "3.0",
+              "default": "3.0",
+              "title": "Protocol Version",
+              "type": "string"
+            },
+            "client": {
+              "default": "anonymous-local-client",
+              "title": "Client",
+              "type": "string"
+            }
+          },
+          "title": "InitializeParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "program/check"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "title": "Source",
+              "type": "string"
+            },
+            "path": {
+              "default": "<source>",
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          "required": [
+            "source"
+          ],
+          "title": "CheckParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "revision/propose"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "source": {
+              "title": "Source",
+              "type": "string"
+            },
+            "path": {
+              "default": "<source>",
+              "title": "Path",
+              "type": "string"
+            },
+            "program_id": {
+              "title": "Program Id",
+              "type": "string"
+            },
+            "expected_revision": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Expected Revision"
+            }
+          },
+          "required": [
+            "source",
+            "program_id",
+            "expected_revision"
+          ],
+          "title": "RevisionParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "goal/resolve"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "program_id": {
+              "title": "Program Id",
+              "type": "string"
+            },
+            "expected_revision": {
+              "title": "Expected Revision",
+              "type": "string"
+            },
+            "goal": {
+              "title": "Goal",
+              "type": "string"
+            },
+            "input_json": {
+              "default": "{}",
+              "title": "Input Json",
+              "type": "string"
+            },
+            "budget": {
+              "$ref": "#/$defs/ResolutionBudget",
+              "default": {
+                "max_model_calls": 4,
+                "max_tokens": 20000,
+                "max_output_tokens": 4096,
+                "timeout_seconds": 120.0
+              }
+            }
+          },
+          "required": [
+            "program_id",
+            "expected_revision",
+            "goal"
+          ],
+          "title": "ResolveParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "author/answer"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "program_id": {
+              "title": "Program Id",
+              "type": "string"
+            },
+            "expected_revision": {
+              "title": "Expected Revision",
+              "type": "string"
+            },
+            "request_id": {
+              "title": "Request Id",
+              "type": "string"
+            },
+            "answer": {
+              "minLength": 1,
+              "title": "Answer",
+              "type": "string"
+            }
+          },
+          "required": [
+            "program_id",
+            "expected_revision",
+            "request_id",
+            "answer"
+          ],
+          "title": "AnswerParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "events/read"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "program_id": {
+              "title": "Program Id",
+              "type": "string"
+            },
+            "after": {
+              "default": 0,
+              "minimum": 0,
+              "title": "After",
+              "type": "integer"
+            }
+          },
+          "required": [
+            "program_id"
+          ],
+          "title": "EventsParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "evidence/explain"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "object_id": {
+              "title": "Object Id",
+              "type": "string"
+            },
+            "context": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ContextSnapshot"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            }
+          },
+          "required": [
+            "object_id"
+          ],
+          "title": "ExplainParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "activity/read"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "object_id": {
+              "title": "Object Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "object_id"
+          ],
+          "title": "IdParams",
+          "type": "object"
+        }
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "jsonrpc",
+        "method"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "jsonrpc": {
+          "const": "2.0"
+        },
+        "id": {
+          "type": [
+            "string",
+            "integer",
+            "null"
+          ]
+        },
+        "method": {
+          "const": "activity/cancel"
+        },
+        "params": {
+          "additionalProperties": false,
+          "properties": {
+            "object_id": {
+              "title": "Object Id",
+              "type": "string"
+            }
+          },
+          "required": [
+            "object_id"
+          ],
+          "title": "IdParams",
+          "type": "object"
+        }
+      }
+    }
+  ]
+}

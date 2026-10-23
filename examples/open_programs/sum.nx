@@ -1,0 +1,10 @@
+language "3.0"
+program Sum {
+    goal total() -> Int {
+        intent "Return the exact sum of the integers in inputs.get('values', []). Return zero for the empty list. Provide a Python solve(inputs) implementation."
+        capabilities [sandbox.exec]
+        ensure checks.sum
+        review model("The implementation sums every integer, including negatives, without hardcoded case outputs.")
+        implementation open
+    }
+}

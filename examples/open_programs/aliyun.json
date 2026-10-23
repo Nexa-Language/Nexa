@@ -1,0 +1,20 @@
+{
+  "image": "python@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704",
+  "model": "qwen3.8-max-0902",
+  "model_pinned": true,
+  "allow_model": true,
+  "provider": {
+    "protocol": "chat",
+    "api_key_env": "ALIYUN_API_KEY",
+    "base_url_env": "ALIYUN_BASE_URL",
+    "enable_thinking": false
+  },
+  "checks": [{
+    "name": "checks.sum",
+    "cases": [
+      {"input_json": "{\"values\":[]}", "expected_json": "0"},
+      {"input_json": "{\"values\":[-8,3,7]}", "expected_json": "2"},
+      {"input_json": "{\"values\":[10,20,30,40]}", "expected_json": "100"}
+    ]
+  }]
+}

@@ -1,0 +1,381 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "EventHandler": {
+      "additionalProperties": false,
+      "properties": {
+        "event": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Event",
+          "type": "string"
+        },
+        "parameter": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Parameter",
+          "type": "string"
+        },
+        "goal": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Goal",
+          "type": "string"
+        },
+        "result": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Result",
+          "type": "string"
+        },
+        "repository": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Repository",
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/SourceSpan",
+          "default": {
+            "path": "<source>",
+            "line": 1,
+            "column": 1,
+            "end_line": 1,
+            "end_column": 1
+          }
+        }
+      },
+      "required": [
+        "event",
+        "parameter",
+        "goal",
+        "result",
+        "repository"
+      ],
+      "title": "EventHandler",
+      "type": "object"
+    },
+    "GoalSpec": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "parameters": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Parameter"
+          },
+          "title": "Parameters",
+          "type": "array"
+        },
+        "return_type": {
+          "enum": [
+            "Int",
+            "Float",
+            "String",
+            "Bool",
+            "Json",
+            "Unit",
+            "Patch",
+            "Repository",
+            "ChangeRequest"
+          ],
+          "title": "Return Type",
+          "type": "string"
+        },
+        "intent": {
+          "minLength": 1,
+          "title": "Intent",
+          "type": "string"
+        },
+        "stage": {
+          "default": "build",
+          "enum": [
+            "build",
+            "runtime"
+          ],
+          "title": "Stage",
+          "type": "string"
+        },
+        "context": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Context",
+          "type": "array"
+        },
+        "capabilities": {
+          "default": [],
+          "items": {
+            "enum": [
+              "repo.read",
+              "sandbox.exec",
+              "sandbox.write",
+              "model.call"
+            ],
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "checks": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Checks",
+          "type": "array"
+        },
+        "reviews": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reviews",
+          "type": "array"
+        },
+        "depends_on": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Depends On",
+          "type": "array"
+        },
+        "implementation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Implementation"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "span": {
+          "$ref": "#/$defs/SourceSpan",
+          "default": {
+            "path": "<source>",
+            "line": 1,
+            "column": 1,
+            "end_line": 1,
+            "end_column": 1
+          }
+        }
+      },
+      "required": [
+        "name",
+        "return_type",
+        "intent"
+      ],
+      "title": "GoalSpec",
+      "type": "object"
+    },
+    "Implementation": {
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "enum": [
+            "value",
+            "python"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "body": {
+          "title": "Body",
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "body"
+      ],
+      "title": "Implementation",
+      "type": "object"
+    },
+    "Parameter": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "Int",
+            "Float",
+            "String",
+            "Bool",
+            "Json",
+            "Unit",
+            "Patch",
+            "Repository",
+            "ChangeRequest"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "type"
+      ],
+      "title": "Parameter",
+      "type": "object"
+    },
+    "ProgramIR": {
+      "additionalProperties": false,
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "default": 1,
+          "title": "Schema Version",
+          "type": "integer"
+        },
+        "language_version": {
+          "const": "3.0",
+          "default": "3.0",
+          "title": "Language Version",
+          "type": "string"
+        },
+        "name": {
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "title": "Name",
+          "type": "string"
+        },
+        "parameters": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Parameter"
+          },
+          "title": "Parameters",
+          "type": "array"
+        },
+        "environment": {
+          "default": "developer",
+          "title": "Environment",
+          "type": "string"
+        },
+        "sandbox": {
+          "default": "repository_image",
+          "title": "Sandbox",
+          "type": "string"
+        },
+        "acceptance": {
+          "default": "repo_maintenance",
+          "title": "Acceptance",
+          "type": "string"
+        },
+        "goals": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/GoalSpec"
+          },
+          "title": "Goals",
+          "type": "array"
+        },
+        "handlers": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/EventHandler"
+          },
+          "title": "Handlers",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ProgramIR",
+      "type": "object"
+    },
+    "SourceSpan": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "default": "<source>",
+          "title": "Path",
+          "type": "string"
+        },
+        "line": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Line",
+          "type": "integer"
+        },
+        "column": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Column",
+          "type": "integer"
+        },
+        "end_line": {
+          "default": 1,
+          "minimum": 1,
+          "title": "End Line",
+          "type": "integer"
+        },
+        "end_column": {
+          "default": 1,
+          "minimum": 1,
+          "title": "End Column",
+          "type": "integer"
+        }
+      },
+      "title": "SourceSpan",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "seed_digest": {
+      "title": "Seed Digest",
+      "type": "string"
+    },
+    "version": {
+      "title": "Version",
+      "type": "string"
+    },
+    "program": {
+      "$ref": "#/$defs/ProgramIR"
+    },
+    "artifact_digest": {
+      "title": "Artifact Digest",
+      "type": "string"
+    },
+    "pass_goal": {
+      "title": "Pass Goal",
+      "type": "string"
+    },
+    "verifier_digest": {
+      "title": "Verifier Digest",
+      "type": "string"
+    },
+    "touched_paths": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Touched Paths",
+      "type": "array"
+    }
+  },
+  "required": [
+    "seed_digest",
+    "version",
+    "program",
+    "artifact_digest",
+    "pass_goal",
+    "verifier_digest",
+    "touched_paths"
+  ],
+  "title": "EvolutionProposal",
+  "type": "object"
+}

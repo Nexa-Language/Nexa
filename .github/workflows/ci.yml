@@ -21,11 +21,15 @@ jobs:
           enable-cache: true
           python-version: ${{ matrix.python }}
       - run: uv sync --locked --all-extras
+      - name: Prepare pinned Open Programs executor
+        run: |
+          docker info
+          docker pull python@sha256:a0f57064cbdcd6285fa45f51237ab0b35ea8ebaed06a1f5973e89e19dfb86704
       - run: uv run pytest -m "not benchmark"
       - run: uv build --no-build-isolation
       - name: Check maintained compiler and runtime boundaries
         run: |
-          files="src/compiler.py src/ast_utils.py src/_version.py tests/conftest.py tests/test_packaging.py tests/test_compiler_integration.py setup.py stdlib/__init__.py src/agent_cli.py src/runtime/agent_execution.py src/runtime/agent_runner.py src/runtime/artifacts.py src/runtime/checkpoints.py src/runtime/conversations.py src/runtime/flow_runtime.py src/runtime/flow_actors.py src/runtime/output_schema.py src/runtime/mcp_client.py src/runtime/native_providers.py src/runtime/parallel_runs.py src/runtime/providers.py src/runtime/run_state.py src/runtime/tool_dispatch.py src/runtime/workspace_tools.py"
+          files="src/open_programs tests/open_programs benchmarks src/compiler.py src/ast_utils.py src/_version.py tests/conftest.py tests/test_examples.py tests/test_packaging.py tests/test_compiler_integration.py setup.py stdlib/__init__.py src/agent_cli.py src/runtime/agent_execution.py src/runtime/agent_runner.py src/runtime/artifacts.py src/runtime/checkpoints.py src/runtime/conversations.py src/runtime/flow_runtime.py src/runtime/flow_actors.py src/runtime/output_schema.py src/runtime/mcp_client.py src/runtime/native_providers.py src/runtime/parallel_runs.py src/runtime/providers.py src/runtime/run_state.py src/runtime/tool_dispatch.py src/runtime/workspace_tools.py"
           uv run ruff check $files
           uv run isort --check-only $files
           uv run ty check $files

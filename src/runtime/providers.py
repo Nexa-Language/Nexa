@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 
 @dataclass(frozen=True)
@@ -58,13 +58,18 @@ def object_dict(value: Any) -> dict[str, Any]:
 class ChatCompletionsProvider:
     name = "chat"
 
-    def __init__(self, client: Callable[[], Any]) -> None:
+    def __init__(self, client: Callable[[], Any], *, extra_body: dict[str, Any] | None = None,
+                 max_tokens_field: Literal["max_tokens", "max_completion_tokens"] = "max_tokens") -> None:
         self._client = client
+        self._extra_body = dict(extra_body or {})
+        self._max_tokens_field = max_tokens_field
 
     def complete(self, request: ModelRequest, on_text: Callable[[str], None] | None = None) -> ModelReply:
         kwargs: dict[str, Any] = {"model": request.model, "messages": request.messages, "timeout": request.timeout}
+        if self._extra_body:
+            kwargs["extra_body"] = dict(self._extra_body)
         if request.max_output_tokens is not None:
-            kwargs["max_tokens"] = request.max_output_tokens
+            kwargs[self._max_tokens_field] = request.max_output_tokens
         if request.response_format is not None:
             kwargs["response_format"] = request.response_format
         if request.tools:

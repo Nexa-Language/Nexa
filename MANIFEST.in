@@ -1,3 +1,14 @@
 include VERSION
 include requirements.txt
 recursive-include stdlib *.nx
+recursive-include schemas/3.0 *.json
+recursive-include docs/spec/3.0 *.md
+recursive-include examples/open_programs *.nx *.json *.md
+recursive-include benchmarks/open_programs *.py *.json *.md
+include benchmarks/__init__.py
+recursive-include docs/migration *.md
+include docs/release_notes/v3.0.0.md
+include plan/03-v1-nexa-3-open-programs.md
+include plan/04-v1-open-programs-execution.md
+include plan/05-v1-release-3.0.0.md
+include plan/evidence/*open-programs*

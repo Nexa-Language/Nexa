@@ -1,13 +1,13 @@
-# Nexa Code · Nexa 2.4.0
+# Nexa Code · Nexa 3.0.0
 
-Nexa Code 是使用 `.nx` 编写的编程 Agent 示例。它通过统一 AgentRunner 执行文件工具、审批、预算和恢复。
+Nexa Code 是使用 `.nx` 编写的编程 Agent 示例。它通过兼容的 2.4 Agent/flow 入口和统一 AgentRunner 执行文件工具、审批、预算和恢复。3.0 Open Programs 的目标、证据与修订接口见 [接入指南](docs/open-programs.md)，仓库维护入口见 [3.0 使用指南](../../docs/spec/3.0/usage.md)。
 
 ## 运行
 
-获取 2.4.0 的源码和锁定环境，并按 [运行契约](../../docs/runtime-v2.4.md#模型协议) 配置模型：
+获取 3.0.0 的源码和锁定环境，并按 [运行契约](../../docs/runtime-v2.4.md#模型协议) 配置模型：
 
 ```sh
-git clone --branch v2.4.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
+git clone --branch v3.0.0 --depth 1 https://github.com/Nexa-Language/Nexa.git
 cd Nexa
 uv sync --locked --all-extras
 source .venv/bin/activate
@@ -49,3 +49,7 @@ uv run pytest tests/test_nexa_code_eval.py -q
 测试消费 `evals/tasks/fix-addition-v1.json`，在临时目录完成读取、两次审批、真实写入与验证脚本运行。provider 响应使用确定性 fixture；报告将其标为 `deterministic_fixture`，记录环境、事件和资源计数。该评测验证工具及恢复机制，真实模型能力、成本和延迟另外测量。
 
 历史 REPL flow 保留在 `flows.nx`；带审批的修改任务使用 `nexa agent` 入口。
+
+## Open Programs 3.0
+
+[Integration guide](docs/open-programs.md): shared author protocol, versioned goals and evidence, exact patch review and recovery.

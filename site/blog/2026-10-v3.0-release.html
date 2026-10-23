@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Nexa 3.0.0 Open Programs: typed goals, evidence, revisions and model-assisted compilation.">
+  <meta name="theme-color" content="#0a0a1a">
+  <meta property="og:title" content="Nexa 3.0.0 — Open Programs">
+  <meta property="og:description" content="Nexa 3.0.0 brings model-assisted compilation, current evidence and persistent revisions to an agent-native language.">
+  <meta property="og:image" content="https://www.nexa-lang.com/assets/nexa-logo-noframe.png">
+  <meta property="og:url" content="https://www.nexa-lang.com/blog/2026-10-v3.0-release.html">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>Open Programs — Nexa 3.0.0</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="icon" type="image/svg+xml" href="../assets/nexa-logo.svg">
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body>
+
+  <canvas id="particles-canvas"></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       NAVIGATION v2
+       ═══════════════════════════════════════════════════════════════════ -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="../index.html" class="nav-logo">
+        <img src="../assets/nexa-logo.svg" alt="Nexa"> Nexa
+      </a>
+      <ul class="nav-links">
+        <li class="nav-item">
+          <a href="../index.html">Home <span class="chevron">▾</span></a>
+          <div class="nav-dropdown">
+            <a href="../index.html#features">Features</a>
+            <a href="../index.html#code">Code</a>
+            <a href="../index.html#architecture">Architecture</a>
+          </div>
+        </li>
+        <li class="nav-item"><a href="index.html">Blog</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa" target="_blank" rel="noopener">GitHub</a></li>
+        <li class="nav-item"><a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/development.md" target="_blank" rel="noopener">Docs</a></li>
+      </ul>
+      <button class="nav-toggle" aria-label="Toggle navigation"><span></span><span></span><span></span></button>
+    </div>
+  </nav>
+
+  <article class="blog-post">
+    <a href="index.html" class="back-link">← All posts</a>
+    <div class="post-date">October 23, 2026 · Release</div>
+    <h1>Open Programs: programs that stay open to change</h1>
+    <div class="post-tags"><span class="tag">v3.0.0</span><span class="tag">Language Design</span></div>
+    <div class="post-body">
+      <p>Nexa 3.0 makes goals, implementations, evidence and revisions part of one persistent program. People and models can write the same typed contract; the compiler can ask for clarification, propose an implementation and check whether it satisfies that contract.</p>
+      <p><strong>Nexa 3.0.0 is available.</strong> Get the <a href="https://github.com/Nexa-Language/Nexa/releases/tag/v3.0.0">wheel, source distribution and checksums</a>, or start with the <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/spec/3.0/usage.md">usage guide</a>. Python 3.10+ and Linux/macOS are supported; candidate execution requires Docker/OCI.</p>
+      <h2>A goal can remain open until an implementation is accepted</h2>
+      <pre data-language="nexa"><code>language "3.0"
+program Answer {
+    goal answer() -&gt; Int {
+        intent "Return the number 42"
+        ensure checks.answer
+        implementation open
+    }
+}</code></pre>
+      <p>The environment binds <code>checks.answer</code> to a frozen check. A configured model proposes the implementation; OCI execution and separate acceptance records determine whether the program can use it. Offline checking and locked artifact replay make zero model requests.</p>
+      <h2>Completion has conditions</h2>
+      <p>Evidence records bind a candidate to its inputs, policy, checker and environment. A later failure prevents an older success from authorizing work. Changes create new revisions; active operations remain pinned until a checkpoint permits the next version.</p>
+      <p>Repository maintenance produces an exact patch. Applying it requires a grant for that patch and baseline. A write-ahead journal and retained original files preserve concurrent edits and support recovery.</p>
+      <h2>Reuse includes provenance and verification</h2>
+      <p>Local implementation capsules carry their source, license, dependencies and evidence. Receiving tasks check the conditions and verify the candidate under their current inputs. Explicit source implementations retain priority over reused candidates.</p>
+      <h2>The compiler can participate in its own improvement</h2>
+      <p>A model-generated diagnostic advice pass is evaluated against a frozen external suite. Locked bootstrap constructs C1 and C2 and compares their artifacts and outputs. An exact approval selects the candidate. This establishes the first small, testable step toward an evolving compiler.</p>
+      <p>The Python reference implementation includes the author protocol, CLI, migration tools, a six-stage maintenance demonstration and reproducible synthetic experiments. The tested Aliyun six-stage run used 11 requests. A 360-stage synthetic matrix records outcomes, failures and token totals, including a corrected baseline output contract. Read the <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/plan/evidence/2026-10-23-open-programs-experiment.md">complete experiment report</a>.</p>
+      <h2>Install and migrate</h2>
+      <pre><code>python -m pip install https://github.com/Nexa-Language/Nexa/releases/download/v3.0.0/nexa_lang-3.0.0-py3-none-any.whl
+nexa --version</code></pre>
+      <p>The PyPI name <code>nexa-lang</code> belongs to another project. Use this release URL. Existing 2.4 source retains its compiler path; <code>language "3.0"</code> selects Open Programs. Legacy checkpoints export to an inert archive, preserving unresolved effects for reconciliation. See the <a href="https://github.com/Nexa-Language/Nexa/blob/v3.0.0/docs/migration/2.4-to-3.0.md">migration guide</a>.</p>
+      <p>The first 3.0 implementation focuses on local repository maintenance. Candidates execute offline Python in OCI; the compiler owns model requests. The Rust AVM retains its 2.4 subset, and compiler bootstrap covers the diagnostic advice pass. External author clients can use the versioned protocol.</p>
+    </div>
+  </article>
+  <script src="../js/main.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

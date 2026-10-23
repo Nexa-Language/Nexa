@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "report_digest": {
+      "title": "Report Digest",
+      "type": "string"
+    },
+    "proposal_digest": {
+      "title": "Proposal Digest",
+      "type": "string"
+    },
+    "seed_digest": {
+      "title": "Seed Digest",
+      "type": "string"
+    },
+    "actor": {
+      "minLength": 1,
+      "title": "Actor",
+      "type": "string"
+    },
+    "issued_at": {
+      "title": "Issued At",
+      "type": "number"
+    },
+    "expires_at": {
+      "title": "Expires At",
+      "type": "number"
+    }
+  },
+  "required": [
+    "report_digest",
+    "proposal_digest",
+    "seed_digest",
+    "actor",
+    "issued_at",
+    "expires_at"
+  ],
+  "title": "EvolutionApproval",
+  "type": "object"
+}

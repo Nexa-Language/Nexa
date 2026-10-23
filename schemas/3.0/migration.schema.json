@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "MigrationIssue": {
+      "additionalProperties": false,
+      "properties": {
+        "run_id": {
+          "title": "Run Id",
+          "type": "string"
+        },
+        "code": {
+          "title": "Code",
+          "type": "string"
+        }
+      },
+      "required": [
+        "run_id",
+        "code"
+      ],
+      "title": "MigrationIssue",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": 1,
+      "default": 1,
+      "title": "Schema Version",
+      "type": "integer"
+    },
+    "source_snapshot_digest": {
+      "title": "Source Snapshot Digest",
+      "type": "string"
+    },
+    "imported": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Imported",
+      "type": "array"
+    },
+    "errors": {
+      "items": {
+        "$ref": "#/$defs/MigrationIssue"
+      },
+      "title": "Errors",
+      "type": "array"
+    },
+    "archive_digests": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Archive Digests",
+      "type": "array"
+    },
+    "next_steps": {
+      "default": [
+        "Declare explicit 3.0 goals, capabilities and acceptance checks.",
+        "Reconcile archived unknown effects before new external operations.",
+        "Build and activate a new program; archived runs are never replayed."
+      ],
+      "items": {
+        "type": "string"
+      },
+      "title": "Next Steps",
+      "type": "array"
+    }
+  },
+  "required": [
+    "source_snapshot_digest",
+    "imported",
+    "errors",
+    "archive_digests"
+  ],
+  "title": "MigrationReport",
+  "type": "object"
+}

@@ -27,11 +27,12 @@ from src.runtime.hitl import wait_for_human, ApprovalStatus, HITLManager, CLIBac
 class TestCLIFeatures:
     """Test CLI features: --version and cache clear"""
     
-    def test_version_constant_exists(self):
+    def test_version_constant_exists(self) -> None:
         """Verify NEXA_VERSION constant is defined"""
         assert NEXA_VERSION is not None
         assert isinstance(NEXA_VERSION, str)
-        assert NEXA_VERSION.startswith("v2.") or NEXA_VERSION.startswith("v1.")
+        expected = (Path(__file__).resolve().parents[1] / "VERSION").read_text(encoding="utf-8").strip()
+        assert NEXA_VERSION == f"v{expected}"
     
     def test_show_version_function(self):
         """Verify show_version() function works"""

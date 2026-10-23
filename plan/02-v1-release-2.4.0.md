@@ -1,6 +1,26 @@
 # Nexa 2.4.0 完整发布
 
-日期：2026-10-23。状态：执行中。用户已批准源码提交、推送、PR、Rebase and merge、tag、GitHub Release 和官网发布。
+日期：2026-10-23。状态：全部发布验收完成。用户已批准源码提交、推送、PR、Rebase and merge、tag、GitHub Release 和官网发布。
+
+## 最终交付
+
+以下记录在发布完成后补入规划分支；已发布的 `v2.4.0` tag 保持不变。
+
+| 项目 | 验收结果 |
+|---|---|
+| 源码 | [PR #2](https://github.com/Nexa-Language/Nexa/pull/2) 通过 Rebase and merge 合入 |
+| 稳定基线 | [v2.4.0](https://github.com/Nexa-Language/Nexa/tree/v2.4.0)，`c2162637236e4a73feea410c4183672411666521` |
+| GitHub Release | [Nexa 2.4.0](https://github.com/Nexa-Language/Nexa/releases/tag/v2.4.0)，正式版本，发布时设为 Latest |
+| 发行物 | wheel、sdist、SHA256SUMS、BUILDINFO.json 齐全；回下载内容和哈希一致 |
+| 安装 | 仓库外新环境从公开 wheel URL 安装成功，版本、Hello World、标准库解析与计算通过；sdist 重建 wheel 与正式 wheel 哈希一致 |
+| CI | [发布源码矩阵](https://github.com/Nexa-Language/Nexa/actions/runs/39931776442) 与 [CodeQL](https://github.com/Nexa-Language/Nexa/actions/runs/39931776856) 通过 |
+| 官网 | [www.nexa-lang.com](https://www.nexa-lang.com/) 已展示 2.4.0；[Release 事件部署](https://github.com/Nexa-Language/Nexa/actions/runs/39932974844) 成功，源码与 tag 一致 |
+| 浏览器 | 1440/960/769/390/320 px × 3 页面共 15 个线上场景通过，复制、导航、搜索和排序正常 |
+
+冻结源码验证为 **Python 2187 passed / 5 skipped / 3 deselected**，Rust 默认 **141 passed**、WASM **144 passed**。5 项 PostgreSQL 测试缺少可选驱动；真实 provider 与 MCP HTTP server 的端到端范围见发行说明。完整交付对应关系与构建信息已补入公开 Release。
+
+正式 wheel SHA-256：`3a9e23c754704718cb7ca08644c30248a92fa2c9bb9bbeaa287057f50ee0544d`。
+正式 sdist SHA-256：`b5c1bdb8bf3bc9eba24780a996ffc10e3a8d132c496ee6fae85dfb031836991d`。
 
 ## 目标与基线
 

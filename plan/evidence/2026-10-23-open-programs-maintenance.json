@@ -1,0 +1,36 @@
+{
+  "status": "accepted",
+  "reason": "",
+  "model": "qwen3.8-max-0902",
+  "revision": "971c5073a6d7620591813a1fdcb356a6c19e866c39a86f0bfd039cace9ef251f",
+  "activity_id": "8190f7d780cf401da4eff6bb589d8afc",
+  "model_calls": 2,
+  "input_tokens": 1539,
+  "output_tokens": 268,
+  "evidence": [
+    {
+      "kind": "deterministic",
+      "passed": true,
+      "artifacts": []
+    },
+    {
+      "kind": "deterministic",
+      "passed": true,
+      "artifacts": [
+        "673a4c0b989ba542eca4920ab4b63ca3447acd4e15bf644b79c369a6bacef293",
+        "a84130c19e6a2212415468cd72af16f54c6b3ba168783d260e78eb557ecdd829"
+      ]
+    },
+    {
+      "kind": "model_review",
+      "passed": true,
+      "artifacts": []
+    }
+  ],
+  "host_unchanged_before_approval": true,
+  "proposal_id": "b488c3b62b206f1ee9f044ebde6e6eb868c21d61cbcf9f66dafa628c00fa300c",
+  "grant_id": "53af94694ab06d96eb5970f88b91f47eaa3f8c15344a8e5d8b7dd60fb4194721",
+  "application": "applied",
+  "restart_revision_preserved": true,
+  "elapsed_seconds": 8.937
+}

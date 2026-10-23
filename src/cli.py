@@ -563,18 +563,39 @@ def main():
     parser = argparse.ArgumentParser(description=f"Nexa Language CLI {NEXA_VERSION}")
     parser.add_argument("-v", "--version", action="store_true", help="Show version and exit")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    check_parser = subparsers.add_parser("check", help="Check an Open Program without model calls")
+    check_parser.add_argument("file")
+    check_parser.add_argument("--json", action="store_true")
     
     # Build command
     build_parser = subparsers.add_parser("build", help="Compile a .nx file to .py")
     build_parser.add_argument("file", help="Path to the .nx source file")
     build_parser.add_argument("--harness", choices=["strict", "warn", "off"], default="warn",
                               help="Harness validation mode (default: warn)")
+    build_parser.add_argument("--environment", help="Open Programs compiler environment JSON")
+    build_parser.add_argument("--state", default=".nexa/open-programs.sqlite3")
+    build_parser.add_argument("--docker-context")
+    build_parser.add_argument("--locked", action="store_true")
+    build_parser.add_argument("--lock")
+    build_parser.add_argument("--json", action="store_true")
+    build_parser.add_argument("--max-model-calls", type=int, default=4)
+    build_parser.add_argument("--max-tokens", type=int, default=20000)
+    build_parser.add_argument("--timeout", type=float, default=120)
+
+    author_parser = subparsers.add_parser("author", help="Serve the Open Programs JSON-RPC author protocol over stdio")
+    author_parser.add_argument("--environment")
+    author_parser.add_argument("--state", default=".nexa/open-programs.sqlite3")
+    author_parser.add_argument("--docker-context")
     
     # Run command
     run_parser = subparsers.add_parser("run", help="Compile and execute a .nx file")
     run_parser.add_argument("file", help="Path to the .nx source file")
     run_parser.add_argument("--harness", choices=["strict", "warn", "off"], default="warn",
                               help="Harness validation mode (default: warn)")
+    from src.open_programs.commands import add_run_arguments, register_commands
+    add_run_arguments(run_parser)
+    register_commands(subparsers)
 
     agent_parser = subparsers.add_parser("agent", help="Run a declared agent with checkpoints and explicit tool approvals")
     agent_parser.add_argument("file")
@@ -690,12 +711,33 @@ def main():
         show_version()
         return
     
-    if args.command == "build":
+    if args.command == "check":
+        from src.open_programs.cli import check_file
+        sys.exit(check_file(args.file, json_output=args.json))
+    elif args.command == "build":
+        from src.compiler import declared_language
+        if declared_language(Path(args.file).read_text(encoding="utf-8")) == "3.0":
+            from src.open_programs.cli import build_file as build_open_program
+            if not args.environment:
+                parser.error("Open Programs builds require --environment")
+            sys.exit(build_open_program(args.file, environment_path=args.environment, state=args.state, docker_context=args.docker_context,
+                                        locked=args.locked, lock=args.lock, json_output=args.json, max_model_calls=args.max_model_calls,
+                                        max_tokens=args.max_tokens, timeout=args.timeout))
         harness_mode = getattr(args, 'harness', 'warn')
         build_file(args.file, harness_mode=harness_mode)
+    elif args.command == "author":
+        from src.open_programs.cli import author_stdio
+        sys.exit(author_stdio(state=args.state, environment_path=args.environment, docker_context=args.docker_context))
     elif args.command == "run":
+        from src.compiler import declared_language
+        if declared_language(Path(args.file).read_text(encoding="utf-8")) == "3.0":
+            from src.open_programs.commands import run_file as run_open_program
+            sys.exit(run_open_program(args))
         harness_mode = getattr(args, 'harness', 'warn')
         run_file(args.file, harness_mode=harness_mode)
+    elif args.command == "open":
+        from src.open_programs.commands import dispatch
+        sys.exit(dispatch(args))
     elif args.command == "agent":
         from src.agent_cli import print_run, run_declared_agent
         state = run_declared_agent(args.file, args.name, args.task, checkpoint=args.checkpoint,
