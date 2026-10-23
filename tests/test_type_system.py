@@ -191,10 +191,10 @@ class TestTypeExpr:
         t = GenericTypeExpr("dict", [PrimitiveTypeExpr("str"), PrimitiveTypeExpr("int")])
         assert t.to_type_str() == "dict[str, int]"
 
-    def test_option_type(self):
+    def test_option_type(self) -> None:
         t = OptionTypeExpr(PrimitiveTypeExpr("str"))
         assert t.to_type_str() == "str?"
-        assert t.to_python_type() == type(None) or "Optional" in str(t.to_python_type())
+        assert t.to_python_type() == str | None
 
     def test_result_type(self):
         t = ResultTypeExpr(PrimitiveTypeExpr("int"), PrimitiveTypeExpr("str"))

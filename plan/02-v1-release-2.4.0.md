@@ -42,6 +42,8 @@
 
 发布准备完成记录：冻结后的完整 Python suite 为 **2160 passed / 5 skipped / 3 deselected**，源码哈希前后一致。运行时增量审查的唯一 Important 已通过两项 null tool-call 回归关闭。既有语言执行缺口经离线复现后同步进入运行契约、发行说明与博客。详细结果见 [发布前验证](evidence/2026-10-23-release-validation.md)。当前进入提交、PR 与远端 CI 阶段。
 
+PR [#2](https://github.com/Nexa-Language/Nexa/pull/2) 已创建。首轮 CI 的 Python 3.10/3.12 与 Rust 通过；Python 3.14 发现 Option 类型测试依赖显示格式，已改为类型比较，本地 79 项类型系统测试通过。继续等待更新后的完整 CI，再按 Rebase and merge 合入。
+
 ## 发布后恢复 3.0 规划
 
 以 `v2.4.0` 为稳定基线，完成 Open Programs 的详细设计。允许破坏性升级，Python 参考实现优先，旗舰场景为持续维护代码仓库。首发贯通目标求解、在线修改、证据失效和有条件的跨任务实现复用。
