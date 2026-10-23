@@ -6,7 +6,7 @@
 
 | 范围 | 实测结果与证据 |
 |---|---|
-| Python 全套 | `.venv/bin/pytest -q -rs -m 'not benchmark'`：**2160 passed / 5 skipped / 3 deselected**，16 warnings，154.57 s；[日志](2026-10-23-release-python-tests.log.txt) |
+| Python 全套 | `.venv/bin/pytest -q -rs -m 'not benchmark'`：**2171 passed / 5 skipped / 3 deselected**，16 warnings，154.49 s；[日志](2026-10-23-release-python-tests.log.txt) |
 | 冻结验证 | 测试前后源码、标准库、测试和打包依赖的 SHA-256 一致；[文件快照](2026-10-23-release-source-snapshot.json) |
 | Rust 默认 / WASM | **140 / 143 passed**；37 个 Rust 源码、锁文件及共同语义 fixture 与此前验证快照一致，复用[原始命令与日志](2026-10-23-verification.md) |
 | 打包及示例定向验证 | 66 passed；完整 suite 也包含仓库外 CLI/标准库与 sdist 重建测试 |
@@ -26,9 +26,13 @@
 - 会话与编辑器增量独立审查发现 1 个 Important：合法 `tool_calls: null` 历史使 `continue_run()` 和既有 `run()` 第二轮失败。新增两项回归在修复前均出现 TypeError；统一空列表归一化后 21 项会话测试通过，最终全套 2160 项通过。该发现已关闭。
 - 增量审查同时核对新轮预算/期限/审批/journal、原生 provider 历史、父子 ID、未知副作用阻断、声明位置和就近配置优先级。该限定范围没有其他未解决的实质发现。
 
+- 文档完整程序验收发现多阶段管道被嵌套 AST 静默跳过；新增 5 项回归在修复前 3 failed / 2 passed，修复后正确执行全部阶段并拒绝非法阶段。独立审查 5 个执行场景与 4 个拒绝场景通过，无 Critical/Important。历史 pipeline + `?? { ... }` 未实现 cases 分派，改为明确失败回归并公开限制。
+- Agent 配置增量的 6 项真实编译执行回归在修复前 5 failed / 1 passed：整数历史限制编译失败、max_tokens 属性被忽略、装饰器名称丢失、timeout/retry 未传入。修复后 23 项 Agent 执行测试通过，相关编译/文档/上下文/示例合计 122 passed，最终全套 **2171 passed** 且源码哈希一致。
+- 配置增量独立审查的 5 组 fixture 检查通过，无 Critical/Important；retry 总尝试次数的 Minor 文档歧义已修正。实测 `max_attempts=3` 对应两次重试，0/1 均不重试。
+
 ## 已验证边界与待验收渠道
 
-PR [#2](https://github.com/Nexa-Language/Nexa/pull/2) 首轮远端检查：Python 3.10、3.12 和 Rust 默认/WASM 通过；Python 3.14 为 2159 passed / 1 failed，失败来自旧测试依赖 `Optional` 的字符串显示格式。按 [Python typing 官方契约](https://docs.python.org/3.14/library/typing.html#typing.Optional)改为直接比较 `str | None` 类型，收紧了原先也接受 `NoneType` 的断言。本地类型系统定向测试 79 项通过；运行时代码与全套冻结快照一致，仅该测试在后续 CI 中再次验证。
+PR [#2](https://github.com/Nexa-Language/Nexa/pull/2) 首轮远端检查：Python 3.10、3.12 和 Rust 默认/WASM 通过；Python 3.14 为 2159 passed / 1 failed，失败来自旧测试依赖 `Optional` 的字符串显示格式。按 [Python typing 官方契约](https://docs.python.org/3.14/library/typing.html#typing.Optional)改为直接比较 `str | None` 类型，收紧了原先也接受 `NoneType` 的断言。本地类型系统定向测试 79 项通过；修复后的 PR CI 已通过 Python 3.10/3.12/3.14 和 Rust；后续编译器修复重新建立全套冻结快照并再次通过本地验证。
 
 推送时 GitHub 报告旧 main 的 AnyIO 4.12.1 存在两项告警，修复下界为 4.14.2。本次 uv.lock 和本地验证环境使用 4.15.1，旧 requirements.txt 的固定版本已随打包迁移移除。
 

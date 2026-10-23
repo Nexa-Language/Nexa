@@ -187,7 +187,8 @@ json_array: "[" [json_value ("," json_value)*] "]"
 // v2.2.1: 新增 context 子块 — Context-as-Structure（声明时定义 context 行为）
 agent_decl: agent_decorator* "agent" IDENTIFIER ["->" return_type] ["uses" use_identifier_list] ["implements" IDENTIFIER] requires_clause* ensures_clause* "{" agent_body* "}"
 agent_decorator: "@" agent_decorator_name "(" agent_decorator_params ")"
-agent_decorator_name: "limit" | "timeout" | "retry" | "temperature"
+agent_decorator_name: AGENT_DECORATOR_NAME
+AGENT_DECORATOR_NAME: "limit" | "timeout" | "retry" | "temperature"
 agent_decorator_params: agent_decorator_param ("," agent_decorator_param)*
 agent_decorator_param: IDENTIFIER "=" (INT | FLOAT)
 return_type: IDENTIFIER "<" IDENTIFIER ">" | IDENTIFIER

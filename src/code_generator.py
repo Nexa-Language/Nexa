@@ -956,11 +956,11 @@ class CodeGenerator:
             stream = "True" if stream_val == "true" else "False"
             cache_val = str(properties.get("cache", '"false"')).strip('"').lower()
             cache = "True" if cache_val == "true" else "False"
-            max_history_turns = properties.get("max_history_turns", 'None').strip('"')
+            max_history_turns = str(properties.get("max_history_turns", 'None')).strip('"')
             experience = properties.get("experience", '""').strip('"')
             # 新增: timeout 和 retry 属性
-            timeout = properties.get("timeout", "30")
-            retry = properties.get("retry", "3")
+            timeout = agent.get("timeout") if agent.get("timeout") is not None else properties.get("timeout", "30")
+            retry = agent.get("retry") if agent.get("retry") is not None else properties.get("retry", "3")
 
             
             tool_refs_list = []
@@ -2575,6 +2575,8 @@ class CodeGenerator:
                     agent_names.append(stage["value"])
                 elif stage["type"] == "MethodCallExpression":
                     agent_names.append(stage["object"]) # just the agent name for now.
+                else:
+                    raise ValueError(f"Unsupported pipeline stage: {stage['type']}")
             agents_list_str = "[ " + ", ".join(agent_names) + " ]"
             # v2.2.1: use nexa_context_pipeline by default; it auto-downgrades
             # to v2.1 string-only behavior for agents without a context_spec.

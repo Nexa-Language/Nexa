@@ -2385,7 +2385,7 @@ class NexaTransformer(Transformer):
                     properties[arg["key"]] = arg["value"]
         
         # Extract decorator values
-        max_tokens = None
+        max_tokens = properties.get("max_tokens")
         timeout = None
         retry = None
         temperature = None
@@ -3428,10 +3428,17 @@ class NexaTransformer(Transformer):
         }
 
     @v_args(inline=False)
-    def pipeline_expr(self, args):
+    def pipeline_expr(self, args: list[dict[str, Any]]) -> dict[str, Any]:
+        stages: list[dict[str, Any]] = []
+        for stage in args:
+            # Earley can group a chain into nested pipelines through comparison_expr.
+            if stage.get("type") == "PipelineExpression":
+                stages.extend(stage["stages"])
+            else:
+                stages.append(stage)
         return {
             "type": "PipelineExpression",
-            "stages": args
+            "stages": stages
         }
     
     # ==================== DAG 表达式转换 ====================
