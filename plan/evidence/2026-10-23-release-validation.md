@@ -6,11 +6,11 @@
 
 | 范围 | 实测结果与证据 |
 |---|---|
-| Python 全套 | `.venv/bin/pytest -q -rs -m 'not benchmark'`：**2171 passed / 5 skipped / 3 deselected**，16 warnings，154.49 s；[日志](2026-10-23-release-python-tests.log.txt) |
+| Python 全套 | `.venv/bin/pytest -q -rs -m 'not benchmark'`：**2187 passed / 5 skipped / 3 deselected**，16 warnings，150.71 s；[日志](2026-10-23-release-python-tests.log.txt) |
 | 冻结验证 | 测试前后源码、标准库、测试和打包依赖的 SHA-256 一致；[文件快照](2026-10-23-release-source-snapshot.json) |
-| Rust 默认 / WASM | **140 / 143 passed**；37 个 Rust 源码、锁文件及共同语义 fixture 与此前验证快照一致，复用[原始命令与日志](2026-10-23-verification.md) |
+| Rust 默认 / WASM | **141 / 144 passed**；新增工具声明拒绝回归后重新运行[默认](2026-10-23-release-rust-default.log.txt)及[WASM](2026-10-23-release-rust-wasm.log.txt)全套门禁，[源码快照](2026-10-23-release-rust-snapshot.json) |
 | 打包及示例定向验证 | 66 passed；完整 suite 也包含仓库外 CLI/标准库与 sdist 重建测试 |
-| Python 静态检查 | CI maintained files 的 Ruff/isort/ty 均通过；最后修改的 conversations.py、agent_runner.py 再次通过三项检查 |
+| Python 静态检查 | CI maintained files 的 Ruff/isort/ty 均通过；最终 maintained files 再次通过三项检查 |
 | 文档和部署预检 | 11 个完整 Nexa 代码块编译、66 个本地页面引用存在、两份 workflow YAML 解析及 release-tag checkout 断言通过；[日志](2026-10-23-release-preflight.log.txt) |
 | 浏览器 | 无头 Edge，1440/960/769/390/320 px × 首页/博客/发行文章共 15 场景 HTTP 200，无横向溢出或页面脚本异常；安装命令复制、移动导航、搜索、正反排序通过；[数据](2026-10-23-site-browser.json)、[脚本](2026-10-23-site-check.cjs.txt) |
 | 提交清单 | 无缓存、构建目录、个人配置和凭据文件；候选文件的私钥、GitHub token 和模型 key 特征扫描零命中；`git diff --check` 通过 |
@@ -29,6 +29,10 @@
 - 文档完整程序验收发现多阶段管道被嵌套 AST 静默跳过；新增 5 项回归在修复前 3 failed / 2 passed，修复后正确执行全部阶段并拒绝非法阶段。独立审查 5 个执行场景与 4 个拒绝场景通过，无 Critical/Important。历史 pipeline + `?? { ... }` 未实现 cases 分派，改为明确失败回归并公开限制。
 - Agent 配置增量的 6 项真实编译执行回归在修复前 5 failed / 1 passed：整数历史限制编译失败、max_tokens 属性被忽略、装饰器名称丢失、timeout/retry 未传入。修复后 23 项 Agent 执行测试通过，相关编译/文档/上下文/示例合计 122 passed，最终全套 **2171 passed** 且源码哈希一致。
 - 配置增量独立审查的 5 组 fixture 检查通过，无 Critical/Important；retry 总尝试次数的 Minor 文档歧义已修正。实测 `max_attempts=3` 对应两次重试，0/1 均不重试。
+
+- GitHub Codex 的 5 项实质反馈已关闭：工具额度耗尽后仍暴露工具、JSON/schema 未修正、错误 hook 缺少变量、工具 hook 丢失名称筛选、AVM 工具声明推迟失败。初始 11 项 Python 回归与 Rust 回归均在修复前失败；最终 16 项新增 Python 测试覆盖额度、审批恢复、合同输入、hook 与原生协议，相关测试共 49 passed。
+- 输出修正独立审查复现了两个交互问题并完成修复：Anthropic 纠正请求需要以 user 回合结束（[官方 Messages API 文档](https://platform.claude.com/docs/en/build-with-claude/working-with-messages)）；内部纠正归入原始逻辑回合，`max_history_turns=1` 保留问题和失败回复。三种 Chat 结构化模式及两种原生协议的 5 项增强回归在修复前失败，修复后通过。最后限定复核 Ready: Yes，无未关闭 Critical/Important。
+- 最终完整 Python 验证 **2187 passed / 5 skipped / 3 deselected**，源码哈希前后一致。最终页面 15 场景再次通过；Pages 环境已允许精确 `v2.4.0` tag policy，并保留 main policy。
 
 ## 已验证边界与待验收渠道
 

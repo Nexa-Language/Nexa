@@ -52,6 +52,10 @@ Chat / Responses 继续使用 `.nxs` 与现有 provider 配置。原生 Anthropi
 
 Agent 属性 `max_tokens` 和 `@limit(max_tokens=...)` 设置单次模型响应的输出 token 上限；总运行预算通过 `RunConfig.max_tokens` 设置。`max_history_turns` 支持整数及历史数字字符串写法。`@timeout(seconds=...)` 设置运行时限；`@retry(max_attempts=...)` 设置包含首次调用的总尝试次数，运行时转换为 `max(0, max_attempts - 1)` 次重试，0/1 均不重试。装饰器优先于同名属性。`@temperature` 当前仅保留声明元数据，尚未传给 provider。
 
+`RunConfig.retries` 分别限制单次 provider 请求的瞬态错误重试，以及整次运行的 JSON/Protocol/schema 输出修正。输出修正保留已执行工具的结果，次数随 checkpoint 保存；审批恢复后继续使用剩余额度。所有尝试均计入 `max_model_calls`、token 和总时限。`ensures` 与 `verify` 失败直接终止。工具调用额度用完后，后续模型请求移除工具，允许基于已有结果给出最终回答；越过预算的额外工具调用仍被执行边界拒绝。
+
+`before_tool(name)` / `after_tool(name)` 仅观察指定工具。`on_error(problem: Exception)` 中的 `problem` 绑定运行事件保存的错误摘要字符串，可用于日志；hook 不改变运行失败状态。
+
 ## 预算、取消与输出
 
 ```python

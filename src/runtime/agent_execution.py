@@ -78,7 +78,10 @@ def execute_agent(agent: NexaAgent, args: tuple[Any, ...], *, config: RunConfig 
         elif continuation:
             _append_input(session, args)
         tools = ToolDispatcher.from_definitions(agent.tools)
-        validate = _output_validator(session, args)
+        if not resuming or continuation or "contract_input" not in state.metadata:
+            state.metadata["contract_input"] = next((str(message.get("content", "")) for message in reversed(state.messages)
+                                                     if message.get("role") == "user"), "")
+        validate = _output_validator(session, args, state.metadata["contract_input"])
         response_format = _response_format(agent)
         identity = {"system": agent.system_prompt, "provider": _cache_identity(agent, provider.name, response_format),
                     "tools": [{**tool.function_schema(), "approval": tool.requires_approval, "risk": tool.risk_level, "sandbox": tool.sandbox}
@@ -169,8 +172,7 @@ def _append_input(session: NexaAgent, args: tuple[Any, ...]) -> None:
     session.messages.append({"role": "user", "content": text})
 
 
-def _output_validator(session: NexaAgent, args: tuple[Any, ...]) -> Callable[[str], Any]:
-    input_text = next((str(message.get("content", "")) for message in reversed(session.messages) if message.get("role") == "user"), "")
+def _output_validator(session: NexaAgent, args: tuple[Any, ...], input_text: str) -> Callable[[str], Any]:
     context = {"input": input_text, "args": args}
     old_values = None
     if session.contracts:
@@ -186,7 +188,7 @@ def _output_validator(session: NexaAgent, args: tuple[Any, ...]) -> Callable[[st
             value = schema.model_validate_json(text)
         elif session.output_format == "json":
             value = json.loads(text)
-        return session._check_ensures_contract(value, old_values)
+        return session._check_ensures_contract(value, old_values, input_text=input_text)
 
     return validate
 

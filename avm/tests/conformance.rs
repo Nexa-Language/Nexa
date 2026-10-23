@@ -57,6 +57,19 @@ fn unsupported_instruction_is_an_error() {
 }
 
 #[test]
+fn tool_declarations_require_the_python_runtime() {
+    for source in ["tool Example {}", "tool Example { parameters: {} }"] {
+        let program = NexaParser::parse_from_source(source).unwrap();
+        let result = BytecodeCompiler::new("unsupported-tool".into()).compile(&program);
+        let error = match result {
+            Err(error) => error,
+            Ok(_) => panic!("Tool declaration unexpectedly compiled: {source}"),
+        };
+        assert!(error.to_string().contains("Tool Example requires the Python runtime"));
+    }
+}
+
+#[test]
 fn instruction_budget_stops_an_infinite_loop() {
     let mut module = BytecodeModule::new("loop".into());
     module.emit(OpCode::Jump, Some(Operand::JumpOffset(0)), None);
